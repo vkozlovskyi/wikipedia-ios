@@ -121,7 +121,8 @@ static NSString *const RecentSearchesViewControllerCellIdentifier = @"RecentSear
     WMFArticleListTableViewCell *cell = (WMFArticleListTableViewCell *)[tableView dequeueReusableCellWithIdentifier:RecentSearchesViewControllerCellIdentifier forIndexPath:indexPath];
     [cell applyTheme:self.theme];
     cell.articleCell.isImageViewHidden = YES;
-    NSString *term = [[self.recentSearches entryAtIndex:indexPath.row] searchTerm];
+    MWKRecentSearchEntry *entry = [self.recentSearches entryAtIndex:indexPath.row];
+    NSString *term = [entry displayTitle] ?: [entry searchTerm];
     [cell setTitleText:term];
 
     return cell;
@@ -147,6 +148,7 @@ static NSString *const RecentSearchesViewControllerCellIdentifier = @"RecentSear
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     [self.delegate recentSearchController:self didSelectSearchTerm:[self.recentSearches entryAtIndex:indexPath.row]];
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {

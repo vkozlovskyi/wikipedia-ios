@@ -227,8 +227,6 @@ static NSUInteger const kWMFMinResultsBeforeAutoFullTextSearch = 12;
            Only perform animations & search site sync if search is being modally dismissed (as opposed to having another
            view presented on top of it.
          */
-        [self saveLastSearch];
-
         self.searchFieldTop.constant = -self.searchFieldHeight.constant;
 
         [self.transitionCoordinator animateAlongsideTransition:^(id<UIViewControllerTransitionCoordinatorContext> _Nonnull context) {
@@ -523,7 +521,7 @@ static NSUInteger const kWMFMinResultsBeforeAutoFullTextSearch = 12;
 - (void)saveLastSearch {
     if ([self currentResultsSearchTerm]) {
         MWKRecentSearchEntry *entry = [[MWKRecentSearchEntry alloc] initWithURL:[self currentResultsSearchSiteURL]
-                                                                     searchTerm:[self currentResultsSearchTerm]];
+                                                                     searchTerm:[self currentResultsSearchTerm] displayTitle:nil];
         [self.dataStore.recentSearchList addEntry:entry];
         [self.dataStore.recentSearchList save];
         [self.recentSearchesViewController reloadRecentSearches];
@@ -534,9 +532,20 @@ static NSUInteger const kWMFMinResultsBeforeAutoFullTextSearch = 12;
 
 - (void)recentSearchController:(RecentSearchesViewController *)controller
            didSelectSearchTerm:(MWKRecentSearchEntry *)searchTerm {
+    if (searchTerm.displayTitle) {
+        NSURL *articleURL = [searchTerm.url wmf_URLWithTitle:searchTerm.displayTitle];
+        if (articleURL) {
+            [self showArticleWithURL:articleURL];
+            [self updateRecentSearchesVisibility];
+            return;
+        }
+
+    }
+    
     [self setSearchFieldText:searchTerm.searchTerm];
     [self searchForSearchTerm:searchTerm.searchTerm];
     [self updateRecentSearchesVisibility];
+
 }
 
 #pragma mark - Actions
@@ -552,12 +561,22 @@ static NSUInteger const kWMFMinResultsBeforeAutoFullTextSearch = 12;
 
 #pragma mark - WMFArticleListTableViewControllerDelegate
 
-- (void)listViewController:(WMFArticleListTableViewController *)listController didSelectArticleURL:(nonnull NSURL *)url {
+- (void)listViewController:(nonnull WMFArticleListTableViewController *)listController didSelectArticleURL:(nonnull NSURL *)url {
+    
+    MWKRecentSearchEntry *entry = [[MWKRecentSearchEntry alloc] initWithURL:[self currentResultsSearchSiteURL]
+                                                                 searchTerm:[self currentResultsSearchTerm] displayTitle:url.wmf_title];
+    [self.dataStore.recentSearchList addEntry:entry];
+    [self.dataStore.recentSearchList save];
+    [self.recentSearchesViewController reloadRecentSearches];
     //log tap through done in table
+    [self showArticleWithURL:url];
+}
+
+- (void)showArticleWithURL:(NSURL *)articleURL {
     UIViewController *presenter = [self presentingViewController];
     [self dismissViewControllerAnimated:YES
                              completion:^{
-                                 [presenter wmf_pushArticleWithURL:url dataStore:self.dataStore animated:YES];
+                                 [presenter wmf_pushArticleWithURL:articleURL dataStore:self.dataStore animated:YES];
                              }];
 }
 

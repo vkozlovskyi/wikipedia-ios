@@ -6,18 +6,20 @@
 @interface MWKRecentSearchEntry ()
 
 @property (readwrite, copy, nonatomic) NSString *searchTerm;
+@property (readwrite, copy, nonatomic) NSString *displayTitle;
 
 @end
 
 @implementation MWKRecentSearchEntry
 
-- (instancetype)initWithURL:(NSURL *)url searchTerm:(NSString *)searchTerm {
+- (instancetype)initWithURL:(NSURL *)url searchTerm:(NSString *)searchTerm displayTitle:(nullable NSString *)displayTitle {
     url = [NSURL wmf_desktopURLForURL:url];
     NSParameterAssert(url);
     NSParameterAssert(searchTerm);
     self = [self initWithURL:url];
     if (self) {
         self.searchTerm = searchTerm;
+        self.displayTitle = displayTitle;
     }
     return self;
 }
@@ -38,12 +40,13 @@
     }
 
     NSString *searchTerm = dict[@"searchTerm"];
-    self = [self initWithURL:url searchTerm:searchTerm];
+    NSString *displayTitle = dict[@"displayTitle"];
+    self = [self initWithURL:url searchTerm:searchTerm displayTitle:displayTitle];
     return self;
 }
 
 - (NSString *)description {
-    return [NSString stringWithFormat:@"%@ %@", [super description], self.searchTerm];
+    return [NSString stringWithFormat:@"%@ %@ %@", [super description], self.searchTerm, self.displayTitle ?: @""];
 }
 
 WMF_SYNTHESIZE_IS_EQUAL(MWKRecentSearchEntry, isEqualToRecentSearch:)
@@ -63,10 +66,11 @@ WMF_SYNTHESIZE_IS_EQUAL(MWKRecentSearchEntry, isEqualToRecentSearch:)
 }
 
 - (id)dataExport {
-    return @{
-        @"url": [self.url absoluteString],
-        @"searchTerm": self.searchTerm
-    };
+    NSMutableDictionary *dictionary = [NSMutableDictionary dictionaryWithCapacity:3];
+    [dictionary setValue:[self.url absoluteString] forKey:@"url"];
+    [dictionary setValue:self.searchTerm forKey:@"searchTerm"];
+    [dictionary setValue:self.displayTitle forKey:@"displayTitle"];
+    return dictionary;
 }
 
 @end
