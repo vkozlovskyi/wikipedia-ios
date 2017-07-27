@@ -2906,7 +2906,7 @@ extension PlacesViewController: Themeable {
         listView.reloadData()
         
         #if OSM
-        #els
+        #else
             mapView.removeOverlays(mapView.overlays)
             let dimmingOverlay = PlacesMapDimmingOverlay(color: theme.colors.paperBackground, alpha: 0.35)
             mapView.add(dimmingOverlay)
