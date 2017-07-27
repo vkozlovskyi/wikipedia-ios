@@ -129,7 +129,6 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
         #else
             mapView = MapView(frame: mapViewFrame)
             mapView.delegate = self
-
             // Setup map view
             mapView.mapType = .standard
             mapView.showsBuildings = false
@@ -2783,6 +2782,10 @@ extension PlacesViewController: MKMapViewDelegate {
         
         return viewFor(place: place)
     }
+    
+    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+        return PlacesMapDimmingOverlayRenderer(overlay: overlay)
+    }
 }
     
 #endif
@@ -2857,6 +2860,7 @@ extension PlacesViewController: Themeable {
             return
         }
         view.backgroundColor = theme.colors.baseBackground
+        mapContainerView.backgroundColor = theme.colors.baseBackground
         extendedNavBarView.backgroundColor = theme.colors.chromeBackground
         
         titleViewSearchBar.backgroundColor = theme.colors.chromeBackground
@@ -2900,5 +2904,12 @@ extension PlacesViewController: Themeable {
         updateSearchFilterTitle()
         listView.backgroundColor = theme.colors.baseBackground
         listView.reloadData()
+        
+        #if OSM
+        #els
+            mapView.removeOverlays(mapView.overlays)
+            let dimmingOverlay = PlacesMapDimmingOverlay(color: theme.colors.paperBackground, alpha: 0.35)
+            mapView.add(dimmingOverlay)
+        #endif
     }
 }
