@@ -3,8 +3,28 @@ import MapKit
 enum PlaceSearchType: UInt {
     case text
     case location
+    case nearby
+}
+
+enum PlaceFilterType: UInt {
     case top
     case saved
+    
+    var stringValue : String {
+        switch self {
+        case .top: return "top";
+        case .saved: return "saved";
+        }
+    }
+}
+
+enum PlaceSearchOrigin: UInt {
+    case user
+    case system
+}
+
+enum PlaceSearchError: Error {
+    case deserialization(object: NSObject?)
 }
 
 extension MKCoordinateRegion {
@@ -14,35 +34,46 @@ extension MKCoordinateRegion {
 }
 
 struct PlaceSearch {
+    let filter: PlaceFilterType
     let type: PlaceSearchType
+    let origin: PlaceSearchOrigin
     let sortStyle: WMFLocationSearchSortStyle
     let string: String?
     var region: MKCoordinateRegion?
     let localizedDescription: String?
     let searchResult: MWKSearchResult?
-    var needsWikidataQuery: Bool = true
-    
-    init(type: PlaceSearchType, sortStyle: WMFLocationSearchSortStyle, string: String?, region: MKCoordinateRegion?, localizedDescription: String?, searchResult: MWKSearchResult?) {
+    var needsWikidataQuery: Bool = false
+    let siteURL: URL?
+
+    init(filter: PlaceFilterType, type: PlaceSearchType, origin: PlaceSearchOrigin, sortStyle: WMFLocationSearchSortStyle, string: String?, region: MKCoordinateRegion?, localizedDescription: String?, searchResult: MWKSearchResult?, siteURL: URL? = nil) {
+        self.filter = filter
         self.type = type
+        self.origin = origin
         self.sortStyle = sortStyle
         self.string = string
         self.region = region
         self.localizedDescription = localizedDescription
         self.searchResult = searchResult
+        self.needsWikidataQuery = type == .location && searchResult != nil
+        self.siteURL = siteURL
     }
+    
     
     var key: String {
         get {
-            let baseString = "\(type.rawValue)|\(sortStyle.rawValue)|\(string?.lowercased().precomposedStringWithCanonicalMapping ?? "")"
-            switch type {
-            case .location:
-                guard let region = region else {
-                    fallthrough
+            var key = "\(type.rawValue)|\(filter.rawValue)|\(sortStyle.rawValue)"
+            if let searchResult = searchResult {
+                if let siteURL = siteURL, let articleURL = searchResult.articleURL(forSiteURL: siteURL), let articleKey = (articleURL as NSURL).wmf_articleDatabaseKey {
+                    key.append("|\(articleKey)")
+                } else {
+                    let lang = (siteURL as NSURL?)?.wmf_language ?? ""
+                    key.append("|\(lang)|\(searchResult.displayTitle?.precomposedStringWithCanonicalMapping ?? "")")
                 }
-                return baseString + "|\(region.stringValue )"
-            default:
-                return baseString
+                
+            } else if let string = string {
+                key.append("|\(string.lowercased().precomposedStringWithCanonicalMapping)")
             }
+            return key
         }
     }
     
@@ -50,6 +81,8 @@ struct PlaceSearch {
         get {
             var dictionary: [String: NSCoding] = [:]
             dictionary["type"] = NSNumber(value: type.rawValue)
+            dictionary["filter"] = NSNumber(value: filter.rawValue)
+            dictionary["origin"] = NSNumber(value: origin.rawValue)
             dictionary["sortStyle"] = NSNumber(value: sortStyle.rawValue)
             if let string = string {
                 dictionary["string"] = string as NSString
@@ -66,17 +99,26 @@ struct PlaceSearch {
             if let result = searchResult {
                 dictionary["searchResult"] = result
             }
+            if let siteURL = siteURL {
+                dictionary["siteURL"] = siteURL.absoluteString as NSString
+            }
             return dictionary
         }
     }
     
     init?(dictionary: [String: Any]) {
-        guard let typeNumber = dictionary["type"] as? NSNumber,
+        guard let filterNumber = dictionary["filter"] as? NSNumber,
+            let filter = PlaceFilterType(rawValue: filterNumber.uintValue),
+            let typeNumber = dictionary["type"] as? NSNumber,
             let type = PlaceSearchType(rawValue: typeNumber.uintValue),
+            let originNumber = dictionary["origin"] as? NSNumber,
+            let origin = PlaceSearchOrigin(rawValue: originNumber.uintValue),
             let sortStyleNumber = dictionary["sortStyle"] as? NSNumber else {
                 return nil
         }
+        self.filter = filter
         self.type = type
+        self.origin = origin
         let sortStyle = WMFLocationSearchSortStyle(rawValue: sortStyleNumber.uintValue) ?? .none
         self.sortStyle = sortStyle
         
@@ -93,15 +135,27 @@ struct PlaceSearch {
         }
         self.searchResult = dictionary["searchResult"] as? MWKSearchResult
         self.localizedDescription = dictionary["localizedDescription"] as? String
+        if let siteURLString = dictionary["siteURL"] as? String {
+            self.siteURL = URL(string: siteURLString)
+        } else {
+            self.siteURL = nil
+        }
     }
     
     init?(object: NSObject?) {
-        guard let object = object, let typeNumber = object.value(forKey: "type") as? NSNumber,
+        guard let object = object,
+            let filterNumber = object.value(forKey: "filter") as? NSNumber,
+            let filter = PlaceFilterType(rawValue: filterNumber.uintValue),
+            let typeNumber = object.value(forKey: "type") as? NSNumber,
             let type = PlaceSearchType(rawValue: typeNumber.uintValue),
+            let originNumber = object.value(forKey: "origin") as? NSNumber,
+            let origin = PlaceSearchOrigin(rawValue: originNumber.uintValue),
             let sortStyleNumber = object.value(forKey: "sortStyle") as? NSNumber else {
                 return nil
         }
+        self.filter = filter
         self.type = type
+        self.origin = origin
         let sortStyle = WMFLocationSearchSortStyle(rawValue: sortStyleNumber.uintValue) ?? .none
         self.sortStyle = sortStyle
         
@@ -118,5 +172,10 @@ struct PlaceSearch {
         }
         self.searchResult = object.value(forKey: "searchResult") as? MWKSearchResult
         self.localizedDescription = object.value(forKey: "localizedDescription") as? String
+        if let siteURLString = object.value(forKey: "siteURL") as? String {
+            self.siteURL = URL(string: siteURLString)
+        } else {
+            self.siteURL = nil
+        }
     }
 }

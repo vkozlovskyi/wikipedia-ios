@@ -1,7 +1,7 @@
 #import "WMFHelpViewController.h"
-#import "MWKDataStore.h"
+#import <WMF/MWKDataStore.h>
 #import "UIBarButtonItem+WMFButtonConvenience.h"
-#import "WikipediaAppUtils.h"
+#import <WMF/WikipediaAppUtils.h>
 #import "Wikipedia-Swift.h"
 #import "WMFLeadingImageTrailingTextButton.h"
 #import "DDLog+WMFLogger.h"
@@ -49,12 +49,12 @@ static NSString *const WMFSettingsEmailSubject = @"Bug:";
 - (UIBarButtonItem *)sendEmailToolbarItem {
     if (!_sendEmailToolbarItem) {
         WMFLeadingImageTrailingTextButton *button = [[WMFLeadingImageTrailingTextButton alloc] init];
-        button.tintColor = [UIColor wmf_blueTint];
+        button.tintColor = [UIColor wmf_blue];
         [button configureAsReportBugButton];
         [button sizeToFit];
         [button addTarget:self action:@selector(sendEmail) forControlEvents:UIControlEventTouchUpInside];
         _sendEmailToolbarItem = [[UIBarButtonItem alloc] initWithCustomView:button];
-        _sendEmailToolbarItem.accessibilityLabel = MWLocalizedString(@"button-report-a-bug", nil);
+        _sendEmailToolbarItem.accessibilityLabel = WMFLocalizedStringWithDefaultValue(@"button-report-a-bug", nil, nil, @"Report a bug", @"Button text for reporting a bug");
         return _sendEmailToolbarItem;
     }
     return _sendEmailToolbarItem;
@@ -82,7 +82,7 @@ static NSString *const WMFSettingsEmailSubject = @"Bug:";
         vc.mailComposeDelegate = self;
         [self presentViewController:vc animated:YES completion:NULL];
     } else {
-        [[WMFAlertManager sharedInstance] showErrorAlertWithMessage:MWLocalizedString(@"no-email-account-alert", nil) sticky:NO dismissPreviousAlerts:NO tapCallBack:NULL];
+        [[WMFAlertManager sharedInstance] showErrorAlertWithMessage:WMFLocalizedStringWithDefaultValue(@"no-email-account-alert", nil, nil, @"Please setup an email account on your device and try again.", @"Displayed to the user when they try to send a feedback email, but they have never set up an account on their device") sticky:NO dismissPreviousAlerts:NO tapCallBack:NULL];
     }
 }
 

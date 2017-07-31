@@ -1,7 +1,6 @@
 #import "WikiTextSectionFetcher.h"
-#import "MWNetworkActivityIndicatorManager.h"
-#import "SessionSingleton.h"
 #import "NSObject+WMFExtras.h"
+@import WMF;
 
 @interface WikiTextSectionFetcher ()
 
@@ -61,7 +60,7 @@
                 // Handle case where revision or userInfo not retrieved.
                 if (![output objectForKey:@"revision"] || ![output objectForKey:@"userInfo"]) {
                     NSMutableDictionary *errorDict = @{}.mutableCopy;
-                    errorDict[NSLocalizedDescriptionKey] = MWLocalizedString(@"wikitext-download-failed", nil);
+                    errorDict[NSLocalizedDescriptionKey] = WMFLocalizedStringWithDefaultValue(@"wikitext-download-failed", nil, nil, @"Unable to obtain latest revision.", @"Alert text shown when unable to obtain latest revision of the section being edited");
                     error = [NSError errorWithDomain:@"Wikitext Fetcher" code:WIKITEXT_FETCHER_ERROR_INCOMPLETE userInfo:errorDict];
                 }
             }

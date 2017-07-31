@@ -1,20 +1,12 @@
 #import "WebViewController.h"
-
-#import "SessionSingleton.h"
-#import "MWLanguageInfo.h"
 #import "WKWebView+ElementLocation.h"
-#import "NSString+WMFExtras.h"
 #import "PaddedLabel.h"
 #import "EditFunnel.h"
 #import "NSString+FormattedAttributedString.h"
 #import "SavedPagesFunnel.h"
-
 #import "UIFont+WMFStyle.h"
-
 #import "UIScrollView+WMFScrollsToTop.h"
-#import "WMFURLCache.h"
-
-#import "MWKHistoryEntry.h"
+@import WMF;
 
 // TODO: rename the WebViewControllerVariableNames once we rename this class
 NS_ASSUME_NONNULL_BEGIN
@@ -22,7 +14,6 @@ NS_ASSUME_NONNULL_BEGIN
 @interface WebViewController ()
 
 @property (nonatomic, strong, readwrite, nullable) WKWebView *webView;
-@property (nonatomic, strong, readwrite, nullable) UIScrollView *webViewScrollView;
 
 @property (nonatomic, strong, nullable, readwrite) MWKArticle *article;
 @property (nonatomic, strong, nullable, readwrite) NSURL *articleURL;
@@ -38,6 +29,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (strong, nonatomic) IBOutlet PaddedLabel *zeroStatusLabel;
 
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *webViewBottomConstraint;
+
+@property (nonatomic, strong) SavedPagesFunnel *savedPagesFunnel;
 
 /**
  * Designated initializer.

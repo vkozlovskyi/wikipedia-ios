@@ -25,7 +25,7 @@
     self.actionButton.layer.borderColor = self.actionButton.tintColor.CGColor;
     [self.actionButton addTarget:self action:@selector(performAction) forControlEvents:UIControlEventTouchUpInside];
     self.captionTextView.textContainerInset = UIEdgeInsetsZero;
-    [self.dismissButton setTitle:MWLocalizedString(@"announcements-dismiss", nil) forState:UIControlStateNormal];
+    [self.dismissButton setTitle:WMFLocalizedStringWithDefaultValue(@"announcements-dismiss", nil, nil, @"No thanks", @"Button text indicating a user wants to dismiss an announcement\n{{Identical|No thanks}}") forState:UIControlStateNormal];
     [self.dismissButton addTarget:self action:@selector(dismiss) forControlEvents:UIControlEventTouchUpInside];
     [self.dismissButton setNeedsLayout];
     [self.dismissButton layoutIfNeeded];
@@ -84,7 +84,7 @@
         self.captionTextView.attributedText = nil;
         return;
     }
-    
+
     NSMutableParagraphStyle *pStyle = [[NSMutableParagraphStyle alloc] init];
     pStyle.lineBreakMode = NSLineBreakByWordWrapping;
     pStyle.baseWritingDirection = NSWritingDirectionNatural;
@@ -97,7 +97,6 @@
     [self.captionTextView setNeedsLayout];
     [self.captionTextView layoutIfNeeded];
 }
-
 
 - (BOOL)textView:(UITextView *)textView shouldInteractWithURL:(NSURL *)URL inRange:(NSRange)characterRange interaction:(UITextItemInteraction)interaction {
     [self.delegate announcementCell:self didTapLinkURL:URL];

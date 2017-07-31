@@ -1,5 +1,6 @@
 #import "WMFArticleNavigationController.h"
 #import <objc/runtime.h>
+@import WMF.WMFLocalization;
 
 static const NSTimeInterval WMFArticleNavigationControllerSecondToolbarAnimationDuration = 0.3;
 
@@ -13,6 +14,14 @@ static const NSTimeInterval WMFArticleNavigationControllerSecondToolbarAnimation
 @end
 
 @implementation WMFArticleNavigationController
+
+- (instancetype)initWithCoder:(NSCoder *)coder {
+    self = [super initWithCoder:coder];
+    if (self) {
+        self.title = WMFLocalizedStringWithDefaultValue(@"home-title", nil, nil, @"Explore", @"Title for home interface.\n{{Identical|Explore}}");
+    }
+    return self;
+}
 
 - (void)viewDidLoad {
     [super viewDidLoad];

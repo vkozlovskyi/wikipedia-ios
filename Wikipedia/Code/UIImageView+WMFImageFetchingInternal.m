@@ -1,12 +1,11 @@
-#import <FLAnimatedImage/FLAnimatedImage.h>
-#import <FLAnimatedImage/FLAnimatedImageView.h>
+@import FLAnimatedImage;
 #import "UIImageView+WMFImageFetchingInternal.h"
-#import "UIImageView+WMFImageFetching.h"
+#import <WMF/UIImageView+WMFImageFetching.h>
 #import "UIImageView+WMFContentOffset.h"
 #import "UIImage+WMFNormalization.h"
-#import "CIDetector+WMFFaceDetection.h"
-#import "WMFFaceDetectionCache.h"
-#import "UIImageView+WMFPlaceholder.h"
+#import <WMF/CIDetector+WMFFaceDetection.h>
+#import <WMF/WMFFaceDetectionCache.h>
+#import <WMF/UIImageView+WMFPlaceholder.h>
 #import <WMF/WMF-Swift.h>
 
 static const char *const MWKURLAssociationKey = "MWKURL";
@@ -101,7 +100,10 @@ static const char *const WMFImageControllerAssociationKey = "WMFImageController"
 
     @weakify(self);
     self.wmf_imageURLToCancel = imageURL;
-    [self.wmf_imageController fetchImageWithURL:imageURL priority:0.5 failure:failure success:^(WMFImageDownload * _Nonnull download) {
+    [self.wmf_imageController fetchImageWithURL:imageURL
+                                       priority:0.5
+                                        failure:failure
+                                        success:^(WMFImageDownload *_Nonnull download) {
                                             dispatch_async(dispatch_get_main_queue(), ^{
                                                 @strongify(self);
                                                 if (!WMF_EQUAL([self wmf_imageURLToFetch], isEqual:, imageURL)) {
@@ -158,11 +160,20 @@ static const char *const WMFImageControllerAssociationKey = "WMFImageController"
              success:(WMFSuccessHandler)success {
     NSAssert([NSThread isMainThread], @"Interaction with a UIImageView should only happen on the main thread");
 
-    CGRect faceBounds = [faceBoundsValue CGRectValue];
     if (detectFaces) {
-        CGFloat faceArea = faceBounds.size.width * faceBounds.size.height;
-        if (!CGRectIsEmpty(faceBounds) && (faceArea >= 0.05)) {
-            [self wmf_cropContentsByVerticallyCenteringFrame:[image wmf_denormalizeRect:faceBounds]
+        BOOL isFaceBigEnough = NO;
+        CGRect unitFaceBounds = [faceBoundsValue CGRectValue];
+        CGRect faceBounds = CGRectZero;
+        if (!CGRectIsEmpty(unitFaceBounds)) {
+            faceBounds = [image wmf_denormalizeRect:unitFaceBounds];
+            CGFloat faceArea = faceBounds.size.width * faceBounds.size.height;
+            CGFloat imageArea = image.size.width * image.size.height;
+            CGFloat faceProportionOfImage = faceArea / MAX(imageArea, 0.0000001);
+            // Reminder: "0.0178" of the area of a 640x640 image would be roughly 85x85.
+            isFaceBigEnough = (faceProportionOfImage >= 0.0178);
+        }
+        if (isFaceBigEnough) {
+            [self wmf_cropContentsByVerticallyCenteringFrame:faceBounds
                                          insideBoundsOfImage:image];
         } else {
             [self wmf_topAlignContentsRect:image];

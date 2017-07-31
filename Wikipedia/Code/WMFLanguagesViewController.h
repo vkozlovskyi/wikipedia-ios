@@ -1,6 +1,5 @@
-#import <UIKit/UIKit.h>
-#import "WMFAnalyticsLogging.h"
-
+@import UIKit;
+@import WMF.Swift;
 @class MWKLanguageLink;
 @class WMFLanguagesViewController;
 

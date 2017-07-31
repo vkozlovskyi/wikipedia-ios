@@ -1,5 +1,5 @@
 @import UIKit;
-#import "WMFAnalyticsLogging.h"
+@import WMF.Swift;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -9,7 +9,15 @@ typedef NS_ENUM(NSUInteger, WMFFeedDisplayType) {
     WMFFeedDisplayTypePageWithLocation,
     WMFFeedDisplayTypePhoto,
     WMFFeedDisplayTypeStory,
-    WMFFeedDisplayTypeAnnouncement
+    WMFFeedDisplayTypeEvent,
+    WMFFeedDisplayTypeAnnouncement,
+    WMFFeedDisplayTypeRelatedPagesSourceArticle,
+    WMFFeedDisplayTypeRelatedPages,
+    WMFFeedDisplayTypeContinueReading,
+    WMFFeedDisplayTypeMainPage,
+    WMFFeedDisplayTypeRandom,
+    WMFFeedDisplayTypeRanked,
+    WMFFeedDisplayTypeNotification
 };
 
 typedef NS_ENUM(NSUInteger, WMFFeedDetailType) {
@@ -17,7 +25,8 @@ typedef NS_ENUM(NSUInteger, WMFFeedDetailType) {
     WMFFeedDetailTypePage,
     WMFFeedDetailTypePageWithRandomButton,
     WMFFeedDetailTypeGallery,
-    WMFFeedDetailTypeStory
+    WMFFeedDetailTypeStory,
+    WMFFeedDetailTypeEvent
 };
 
 typedef NS_ENUM(NSUInteger, WMFFeedHeaderType) {
@@ -37,15 +46,16 @@ typedef NS_ENUM(NSUInteger, WMFFeedMoreType) {
     WMFFeedMoreTypePage,
     WMFFeedMoreTypePageWithRandomButton,
     WMFFeedMoreTypePageList,
-    WMFFeedMoreTypePageListWithPreview,
     WMFFeedMoreTypePageListWithLocation,
-    WMFFeedMoreTypeLocationAuthorization
+    WMFFeedMoreTypeLocationAuthorization,
+    WMFFeedMoreTypeNews,
+    WMFFeedMoreTypeOnThisDay
 };
 
 typedef NS_OPTIONS(NSInteger, WMFFeedBlacklistOption) {
     WMFFeedBlacklistOptionNone = 0,
-    WMFFeedBlacklistOptionContent = 1 << 0, //blacklist specific section content
-    WMFFeedBlacklistOptionSection = 1 << 1, //blacklist this section
+    WMFFeedBlacklistOptionContent = 1 << 0,    //blacklist specific section content
+    WMFFeedBlacklistOptionSection = 1 << 1,    //blacklist this section
     WMFFeedBlacklistOptionAllSections = 1 << 2 // blacklist all sections of this type
 };
 
@@ -128,7 +138,7 @@ typedef NS_OPTIONS(NSInteger, WMFFeedBlacklistOption) {
 /**
  *  How to display the content of the section.
  */
-- (WMFFeedDisplayType)displayType;
+- (WMFFeedDisplayType)displayTypeForItemAtIndex:(NSInteger)index;
 
 - (NSUInteger)maxNumberOfCells;
 

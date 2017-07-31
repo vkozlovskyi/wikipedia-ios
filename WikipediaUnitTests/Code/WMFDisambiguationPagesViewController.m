@@ -1,10 +1,10 @@
 #import "WMFDisambiguationPagesViewController.h"
 #import "WMFArticlePreviewDataSource.h"
-#import "MWKArticle.h"
 #import "WMFArticleFetcher.h"
 #import "UIBarButtonItem+WMFButtonConvenience.h"
-#import "WMFArticleFetcher.h"
-#import "MWKDataStore.h"
+@import WMF.MWKDataStore;
+@import WMF.MWKArticle;
+@import WMF.WMFArticlePreviewFetcher;
 
 @interface WMFDisambiguationPagesViewController ()
 
@@ -32,8 +32,7 @@
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     [((WMFArticlePreviewDataSource *)self.dataSource)fetch];
-    UIBarButtonItem *xButton = [UIBarButtonItem wmf_buttonType:WMFButtonTypeX target:self action:@selector(xButtonPressed)];
-    self.navigationItem.leftBarButtonItem = xButton;
+    self.navigationItem.leftBarButtonItem = [UIBarButtonItem wmf_buttonType:WMFButtonTypeX target:self action:@selector(xButtonPressed)];
     self.navigationItem.rightBarButtonItem = nil;
 }
 

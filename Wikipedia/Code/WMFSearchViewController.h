@@ -1,5 +1,5 @@
-#import <UIKit/UIKit.h>
-#import "WMFAnalyticsLogging.h"
+@import WMF.Swift;
+@import UIKit;
 
 @class MWKDataStore;
 

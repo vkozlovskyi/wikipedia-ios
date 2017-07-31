@@ -1,5 +1,4 @@
-#import <UIKit/UIKit.h>
-
+@import UIKit;
 @class WMFCVLMetrics;
 
 /*!
@@ -10,6 +9,8 @@
 @interface WMFColumnarCollectionViewLayout : UICollectionViewLayout
 
 - (nullable UICollectionViewLayoutAttributes *)layoutAttributesAtPoint:(CGPoint)point; //returns the first matched layout attributes that contain the given point
+
+@property (nonatomic) BOOL slideInNewContentFromTheTop;
 
 @end
 
@@ -25,5 +26,7 @@ typedef struct WMFLayoutEstimate WMFLayoutEstimate;
 - (CGFloat)collectionView:(nonnull UICollectionView *)collectionView estimatedHeightForHeaderInSection:(NSInteger)section forColumnWidth:(CGFloat)columnWidth;
 - (CGFloat)collectionView:(nonnull UICollectionView *)collectionView estimatedHeightForFooterInSection:(NSInteger)section forColumnWidth:(CGFloat)columnWidth;
 - (BOOL)collectionView:(nonnull UICollectionView *)collectionView prefersWiderColumnForSectionAtIndex:(NSUInteger)index;
+
+- (nonnull WMFCVLMetrics *)metricsWithBoundsSize:(CGSize)size;
 
 @end

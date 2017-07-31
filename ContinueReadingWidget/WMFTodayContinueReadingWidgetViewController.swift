@@ -32,8 +32,8 @@ class WMFTodayContinueReadingWidgetViewController: UIViewController, NCWidgetPro
             daysAgoView.backgroundColor = UIColor(white: 0.3, alpha: 0.3)
         }
         
-        emptyDescriptionLabel.text = localizedStringForKeyFallingBackOnEnglish("continue-reading-empty-title")
-        emptyDescriptionLabel.text = localizedStringForKeyFallingBackOnEnglish("continue-reading-empty-description")
+        emptyDescriptionLabel.text = WMFLocalizedString("continue-reading-empty-title", value:"No recently read articles", comment: "No recently read articles")
+        emptyDescriptionLabel.text = WMFLocalizedString("continue-reading-empty-description", value:"Explore Wikipedia for more articles to read", comment: "Explore Wikipedia for more articles to read")
         _ = updateView()
         
         view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.handleTapGestureRecognizer(_:))))
@@ -85,27 +85,32 @@ class WMFTodayContinueReadingWidgetViewController: UIViewController, NCWidgetPro
         }
     }
     
-    func hasNewData() -> Bool{
-        
+    func updateView() -> Bool {
         guard let session = SessionSingleton.sharedInstance() else {
             return false
         }
         
-        guard let historyEntry = session.dataStore.historyList.mostRecentEntry() else {
+        let article: WMFArticle
+        
+        if let openArticleURL = UserDefaults.wmf_userDefaults().wmf_openArticleURL(), let openArticle = session.dataStore.historyList.entry(for: openArticleURL) {
+            article = openArticle
+        } else if let mostRecentHistoryEntry = session.dataStore.historyList.mostRecentEntry() {
+            article = mostRecentHistoryEntry
+        } else {
             return false
         }
-        let fragment = historyEntry.viewedFragment
         
-        let newURL = (historyEntry.url as NSURL?)?.wmf_URL(withFragment: fragment)
+        let fragment = article.viewedFragment
         
-        return newURL?.absoluteString != articleURL?.absoluteString
-    }
-    
-    func updateView() -> Bool {
-        
-        if hasNewData() == false{
+        guard let newArticleURL = (article.url as NSURL?)?.wmf_URL(withFragment: fragment) else {
             return false
         }
+        
+        guard newArticleURL.absoluteString != articleURL?.absoluteString else {
+            return false
+        }
+        
+        articleURL = newArticleURL
 
         textLabel.text = nil
         titleLabel.text = nil
@@ -113,22 +118,9 @@ class WMFTodayContinueReadingWidgetViewController: UIViewController, NCWidgetPro
         imageView.isHidden = true
         daysAgoLabel.text = nil
         daysAgoView.isHidden = true
-        
-        guard let session = SessionSingleton.sharedInstance() else {
-            emptyViewHidden = false
-            return false
-        }
-        
-        guard let historyEntry = session.dataStore.historyList.mostRecentEntry() else {
-            return false
-        }
-        
-        let fragment = historyEntry.viewedFragment
-        articleURL = (historyEntry.url as NSURL?)?.wmf_URL(withFragment: fragment)
-        
         emptyViewHidden = true
         
-        if let subtitle = historyEntry.snippet ?? historyEntry.wikidataDescription?.wmf_stringByCapitalizingFirstCharacter(){
+        if let subtitle = article.capitalizedWikidataDescriptionOrSnippet {
             self.textLabel.text = subtitle
         } else {
             self.textLabel.text = nil
@@ -136,17 +128,17 @@ class WMFTodayContinueReadingWidgetViewController: UIViewController, NCWidgetPro
         
         if let date = UserDefaults.wmf_userDefaults().wmf_appResignActiveDate() {
             self.daysAgoView.isHidden = false
-            self.daysAgoLabel.text = (date as NSDate).wmf_relativeTimestamp()
+            self.daysAgoLabel.text = (date as NSDate).wmf_localizedRelativeDateStringFromLocalDateToNow()
         } else {
             self.daysAgoView.isHidden = true
         }
         
         
-        self.titleLabel.text = historyEntry.displayTitle
+        self.titleLabel.text = article.displayTitle
         
         
         if #available(iOSApplicationExtension 10.0, *) {
-            if let imageURL = historyEntry.imageURL(forWidth: self.traitCollection.wmf_nearbyThumbnailWidth) {
+            if let imageURL = article.imageURL(forWidth: self.traitCollection.wmf_nearbyThumbnailWidth) {
                 self.collapseImageAndWidenLabels = false
                 self.imageView.wmf_setImage(with: imageURL, detectFaces: true, onGPU: true, failure: { (error) in
                     self.collapseImageAndWidenLabels = true

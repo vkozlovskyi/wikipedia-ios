@@ -52,7 +52,7 @@
                 [insertedSections addIndex:change.sectionIndex];
                 break;
             case NSFetchedResultsChangeDelete:
-                [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:change.sectionIndex] withRowAnimation:UITableViewRowAnimationAutomatic];
+                [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:change.sectionIndex] withRowAnimation:UITableViewRowAnimationFade];
                 [deletedSections addIndex:change.sectionIndex];
                 break;
             case NSFetchedResultsChangeUpdate:
@@ -98,7 +98,7 @@
 
     [self.objectChanges removeAllObjects];
     [self.sectionChanges removeAllObjects];
-    
+
     [self.delegate tableViewUpdater:self didUpdateTableView:self.tableView];
 }
 

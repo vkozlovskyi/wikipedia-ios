@@ -1,11 +1,10 @@
 #import "WMFArticlePreviewTableViewCell.h"
-#import "UIColor+WMFStyle.h"
+@import WMF.MWKImage;
+@import WMF.UITableViewCell_WMFEdgeToEdgeSeparator;
+@import Masonry;
 #import "UIButton+WMFButton.h"
 #import "WMFSaveButtonController.h"
-#import "MWKImage.h"
 #import "UITableViewCell+SelectedBackground.h"
-#import <Masonry/Masonry.h>
-#import "UITableViewCell+WMFEdgeToEdgeSeparator.h"
 #import "WMFLeadingImageTrailingTextButton.h"
 
 @interface WMFArticlePreviewTableViewCell ()
@@ -55,7 +54,7 @@
 - (void)awakeFromNib {
     [super awakeFromNib];
     [self rememberSettingsFromIB];
-    self.saveButton.tintColor = [UIColor wmf_blueTint];
+    self.saveButton.tintColor = [UIColor wmf_blue];
     [self.saveButton configureAsSaveButton];
     self.saveButtonController.control = self.saveButton;
     [self wmf_makeCellDividerBeEdgeToEdge];

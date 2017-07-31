@@ -5,44 +5,25 @@ XCODE_VERSION = "$(shell xcodebuild -version 2>/dev/null)"
 help: ##Show this help
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
-submodules: ##Install or update submodules
-	# No-op, uncomment to re-enable submodules git submodule update --init --recursive
+setup: ##Install all required dependencies to build & run the app
+	@./scripts/setup
 
-prebuild: ##Install dependencies needed to build the project
-prebuild: submodules
+bootstrap: ##Install all required dependencies to build & run the app (alias for setup)
+bootstrap: setup
 
-check-deps: ##Make sure dev prerequisites are installed
-check-deps: xcode-cltools-check exec-check node-check bundle-check
-
-#!!!!!
-#!!!!! Travis
-#!!!!!
-
-travis-get-deps: ##Install dependencies for building on Travis
-travis-get-deps: xcode-cltools-check submodules
-	@bundle install --without dev;
-
-#!!!!!
-#!!!!! Xcode dependencies
-#!!!!!
-
-# Required so we (and other tools) can use command line tools, e.g. xcodebuild.
-xcode-cltools-check: ##Make sure proper Xcode & command line tools are installed
-	if ! xcode-select -p > /dev/null ; then \
-		echo "Xcode command line tools are missing! Please run xcode-select --install or download them from Xcode's 'Downloads' tab in preferences."; \
-		exit 1; \
-	else \
-		echo "Xcode command line tools are installed!"; \
-	fi
-
-get-xcode-cltools: ##Install Xcode command-line tools
-	if ! xcode-select -p > /dev/null ; then \
-		xcode-select --install; \
-	fi
+prebuild: ##Install all required dependencies to build & run the app (alias for setup)
+prebuild: setup
+	
+build: ##Build the project
+build: setup
+	@xcodebuild
+	
+deps: ##Build deps from scratch. Uses carthage.
+	@./scripts/setup force
 
 #!!!!!
-#!!!!! Executable dependencies
-#!!!!!
+#!!!!! Individual executable dependencies (instead of running the all of setup)
+#!!!!
 
 get-homebrew: ##Install Homebrew using the bootstrapping script from http://brew.sh
 	@./scripts/setup_homebrew
@@ -59,13 +40,16 @@ web: ##Make web assets
 web: css grunt
 
 PROD_CSS_PREFIX="https://en.wikipedia.org/w"
+BETA_CSS_PREFIX="https://beta.wmflabs.org/w"
 LOCAL_CSS_PREFIX="http://127.0.0.1:8080/w"
 
-# Switch to LOCAL_CSS_PREFIX when testing CSS changes in a local MW instance (in vagrant).
+# Switch to LOCAL_CSS_PREFIX when testing CSS changes in a local MW instance (in vagrant),
+# or to BETA_CSS_PREFIX when testing CSS changes which have been staged to beta but not
+# yet deployed to production.
 CSS_PREFIX=$(PROD_CSS_PREFIX)
 WEB_ASSETS_DIR = "Wikipedia/assets"
 
-CSS_ORIGIN = $(CSS_PREFIX)/load.php?debug=false&lang=en&only=styles&skin=vector&modules=skins.minerva.base.reset|skins.minerva.content.styles|
+CSS_ORIGIN = $(CSS_PREFIX)/load.php?debug=false&lang=en&only=styles&skin=vector&modules=skins.minerva.base.reset|skins.minerva.content.styles|ext.math.styles|
 
 define get_css_module
 curl -s -L -o
@@ -99,18 +83,15 @@ get-node: brew-install
 	brew install node
 
 #!!!!!
-#!!!!! Native dependency management
+#!!!!! Ruby dependency management
 #!!!!!
 
 RUBY_VERSION = "$(shell ruby -v 2>/dev/null)"
 BUNDLER = "$(shell which bundle 2/dev/null)"
 
-#!!!!!
-#!!!!! Ruby dependency management
-#!!!!!
-
-RUBY_VERSION = "$(shell ruby -v 2>/dev/null)"
-
+get-ruby: ##Install Ruby via rbenv and Homebrew (to remove need for sudo)
+	@./scripts/setup_rbenv_and_ruby
+	
 bundle-install: ##Install all gems using Bundler
 bundle-install: bundler-check
 	@bundle install
@@ -124,10 +105,6 @@ bundler-check: ruby-check
 		echo "Bundler is installed!" ; \
 	fi
 
-get-bundler: ##Install Bundler, requires Ruby installed outside /usr/bin
-get-bundler: get-ruby
-	gem install bundler
-
 ruby-check: ##Make sure Ruby is installed
 	@if [[ $(RUBY_VERSION) == "" ]]; then \
 		echo "Ruby is missing!" ; \
@@ -136,13 +113,4 @@ ruby-check: ##Make sure Ruby is installed
 		echo "Ruby is installed!" ; \
 	fi
 
-get-ruby: ##Install Ruby via Homebrew (to remove need for sudo)
-		brew install ruby
 
-
-#!!!!!
-#!!!!! Misc
-#!!!!!
-
-bootstrap: ##Only recommended if starting from scratch! Attempts to install all dependencies (Xcode command-line tools Homebrew, Ruby, Node, Bundler, etc...)
-bootstrap: get-xcode-cltools get-homebrew get-node get-bundler brew-install bundle-install

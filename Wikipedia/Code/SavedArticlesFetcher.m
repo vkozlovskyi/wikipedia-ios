@@ -1,16 +1,8 @@
 #import "SavedArticlesFetcher_Testing.h"
-
+@import WMF;
 #import "Wikipedia-Swift.h"
 #import "WMFArticleFetcher.h"
 #import "MWKImageInfoFetcher.h"
-
-#import "MWKDataStore.h"
-#import "MWKSavedPageList.h"
-#import "MWKArticle.h"
-#import "MWKImage+CanonicalFilenames.h"
-#import "WMFImageURLParsing.h"
-#import "WMFTaskGroup.h"
-#import <WMF/WMF.h>
 
 static DDLogLevel const WMFSavedArticlesFetcherLogLevel = DDLogLevelDebug;
 
@@ -515,7 +507,7 @@ static NSString *const WMFSavedPageErrorDomain = @"WMFSavedPageErrorDomain";
     return [NSError errorWithDomain:WMFSavedPageErrorDomain
                                code:1
                            userInfo:@{
-                               NSLocalizedDescriptionKey: MWLocalizedString(@"saved-pages-image-download-error", nil)
+                               NSLocalizedDescriptionKey: WMFLocalizedStringWithDefaultValue(@"saved-pages-image-download-error", nil, nil, @"Failed to download images for this saved page.", @"Error message shown when one or more images fails to save for offline use.")
                            }];
 }
 

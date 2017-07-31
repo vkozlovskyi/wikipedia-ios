@@ -1,22 +1,26 @@
-#import "WMFExploreFeedContentController.h"
-#import "WMFRelatedPagesContentSource.h"
-#import "WMFMainPageContentSource.h"
-#import "WMFNearbyContentSource.h"
-#import "WMFContinueReadingContentSource.h"
-#import "WMFFeedContentSource.h"
-#import "WMFRandomContentSource.h"
-#import "WMFAnnouncementsContentSource.h"
-#import "WMFAssertions.h"
+#import <WMF/WMFExploreFeedContentController.h>
+#import <WMF/WMFRelatedPagesContentSource.h>
+#import <WMF/WMFMainPageContentSource.h>
+#import <WMF/WMFNearbyContentSource.h>
+#import <WMF/WMFContinueReadingContentSource.h>
+#import <WMF/WMFFeedContentSource.h>
+#import <WMF/WMFRandomContentSource.h>
+#import <WMF/WMFAnnouncementsContentSource.h>
+#import <WMF/WMFOnThisDayContentSource.h>
+#import <WMF/WMFAssertions.h>
 #import <WMF/WMF-Swift.h>
+
+NSString *const WMFExploreFeedContentControllerBusyStateDidChange = @"WMFExploreFeedContentControllerBusyStateDidChange";
 
 static const NSTimeInterval WMFFeedRefreshTimeoutInterval = 12;
 static NSTimeInterval WMFFeedRefreshBackgroundTimeout = 30;
+static const NSString *kvo_WMFExploreFeedContentController_operationQueue_operationCount = @"kvo_WMFExploreFeedContentController_operationQueue_operationCount";
 
 @interface WMFExploreFeedContentController ()
 
 @property (nonatomic, strong) NSArray<id<WMFContentSource>> *contentSources;
-@property (nonatomic, strong) WMFTaskGroup *taskGroup;
-@property (nonatomic, strong) NSMutableArray <dispatch_block_t>*queue;
+@property (nonatomic, strong) NSOperationQueue *operationQueue;
+
 @end
 
 @implementation WMFExploreFeedContentController
@@ -24,9 +28,30 @@ static NSTimeInterval WMFFeedRefreshBackgroundTimeout = 30;
 - (instancetype)init {
     self = [super init];
     if (self) {
-        self.queue = [NSMutableArray arrayWithCapacity:1];
+        self.operationQueue = [[NSOperationQueue alloc] init];
+        self.operationQueue.maxConcurrentOperationCount = 1;
     }
     return self;
+}
+
+- (void)dealloc {
+    self.operationQueue = nil;
+}
+
+- (void)setOperationQueue:(NSOperationQueue *)operationQueue {
+    if (_operationQueue == operationQueue) {
+        return;
+    }
+
+    if (_operationQueue) {
+        [_operationQueue removeObserver:self forKeyPath:@"operationCount"];
+    }
+
+    _operationQueue = operationQueue;
+
+    if (_operationQueue) {
+        [_operationQueue addObserver:self forKeyPath:@"operationCount" options:NSKeyValueObservingOptionNew context:&kvo_WMFExploreFeedContentController_operationQueue_operationCount];
+    }
 }
 
 #pragma mark - Content Sources
@@ -57,14 +82,16 @@ static NSTimeInterval WMFFeedRefreshBackgroundTimeout = 30;
                                                                         notificationsController:[WMFNotificationsController sharedNotificationsController]];
         feedContentSource.notificationSchedulingEnabled = YES;
         _contentSources = @[
-                            [[WMFRelatedPagesContentSource alloc] init],
-                            [[WMFMainPageContentSource alloc] initWithSiteURL:[self siteURL]],
-                            [[WMFContinueReadingContentSource alloc] initWithUserDataStore:self.dataStore],
-                            [[WMFNearbyContentSource alloc] initWithSiteURL:[self siteURL] dataStore:self.dataStore],
-                            feedContentSource,
-                            [[WMFRandomContentSource alloc] initWithSiteURL:[self siteURL]],
-                            [[WMFAnnouncementsContentSource alloc] initWithSiteURL:[self siteURL]]
-                            ];
+            [[WMFRelatedPagesContentSource alloc] init],
+            [[WMFMainPageContentSource alloc] initWithSiteURL:[self siteURL]],
+            [[WMFContinueReadingContentSource alloc] initWithUserDataStore:self.dataStore],
+            [[WMFNearbyContentSource alloc] initWithSiteURL:[self siteURL]
+                                                  dataStore:self.dataStore],
+            feedContentSource,
+            [[WMFRandomContentSource alloc] initWithSiteURL:[self siteURL]],
+            [[WMFAnnouncementsContentSource alloc] initWithSiteURL:[self siteURL]],
+            [[WMFOnThisDayContentSource alloc] initWithSiteURL:[self siteURL]]
+        ];
     }
     return _contentSources;
 }
@@ -95,184 +122,157 @@ static NSTimeInterval WMFFeedRefreshBackgroundTimeout = 30;
 
 - (void)updateFeedSourcesWithDate:(nullable NSDate *)date userInitiated:(BOOL)wasUserInitiated completion:(nullable dispatch_block_t)completion {
     WMFAssertMainThread(@"updateFeedSources: must be called on the main thread");
-    if (self.taskGroup) {
-        @weakify(self);
-        [self.queue addObject:^{
-            @strongify(self);
-            [self updateFeedSourcesWithDate:date userInitiated:wasUserInitiated completion:completion];
-        }];
-        return;
-    }
-    
-    WMFTaskGroup *group = [WMFTaskGroup new];
-    self.taskGroup = group;
+    WMFAsyncBlockOperation *op = [[WMFAsyncBlockOperation alloc] initWithAsyncBlock:^(WMFAsyncBlockOperation *_Nonnull op) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSManagedObjectContext *moc = self.dataStore.feedImportContext;
+            WMFTaskGroup *group = [WMFTaskGroup new];
 #if DEBUG
-    NSMutableSet *entered = [NSMutableSet setWithCapacity:self.contentSources.count];
+            NSMutableSet *entered = [NSMutableSet setWithCapacity:self.contentSources.count];
 #endif
-    NSManagedObjectContext *moc = self.dataStore.feedImportContext;
-    [self.contentSources enumerateObjectsUsingBlock:^(id<WMFContentSource> _Nonnull obj, NSUInteger idx, BOOL *_Nonnull stop) {
-        [group enter];
+            [self.contentSources enumerateObjectsUsingBlock:^(id<WMFContentSource> _Nonnull obj, NSUInteger idx, BOOL *_Nonnull stop) {
+                [group enter];
 #if DEBUG
-        NSString *classString = NSStringFromClass([obj class]);
-        [entered addObject:classString];
+                NSString *classString = NSStringFromClass([obj class]);
+                [entered addObject:classString];
 #endif
-        dispatch_block_t contentSourceCompletion = ^{
+                dispatch_block_t contentSourceCompletion = ^{
 #if DEBUG
-            assert([entered containsObject:classString]);
-            [entered removeObject:classString];
+                    assert([entered containsObject:classString]);
+                    [entered removeObject:classString];
 #endif
-            [group leave];
-        };
-        
-        if ([obj conformsToProtocol:@protocol(WMFOptionalNewContentSource)]) {
-            NSDate *optionalDate = date ? date : [NSDate date];
-            id<WMFOptionalNewContentSource> optional = (id<WMFOptionalNewContentSource>)obj;
-            [optional loadContentForDate:optionalDate inManagedObjectContext:moc force:NO addNewContent:wasUserInitiated completion:contentSourceCompletion];
-        } else if (date && [obj conformsToProtocol:@protocol(WMFDateBasedContentSource)]) {
-            id<WMFDateBasedContentSource> dateBased = (id<WMFDateBasedContentSource>)obj;
-            [dateBased loadContentForDate:date inManagedObjectContext:moc force:NO completion:contentSourceCompletion];
-        } else if (!date) {
-            [obj loadNewContentInManagedObjectContext:moc force:NO completion:contentSourceCompletion];
-        } else {
-            contentSourceCompletion();
-        }
-    }];
-    
-    [group waitInBackgroundWithTimeout:WMFFeedRefreshTimeoutInterval
-                            completion:^{
-                                [moc performBlock:^{
-                                    NSError *saveError = nil;
-                                    if ([moc hasChanges] && ![moc save:&saveError]) {
-                                        DDLogError(@"Error saving: %@", saveError);
-                                    }
-                                    dispatch_async(dispatch_get_main_queue(), ^{
-                                        [self.dataStore teardownFeedImportContext];
-                                        [[NSUserDefaults wmf_userDefaults] wmf_setFeedRefreshDate:[NSDate date]];
-                                        self.taskGroup = nil;
-                                        if (completion) {
-                                            completion();
+                    [group leave];
+                };
+
+                if ([obj conformsToProtocol:@protocol(WMFOptionalNewContentSource)]) {
+                    NSDate *optionalDate = date ? date : [NSDate date];
+                    id<WMFOptionalNewContentSource> optional = (id<WMFOptionalNewContentSource>)obj;
+                    [optional loadContentForDate:optionalDate inManagedObjectContext:moc force:NO addNewContent:wasUserInitiated completion:contentSourceCompletion];
+                } else if (date && [obj conformsToProtocol:@protocol(WMFDateBasedContentSource)]) {
+                    id<WMFDateBasedContentSource> dateBased = (id<WMFDateBasedContentSource>)obj;
+                    [dateBased loadContentForDate:date inManagedObjectContext:moc force:NO completion:contentSourceCompletion];
+                } else if (!date) {
+                    [obj loadNewContentInManagedObjectContext:moc force:NO completion:contentSourceCompletion];
+                } else {
+                    contentSourceCompletion();
+                }
+            }];
+
+            [group waitInBackgroundWithTimeout:WMFFeedRefreshTimeoutInterval
+                                    completion:^{
+                                        [moc performBlock:^{
+                                            NSError *saveError = nil;
+                                            if ([moc hasChanges] && ![moc save:&saveError]) {
+                                                DDLogError(@"Error saving: %@", saveError);
+                                            }
+                                            dispatch_async(dispatch_get_main_queue(), ^{
+                                                [self.dataStore teardownFeedImportContext];
+                                                [[NSUserDefaults wmf_userDefaults] wmf_setFeedRefreshDate:[NSDate date]];
+                                                if (completion) {
+                                                    completion();
+                                                }
+                                                [op finish];
+                                            });
+                                        }];
+
+#if DEBUG
+                                        if ([entered count] > 0) {
+                                            DDLogError(@"Didn't leave: %@", entered);
                                         }
-                                        [self popQueue];
-                                    });
-                                }];
-                                
-#if DEBUG
-                                if ([entered count] > 0) {
-                                    DDLogError(@"Didn't leave: %@", entered);
-                                }
 #endif
-                            }];
+                                    }];
+        });
+    }];
+
+    [self.operationQueue addOperation:op];
 }
 
 - (void)updateNearbyForce:(BOOL)force completion:(nullable dispatch_block_t)completion {
     WMFAssertMainThread(@"updateNearby: must be called on the main thread");
-    if (self.taskGroup) {
-        @weakify(self);
-        [self.queue addObject:^{
-            @strongify(self);
-            [self updateNearbyForce:force completion:completion];
-        }];
-        return;
-    }
+
     NSManagedObjectContext *moc = self.dataStore.viewContext;
     WMFTaskGroup *group = [WMFTaskGroup new];
-    self.taskGroup = group;
-    [self.contentSources enumerateObjectsUsingBlock:^(id<WMFContentSource> _Nonnull obj, NSUInteger idx, BOOL *_Nonnull stop) {
-        if ([obj isKindOfClass:[WMFNearbyContentSource class]]) {
-            [group enter];
-            [obj loadNewContentInManagedObjectContext:moc
-                                                force:force
-                                           completion:^{
-                                               [group leave];
-                                           }];
-        }
-    }];
-    
-    [group waitInBackgroundWithTimeout:WMFFeedRefreshTimeoutInterval
-                            completion:^{
-                                [moc performBlock:^{
-                                    NSError *saveError = nil;
-                                    if ([moc hasChanges] && ![moc save:&saveError]) {
-                                        DDLogError(@"Error saving: %@", saveError);
-                                    }
-                                    dispatch_async(dispatch_get_main_queue(), ^{
-                                        self.taskGroup = nil;
-                                        if (completion) {
-                                            completion();
+    WMFAsyncBlockOperation *op = [[WMFAsyncBlockOperation alloc] initWithAsyncBlock:^(WMFAsyncBlockOperation *_Nonnull op) {
+        [self.contentSources enumerateObjectsUsingBlock:^(id<WMFContentSource> _Nonnull obj, NSUInteger idx, BOOL *_Nonnull stop) {
+            if ([obj isKindOfClass:[WMFNearbyContentSource class]]) {
+                [group enter];
+                [obj loadNewContentInManagedObjectContext:moc
+                                                    force:force
+                                               completion:^{
+                                                   [group leave];
+                                               }];
+            }
+        }];
+
+        [group waitInBackgroundWithTimeout:WMFFeedRefreshTimeoutInterval
+                                completion:^{
+                                    [moc performBlock:^{
+                                        NSError *saveError = nil;
+                                        if ([moc hasChanges] && ![moc save:&saveError]) {
+                                            DDLogError(@"Error saving: %@", saveError);
                                         }
-                                        [self popQueue];
-                                    });
+                                        dispatch_async(dispatch_get_main_queue(), ^{
+                                            if (completion) {
+                                                completion();
+                                            }
+                                            [op finish];
+                                        });
+                                    }];
                                 }];
-                            }];
+
+    }];
+
+    [self.operationQueue addOperation:op];
 }
 
 - (void)updateBackgroundSourcesWithCompletion:(void (^_Nonnull)(UIBackgroundFetchResult))completionHandler {
     WMFAssertMainThread(@"updateBackgroundSourcesWithCompletion: must be called on the main thread");
-    if (self.taskGroup) {
-        @weakify(self);
-        [self.queue addObject:^{
-            @strongify(self);
-            [self updateBackgroundSourcesWithCompletion:completionHandler];
-        }];
-        return;
-    }
-    WMFTaskGroup *group = [WMFTaskGroup new];
-    self.taskGroup = group;
+
     NSManagedObjectContext *moc = self.dataStore.viewContext;
     NSFetchRequest *beforeFetchRequest = [WMFContentGroup fetchRequest];
     NSInteger beforeCount = [moc countForFetchRequest:beforeFetchRequest error:nil];
-    [group enter];
-    [[self feedContentSource] loadNewContentInManagedObjectContext:moc
-                                                             force:NO
-                                                        completion:^{
-                                                            [group leave];
-                                                        }];
-    
-    [group enter];
-    [[self randomContentSource] loadNewContentInManagedObjectContext:moc
-                                                               force:NO
-                                                          completion:^{
-                                                              [group leave];
-                                                          }];
-    
-    [group waitInBackgroundWithTimeout:WMFFeedRefreshBackgroundTimeout completion:^{
-        [moc performBlock:^{
-            BOOL didUpdate = NO;
-            if ([moc hasChanges]) {
-                NSFetchRequest *afterFetchRequest = [WMFContentGroup fetchRequest];
-                NSInteger afterCount = [moc countForFetchRequest:afterFetchRequest error:nil];
-                didUpdate = afterCount != beforeCount;
-                NSError *saveError = nil;
-                if (![moc save:&saveError]) {
-                    DDLogError(@"Error saving background source update: %@", saveError);
-                }
-            }
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (completionHandler) {
-                    completionHandler(didUpdate ? UIBackgroundFetchResultNewData : UIBackgroundFetchResultNoData);
-                }
-                self.taskGroup = nil;
-                [self popQueue];
-            });
-        }];
+
+    WMFAsyncBlockOperation *op = [[WMFAsyncBlockOperation alloc] initWithAsyncBlock:^(WMFAsyncBlockOperation *_Nonnull op) {
+        WMFTaskGroup *group = [WMFTaskGroup new];
+        [group enter];
+        [[self feedContentSource] loadNewContentInManagedObjectContext:moc
+                                                                 force:NO
+                                                            completion:^{
+                                                                [group leave];
+                                                            }];
+
+        [group enter];
+        [[self randomContentSource] loadNewContentInManagedObjectContext:moc
+                                                                   force:NO
+                                                              completion:^{
+                                                                  [group leave];
+                                                              }];
+
+        [group waitInBackgroundWithTimeout:WMFFeedRefreshBackgroundTimeout
+                                completion:^{
+                                    [moc performBlock:^{
+                                        BOOL didUpdate = NO;
+                                        if ([moc hasChanges]) {
+                                            NSFetchRequest *afterFetchRequest = [WMFContentGroup fetchRequest];
+                                            NSInteger afterCount = [moc countForFetchRequest:afterFetchRequest error:nil];
+                                            didUpdate = afterCount != beforeCount;
+                                            NSError *saveError = nil;
+                                            if (![moc save:&saveError]) {
+                                                DDLogError(@"Error saving background source update: %@", saveError);
+                                            }
+                                        }
+                                        dispatch_async(dispatch_get_main_queue(), ^{
+                                            if (completionHandler) {
+                                                completionHandler(didUpdate ? UIBackgroundFetchResultNewData : UIBackgroundFetchResultNoData);
+                                            }
+                                            [op finish];
+                                        });
+                                    }];
+                                }];
     }];
+    [self.operationQueue addOperation:op];
 }
 
-#pragma mark - Queue
-
-- (void)popQueue {
-    WMFAssertMainThread(@"popQueue: must be called on the main thread");
-    dispatch_block_t queued = [self.queue firstObject];
-    if (!queued) {
-        return;
-    }
-    
-    [self.queue removeObjectAtIndex:0];
-    
-    queued();
-}
-
-#pragma mark - SiteURL 
+#pragma mark - SiteURL
 
 - (void)setSiteURL:(NSURL *)siteURL {
     _siteURL = [siteURL copy];
@@ -288,7 +288,7 @@ static NSTimeInterval WMFFeedRefreshBackgroundTimeout = 30;
 #if WMF_TWEAKS_ENABLED
 - (void)debugSendRandomInTheNewsNotification {
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        
+
         [[WMFNotificationsController sharedNotificationsController] requestAuthenticationIfNecessaryWithCompletionHandler:^(BOOL granted, NSError *_Nullable error) {
             if (!granted) {
                 return;
@@ -315,55 +315,63 @@ static NSTimeInterval WMFFeedRefreshBackgroundTimeout = 30;
 #pragma mark - Debug
 
 - (void)debugChaos {
-    if (self.taskGroup) {
-        return;
-    }
-    self.taskGroup = [WMFTaskGroup new];
     BOOL needsTeardown = arc4random_uniform(2) > 0;
     NSManagedObjectContext *moc = needsTeardown ? self.dataStore.feedImportContext : self.dataStore.viewContext;
-    [moc performBlock:^{
-        NSFetchRequest *request = [WMFContentGroup fetchRequest];
-        NSInteger count = [moc countForFetchRequest:request error:nil];
-        request.fetchLimit = (NSUInteger) arc4random_uniform((uint32_t)count);
-        request.fetchOffset = (NSUInteger) arc4random_uniform((uint32_t)(count - request.fetchLimit));
-        NSArray *results = [moc executeFetchRequest:request error:nil];
-        for (WMFContentGroup *group in results) {
-            uint32_t seed = arc4random_uniform(5);
-            int32_t random = (15 - (int32_t)arc4random_uniform(30));
-            switch (seed) {
-                case 0:
-                    group.dailySortPriority = group.dailySortPriority + random;
-                    break;
-                case 1:
-                    group.midnightUTCDate = [group.midnightUTCDate dateByAddingTimeInterval:86400*random];
-                    group.contentMidnightUTCDate = [group.contentMidnightUTCDate dateByAddingTimeInterval:86400*random];
-                    group.date = [group.date dateByAddingTimeInterval:86400*random];
-                    break;
-                case 2:
-                    [moc deleteObject:group];
-                default:
-                {
-                    [moc createGroupOfKind:group.contentGroupKind forDate:[group.date dateByAddingTimeInterval:86400*random] withSiteURL:group.siteURL associatedContent:group.content customizationBlock:^(WMFContentGroup * _Nonnull newGroup) {
-                        newGroup.location = group.location;
-                        newGroup.placemark = group.placemark;
-                        newGroup.contentMidnightUTCDate = [group.contentMidnightUTCDate dateByAddingTimeInterval:86400*random];
-                    }];
+    WMFAsyncBlockOperation *op = [[WMFAsyncBlockOperation alloc] initWithAsyncBlock:^(WMFAsyncBlockOperation * _Nonnull op) {
+        [moc performBlock:^{
+            NSFetchRequest *request = [WMFContentGroup fetchRequest];
+            NSInteger count = [moc countForFetchRequest:request error:nil];
+            request.fetchLimit = (NSUInteger)arc4random_uniform((uint32_t)count);
+            request.fetchOffset = (NSUInteger)arc4random_uniform((uint32_t)(count - request.fetchLimit));
+            NSArray *results = [moc executeFetchRequest:request error:nil];
+            for (WMFContentGroup *group in results) {
+                uint32_t seed = arc4random_uniform(5);
+                int32_t random = (15 - (int32_t)arc4random_uniform(30));
+                switch (seed) {
+                    case 0:
+                        group.midnightUTCDate = [group.midnightUTCDate dateByAddingTimeInterval:86400*random];
+                        group.contentMidnightUTCDate = [group.contentMidnightUTCDate dateByAddingTimeInterval:86400*random];
+                        group.date = [group.date dateByAddingTimeInterval:86400*random];
+                        break;
+                    case 1:
+                        [moc deleteObject:group];
+                    case 2:
+                        group.dailySortPriority = group.dailySortPriority + random;
+                    default:
+                        break;
                 }
-                    break;
             }
-        }
-        NSError *saveError = nil;
-        if ([moc hasChanges] && ![moc save:&saveError]) {
-            DDLogError(@"chaos error: %@", saveError);
-        }
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (needsTeardown) {
-                [self.dataStore teardownFeedImportContext];
+            NSError *saveError = nil;
+            if ([moc hasChanges] && ![moc save:&saveError]) {
+                DDLogError(@"chaos error: %@", saveError);
             }
-            self.taskGroup = nil;
-            [self popQueue];
-        });
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (needsTeardown) {
+                    [self.dataStore teardownFeedImportContext];
+                }
+                [op finish];
+            });
+        }];
     }];
+    [self.operationQueue addOperation:op];
 }
 #endif
+
+- (void)cancelAllFetches {
+    [self.operationQueue cancelAllOperations];
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSKeyValueChangeKey, id> *)change context:(void *)context {
+    if (context == &kvo_WMFExploreFeedContentController_operationQueue_operationCount) {
+        if (self.operationQueue.operationCount == 0 && self.isBusy) {
+            self.busy = NO;
+            [[NSNotificationCenter defaultCenter] postNotificationName:WMFExploreFeedContentControllerBusyStateDidChange object:self];
+        } else if (self.operationQueue.operationCount > 0 && !self.isBusy) {
+            self.busy = YES;
+            [[NSNotificationCenter defaultCenter] postNotificationName:WMFExploreFeedContentControllerBusyStateDidChange object:self];
+        }
+    } else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    }
+}
 @end

@@ -1,5 +1,8 @@
 #import "WMFRandomDiceButton.h"
 @import WebKit;
+@import WMF.UIColor_WMFHexColor;
+@import WMF.WMFLocalization;
+@import WMF.WMFLogging;
 
 @interface WMFRandomDiceButton ()
 @property (nonatomic, strong) WKWebView *webView;
@@ -44,7 +47,7 @@
     self.label.adjustsFontSizeToFitWidth = YES;
     self.label.minimumScaleFactor = 0.1;
     self.label.textAlignment = NSTextAlignmentCenter;
-    self.label.text = MWLocalizedString(@"explore-randomizer", nil);
+    self.label.text = WMFLocalizedStringWithDefaultValue(@"explore-randomizer", nil, nil, @"Randomizer", @"Displayed on a button that loads another random article - it's a 'Randomizer'");
     [self addSubview:self.label];
 }
 

@@ -6,6 +6,7 @@
 
 @import CoreData;
 
+// Emitted when article state changes. Can be used for things such as being notified when article 'saved' state changes.
 NSString *const WMFArticleUpdatedNotification = @"WMFArticleUpdatedNotification";
 
 NSString *const MWKDataStoreValidImageSitePrefix = @"//upload.wikimedia.org/";
@@ -205,7 +206,7 @@ static uint64_t bundleHash() {
 }
 
 - (void)setupCoreDataStackWithContainerURL:(NSURL *)containerURL {
-    NSURL *modelURL = [[NSBundle bundleWithIdentifier:@"org.wikimedia.WMF"] URLForResource:@"Wikipedia" withExtension:@"momd"];
+    NSURL *modelURL = [[NSBundle wmf] URLForResource:@"Wikipedia" withExtension:@"momd"];
     NSManagedObjectModel *model = [[NSManagedObjectModel alloc] initWithContentsOfURL:modelURL];
     NSString *coreDataDBName = @"Wikipedia.sqlite";
 
@@ -638,6 +639,8 @@ static uint64_t bundleHash() {
                         contentGroupKind = WMFContentGroupKindNotification;
                     } else if ([key hasPrefix:@"wikipedia://content/news/"]) {
                         contentGroupKind = WMFContentGroupKindNews;
+                    } else if ([key hasPrefix:@"wikipedia://content/on-this-day/"]) {
+                        contentGroupKind = WMFContentGroupKindOnThisDay;
                     } else if ([key hasPrefix:@"wikipedia://content/top-read/"]) {
                         contentGroupKind = WMFContentGroupKindTopRead;
                     } else if ([key hasPrefix:@"wikipedia://content/related-pages/"]) {
@@ -1410,6 +1413,7 @@ static uint64_t bundleHash() {
     if (!article) {
         article = [[WMFArticle alloc] initWithEntity:[NSEntityDescription entityForName:@"WMFArticle" inManagedObjectContext:moc] insertIntoManagedObjectContext:moc];
         article.key = key;
+        article.displayTitle = title.wmf_unescapedNormalizedPageTitle;
         if (moc == self.viewContext) {
             [self.articlePreviewCache setObject:article forKey:key];
         }

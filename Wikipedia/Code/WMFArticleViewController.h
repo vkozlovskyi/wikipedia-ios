@@ -1,13 +1,9 @@
-@import UIKit;
-#import "WMFAnalyticsLogging.h"
-#import "MWKArticle.h"
-#import "WebViewController.h"
-#import "WMFTableOfContentsDisplay.h"
-
+@import WMF;
 @class MWKDataStore;
-
 @class WMFShareFunnel;
 @class WMFArticleViewController;
+#import "WMFTableOfContentsDisplay.h"
+#import "WebViewController.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -56,8 +52,6 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, strong, nullable) MWKSection *currentSection;               //doesn't actually update the view, only here for access from Swift category
 @property (nonatomic, strong, nullable) MWKSection *sectionToRestoreScrollOffset; //doesn't actually update the view, only here for access from Swift category
-@property (nonatomic) NSInteger currentFooterIndex;                               //doesn't actually update the view, only here for access from Swift category
-@property (nonatomic) NSInteger footerIndexToRestoreScrollOffset;                 //doesn't actually update the view, only here for access from Swift category
 
 @property (nonatomic, getter=isSavingOpenArticleTitleEnabled) BOOL savingOpenArticleTitleEnabled;
 @property (nonatomic, getter=isAddingArticleToHistoryListEnabled) BOOL addingArticleToHistoryListEnabled;

@@ -1,3 +1,6 @@
+import UIKit
+import WMF
+
 protocol PlaceSearchSuggestionControllerDelegate: NSObjectProtocol {
     func placeSearchSuggestionController(_ controller: PlaceSearchSuggestionController, didSelectSearch search: PlaceSearch)
     func placeSearchSuggestionControllerClearButtonPressed(_ controller: PlaceSearchSuggestionController)
@@ -7,14 +10,21 @@ protocol PlaceSearchSuggestionControllerDelegate: NSObjectProtocol {
 class PlaceSearchSuggestionController: NSObject, UITableViewDataSource, UITableViewDelegate {
     static let cellReuseIdentifier = "org.wikimedia.places"
     static let headerReuseIdentifier = "org.wikimedia.places.header"
-    let suggestionSection = 0
-    let recentSection = 1
-    let currentStringSection = 2
-    let completionSection = 3
+    static let suggestionSection = 0
+    static let recentSection = 1
+    static let currentStringSection = 2
+    static let completionSection = 3
+    
+    var wikipediaLanguage: String? = "en"
+    var siteURL: URL? = nil {
+        didSet {
+            wikipediaLanguage = (siteURL as NSURL?)?.wmf_language
+        }
+    }
     
     var tableView: UITableView = UITableView() {
         didSet {
-            tableView.register(UITableViewCell.self, forCellReuseIdentifier: PlaceSearchSuggestionController.cellReuseIdentifier)
+            tableView.register(PlacesSearchSuggestionTableViewCell.wmf_classNib(), forCellReuseIdentifier: PlaceSearchSuggestionController.cellReuseIdentifier)
             tableView.register(WMFTableHeaderLabelView.wmf_classNib(), forHeaderFooterViewReuseIdentifier: PlaceSearchSuggestionController.headerReuseIdentifier)
             tableView.dataSource = self
             tableView.delegate = self
@@ -37,33 +47,59 @@ class PlaceSearchSuggestionController: NSObject, UITableViewDataSource, UITableV
         return searches.count
     }
     
+    var shouldUseFirstSuggestionAsDefault: Bool {
+        return searches[PlaceSearchSuggestionController.suggestionSection].count == 0 && searches[PlaceSearchSuggestionController.completionSection].count > 0
+    }
+    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return searches[section].count
+        switch (section, shouldUseFirstSuggestionAsDefault) {
+        case (PlaceSearchSuggestionController.suggestionSection, true):
+            return 1
+        case (PlaceSearchSuggestionController.completionSection, true):
+            return searches[PlaceSearchSuggestionController.completionSection].count - 1
+        default:
+            return searches[section].count
+        }
+    }
+    
+    func searchForIndexPath(_ indexPath: IndexPath) -> PlaceSearch {
+        let search: PlaceSearch
+        switch (indexPath.section, shouldUseFirstSuggestionAsDefault) {
+        case (PlaceSearchSuggestionController.suggestionSection, true):
+            search = searches[PlaceSearchSuggestionController.completionSection][0]
+        case (PlaceSearchSuggestionController.completionSection, true):
+            search = searches[PlaceSearchSuggestionController.completionSection][indexPath.row+1]
+        default:
+            search = searches[indexPath.section][indexPath.row]
+        }
+        return search
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier:  PlaceSearchSuggestionController.cellReuseIdentifier, for: indexPath)
-        let search = searches[indexPath.section][indexPath.row]
-        switch search.type {
-        case .saved:
-            cell.imageView?.image = #imageLiteral(resourceName: "places-suggestion-saved")
-        case .top:
-            cell.imageView?.image = #imageLiteral(resourceName: "places-suggestion-top")
-        case .location:
-            cell.imageView?.image = #imageLiteral(resourceName: "places-suggestion-location")
-        default:
-            cell.imageView?.image = #imageLiteral(resourceName: "places-suggestion-text")
-            break
+        guard let searchSuggestionCell = cell as? PlacesSearchSuggestionTableViewCell else {
+            return cell
         }
-        cell.textLabel?.text = search.localizedDescription
+
+        let search = searchForIndexPath(indexPath)
+        
+        switch search.type {
+        case .nearby:
+            searchSuggestionCell.iconImageView.image = #imageLiteral(resourceName: "places-suggestion-location")
+        default:
+            searchSuggestionCell.iconImageView.image = search.searchResult != nil ? #imageLiteral(resourceName: "nearby-mini") : #imageLiteral(resourceName: "places-suggestion-text")
+            
+        }
+        searchSuggestionCell.titleLabel.text = search.localizedDescription
+        searchSuggestionCell.detailLabel.text = search.searchResult?.wikidataDescription?.wmf_stringByCapitalizingFirstCharacter(usingWikipediaLanguage: wikipediaLanguage)
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let search = searches[indexPath.section][indexPath.row]
+        let search = searchForIndexPath(indexPath)
         delegate?.placeSearchSuggestionController(self, didSelectSearch: search)
+        tableView.deselectRow(at: indexPath, animated: true)
     }
-    
     
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         guard searches[section].count > 0, section < 2, let header = tableView.dequeueReusableHeaderFooterView(withIdentifier: PlaceSearchSuggestionController.headerReuseIdentifier) as? WMFTableHeaderLabelView else {
@@ -74,13 +110,13 @@ class PlaceSearchSuggestionController: NSObject, UITableViewDataSource, UITableV
         header.contentView.backgroundColor = .wmf_articleListBackground
         header.isLabelVerticallyCentered = true
         switch section {
-        case suggestionSection:
-            header.text = localizedStringForKeyFallingBackOnEnglish("places-search-suggested-searches-header")
-        case recentSection:
+//        case PlaceSearchSuggestionController.suggestionSection:
+//            header.text = WMFLocalizedString("places-search-suggested-searches-header", value:"Suggested searches", comment:"Suggested searches - header for the list of suggested searches")
+        case PlaceSearchSuggestionController.recentSection:
             header.isClearButtonHidden = false
             header.addClearButtonTarget(self, selector: #selector(clearButtonPressed))
-            header.text = localizedStringForKeyFallingBackOnEnglish("places-search-recently-searched-header")
-            header.clearButton.accessibilityLabel = localizedStringForKeyFallingBackOnEnglish("places-accessibility-clear-saved-searches")
+            header.text = WMFLocalizedString("places-search-recently-searched-header", value:"Recently searched", comment:"Recently searched - header for the list of recently searched items")
+            header.clearButton.accessibilityLabel = WMFLocalizedString("places-accessibility-clear-saved-searches", value:"Clear saved searches", comment:"Accessibility hint for clearing saved searches")
         default:
             return nil
         }
@@ -98,7 +134,7 @@ class PlaceSearchSuggestionController: NSObject, UITableViewDataSource, UITableV
     
     func tableView(_ tableView: UITableView, canEditRowAt indexPath: IndexPath) -> Bool {
         switch indexPath.section {
-        case recentSection:
+        case PlaceSearchSuggestionController.recentSection:
             return true
         default:
             return false
@@ -107,9 +143,9 @@ class PlaceSearchSuggestionController: NSObject, UITableViewDataSource, UITableV
     
     func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
         switch indexPath.section {
-        case recentSection:
+        case PlaceSearchSuggestionController.recentSection:
             return [UITableViewRowAction(style: .destructive, title: "Delete", handler: { (action, indexPath) in
-                let search = self.searches[indexPath.section][indexPath.row]
+                let search = self.searchForIndexPath(indexPath)
                 self.delegate?.placeSearchSuggestionController(self, didDeleteSearch: search)
             })]
         default:

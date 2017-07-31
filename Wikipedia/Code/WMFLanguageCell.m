@@ -1,7 +1,6 @@
 #import "WMFLanguageCell.h"
 #import "UILabel+WMFStyling.h"
-#import "UITableViewCell+WMFEdgeToEdgeSeparator.h"
-#import "NSString+WMFExtras.h"
+#import <WMF/UITableViewCell+WMFEdgeToEdgeSeparator.h>
 #import "Wikipedia-Swift.h"
 
 @interface WMFLanguageCell ()
@@ -31,7 +30,7 @@
         self.localizedLanguageLabel.text = nil;
     }
     _languageName = languageName;
-    self.languageNameLabel.text = [languageName wmf_stringByCapitalizingFirstCharacter];
+    self.languageNameLabel.text = [languageName wmf_stringByCapitalizingFirstCharacterUsingWikipediaLanguage:nil];
 }
 
 - (BOOL)shouldShowLanguageName:(NSString *)languageName {
@@ -65,7 +64,7 @@
 - (void)setIsPrimary:(BOOL)isPrimary {
     _isPrimary = isPrimary;
     if (isPrimary) {
-        self.primaryLabel.text = [MWLocalizedString(@"settings-primary-language", nil) uppercaseStringWithLocale:[NSLocale currentLocale]];
+        self.primaryLabel.text = [WMFLocalizedStringWithDefaultValue(@"settings-primary-language", nil, nil, @"Primary", @"Label shown next to primary language\n{{Identical|Primary}}") uppercaseStringWithLocale:[NSLocale currentLocale]];
         self.primaryLabelContainerView.backgroundColor = [UIColor wmf_primaryLanguageLabelBackground];
     } else {
         self.primaryLabel.text = nil;

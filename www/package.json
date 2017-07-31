@@ -4,14 +4,14 @@
   "repository": "https://gerrit.wikimedia.org/r/apps/ios/wikipedia",
   "version": "0.1.0",
   "dependencies": {
-    "applib": "1.2.0"
+    "wikimedia-page-library": "3.1.0"
    },
   "devDependencies": {
     "grunt": "1.0.1",
     "grunt-browserify": "5.0.0",
     "grunt-cli": "1.2.0",
     "grunt-contrib-copy": "1.0.0",
-    "grunt-contrib-jshint": "1.1.0",
+    "gruntify-eslint": "3.1.0",
     "grunt-contrib-less": "1.4.1"
   }
 }

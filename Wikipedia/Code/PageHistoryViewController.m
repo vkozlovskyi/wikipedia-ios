@@ -4,7 +4,7 @@
 #import "UITableView+DynamicCellHeight.h"
 #import "UIBarButtonItem+WMFButtonConvenience.h"
 #import "Wikipedia-Swift.h"
-#import "AFHTTPSessionManager+WMFCancelAll.h"
+@import WMF.AFHTTPSessionManager_WMFCancelAll;
 #import "WMFPageHistoryRevision.h"
 
 #define TABLE_CELL_ID @"PageHistoryResultCell"
@@ -23,7 +23,7 @@
 @implementation PageHistoryViewController
 
 - (NSString *)title {
-    return MWLocalizedString(@"page-history-title", nil);
+    return WMFLocalizedStringWithDefaultValue(@"page-history-title", nil, nil, @"Article history", @"Header text for Page History interface.\n{{Identical|Article history}}");
 }
 
 - (void)viewDidAppear:(BOOL)animated {
@@ -53,7 +53,7 @@
          forCellReuseIdentifier:TABLE_CELL_ID];
 
     self.tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-    
+
     self.tableView.rowHeight = UITableViewAutomaticDimension;
     self.tableView.estimatedRowHeight = 75;
 }
@@ -70,12 +70,18 @@
         requestParams:self.historyFetcherParams
         failure:^(NSError *_Nonnull error) {
             @strongify(self);
+            if (!self) {
+                return;
+            }
             DDLogError(@"Failed to fetch items for section %@. %@", self, error);
             [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:NO tapCallBack:NULL];
             self.isLoadingData = NO;
         }
         success:^(HistoryFetchResults *_Nonnull historyFetchResults) {
             @strongify(self);
+            if (!self) {
+                return;
+            }
             [self.pageHistoryDataArray addObjectsFromArray:historyFetchResults.items];
             self.historyFetcherParams = [historyFetchResults getPageHistoryRequestParameters:self.article.url];
             self.batchComplete = historyFetchResults.batchComplete;
@@ -118,7 +124,7 @@
 
 - (UIView *)tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
     UIView *view = [[UIView alloc] initWithFrame:CGRectZero];
-    view.backgroundColor = [UIColor colorWithRed:0.94 green:0.94 blue:0.96 alpha:1.0];
+    view.backgroundColor = [UIColor wmf_settingsBackground];
     view.autoresizesSubviews = YES;
     PaddedLabel *label = [[PaddedLabel alloc] init];
 
@@ -137,7 +143,7 @@
     label.text = self.pageHistoryDataArray[section].sectionTitle;
 
     [label wmf_configureSubviewsForDynamicType];
-    
+
     [view addSubview:label];
 
     return view;

@@ -1,4 +1,4 @@
-#import "UIColor+WMFHexColor.h"
+#import <WMF/UIColor+WMFHexColor.h>
 
 @implementation UIColor (WMF_HexColor)
 
@@ -8,6 +8,10 @@
                            green:((float)((hex & 0xFF00) >> 8)) / 255.0
                             blue:((float)(hex & 0xFF)) / 255.0
                            alpha:alpha];
+}
+
++ (UIColor *)wmf_colorWithHex:(NSInteger)hex {
+    return [UIColor wmf_colorWithHex:hex alpha:1.0];
 }
 
 - (NSString *)wmf_hexStringIncludingAlpha:(BOOL)includeAlpha {

@@ -1,6 +1,5 @@
-#import <Foundation/Foundation.h>
-#import "WMFAnalyticsLogging.h"
-
+@import UIKit;
+@import WMF.Swift;
 @class MWKSavedPageList, MWKSavedPageList;
 
 @interface WMFSaveButtonController : NSObject <WMFAnalyticsContextProviding, WMFAnalyticsContentTypeProviding>

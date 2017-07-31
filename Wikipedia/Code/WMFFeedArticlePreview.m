@@ -1,4 +1,8 @@
-#import "WMFFeedArticlePreview.h"
+#import <WMF/WMFFeedArticlePreview.h>
+#import <WMF/WMFComparison.h>
+#import <WMF/NSURL+WMFExtras.h>
+#import <WMF/NSURL+WMFLinkParsing.h>
+#import <WMF/NSString+WMFHTMLParsing.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -54,6 +58,20 @@ NS_ASSUME_NONNULL_BEGIN
                 dict[@"normalizedtitle"] = normalizedTitle;
             }
             return dict;
+        }];
+}
+
++ (NSValueTransformer *)snippetJSONTransformer {
+    return [MTLValueTransformer
+        transformerUsingForwardBlock:^NSString *(NSString *extract,
+                                                 BOOL *success,
+                                                 NSError *__autoreleasing *error) {
+            return [extract wmf_summaryFromText];
+        }
+        reverseBlock:^NSString *(NSString *snippet,
+                                 BOOL *success,
+                                 NSError *__autoreleasing *error) {
+            return snippet;
         }];
 }
 

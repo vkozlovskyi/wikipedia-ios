@@ -1,12 +1,14 @@
 #import "WMFPageIssuesViewController.h"
 #import "SSDataSources.h"
 #import "UIBarButtonItem+WMFButtonConvenience.h"
+@import WMF.UITableViewCell_WMFEdgeToEdgeSeparator;
+@import WMF.WMFLocalization;
 
 @implementation WMFPageIssuesViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = MWLocalizedString(@"page-issues", nil);
+    self.title = WMFLocalizedStringWithDefaultValue(@"page-issues", nil, nil, @"Page issues", @"Label for the button that shows the \"Page issues\" dialog, where information about the imperfections of the current page is provided (by displaying the warning/cleanup templates).\n{{Identical|Page issue}}");
     self.tableView.estimatedRowHeight = 90.0;
     self.tableView.rowHeight = UITableViewAutomaticDimension;
 

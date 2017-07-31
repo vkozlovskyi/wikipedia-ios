@@ -1,5 +1,4 @@
-#import <Foundation/Foundation.h>
-
+@import UIKit.UICollectionView;
 @class WMFCVLColumn;
 @class WMFCVLSection;
 @class WMFCVLAttributes;
@@ -23,8 +22,8 @@
 - (void)enumerateSectionsWithBlock:(nonnull void (^)(WMFCVLSection *_Nonnull section, NSUInteger idx, BOOL *_Nonnull stop))block;
 - (void)enumerateColumnsWithBlock:(nonnull void (^)(WMFCVLColumn *_Nonnull column, NSUInteger idx, BOOL *_Nonnull stop))block;
 
-- (nullable WMFCVLAttributes *)layoutAttributesForItemAtIndexPath:(nonnull NSIndexPath *)indexPath;
-- (nullable WMFCVLAttributes *)layoutAttributesForSupplementaryViewOfKind:(nonnull NSString *)elementKind atIndexPath:(nonnull NSIndexPath *)indexPath;
+- (nonnull WMFCVLAttributes *)layoutAttributesForItemAtIndexPath:(nonnull NSIndexPath *)indexPath;
+- (nonnull WMFCVLAttributes *)layoutAttributesForSupplementaryViewOfKind:(nonnull NSString *)elementKind atIndexPath:(nonnull NSIndexPath *)indexPath;
 
 - (void)layoutWithMetrics:(nonnull WMFCVLMetrics *)metrics delegate:(nullable id<WMFColumnarCollectionViewLayoutDelegate>)delegate collectionView:(nullable UICollectionView *)collectionView invalidationContext:(nullable WMFCVLInvalidationContext *)context;
 

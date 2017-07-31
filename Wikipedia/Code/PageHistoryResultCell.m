@@ -1,5 +1,4 @@
 #import "PageHistoryResultCell.h"
-#import "NSString+WMFExtras.h"
 #import "UIFont+WMFStyle.h"
 #import "Wikipedia-Swift.h"
 
@@ -22,18 +21,18 @@
          isAnon:(BOOL)isAnon
         summary:(NSString *)summary
       separator:(BOOL)separator {
-    
+
     self.nameLabel.text = name;
     self.timeLabel.text = [[NSDateFormatter wmf_shortTimeFormatter] stringFromDate:date];
     self.deltaLabel.text = [NSString stringWithFormat:@"%@%@", (delta.integerValue > 0) ? @"+" : @"", delta.stringValue];
     self.userImageView.image = [[UIImage imageNamed:isAnon ? @"user-sleep" : @"user-smile"] imageWithRenderingMode:UIImageRenderingModeAlwaysTemplate];
 
     if (delta.integerValue == 0) {
-        self.deltaLabel.textColor = [UIColor colorWithRed:0.2039 green:0.4824 blue:1.0 alpha:1.0];
+        self.deltaLabel.textColor = [UIColor wmf_blue];
     } else if (delta.integerValue > 0) {
-        self.deltaLabel.textColor = [UIColor colorWithRed:0.00 green:0.69 blue:0.54 alpha:1.0];
+        self.deltaLabel.textColor = [UIColor wmf_green];
     } else {
-        self.deltaLabel.textColor = [UIColor colorWithRed:0.82 green:0.09 blue:0.07 alpha:1.0];
+        self.deltaLabel.textColor = [UIColor wmf_red];
     }
 
     self.userImageView.tintColor = [UIColor wmf_customGray];

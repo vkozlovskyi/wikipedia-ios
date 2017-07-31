@@ -131,7 +131,7 @@
 
 - (CGFloat)setSize:(CGSize)size forItemAtIndex:(NSInteger)index invalidationContext:(WMFCVLInvalidationContext *)invalidationContext {
     CGFloat deltaH = [self setSize:size forAttributesAtIndex:index inArray:_items];
-    
+
     [invalidationContext invalidateItemsAtIndexPaths:@[[NSIndexPath indexPathForItem:index inSection:self.index]]];
     [self offsetItemsStartingAtIndex:index + 1 distance:deltaH invalidationContext:invalidationContext];
     [self offsetFootersStartingAtIndex:0 distance:deltaH invalidationContext:invalidationContext];
@@ -170,7 +170,7 @@
         WMFCVLAttributes *attributes = attributesProvider([NSIndexPath indexPathForItem:index inSection:self.index]);
         CGRect frame = frameProvider(YES, CGRectZero, attributes);
         attributes.frame = frame;
-        if (attributes != nil) {
+        if (attributes != nil && attributes.frame.size.height > 0) {
             [array addObject:attributes];
         }
         return YES;

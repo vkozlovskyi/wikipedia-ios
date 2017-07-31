@@ -1,9 +1,9 @@
-#import "MWKSavedPageList.h"
+#import <WMF/MWKSavedPageList.h>
 #import <WMF/WMF-Swift.h>
 
 //Legacy
-#import "MWKSavedPageListDataExportConstants.h"
-#import "MWKSavedPageEntry.h"
+#import <WMF/MWKSavedPageListDataExportConstants.h>
+#import <WMF/MWKSavedPageEntry.h>
 NSString *const MWKSavedPageExportedEntriesKey = @"entries";
 NSString *const MWKSavedPageExportedSchemaVersionKey = @"schemaVersion";
 
@@ -135,6 +135,20 @@ NSString *const MWKSavedPageExportedSchemaVersionKey = @"schemaVersion";
         [self addSavedPageWithURL:url];
         return YES;
     }
+}
+
+- (BOOL)toggleSavedPageForKey:(NSString *)key {
+    if (!key) {
+        return NO;
+    }
+    WMFArticle *article = [self.dataStore fetchArticleWithKey:key];
+    if (article.savedDate == nil) {
+        article.savedDate = [NSDate date];
+    } else {
+        article.savedDate = nil;
+    }
+    [self.dataStore save:nil];
+    return article.savedDate != nil;
 }
 
 - (void)addSavedPageWithURL:(NSURL *)url {

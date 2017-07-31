@@ -1,19 +1,7 @@
 #import "WMFSavedArticleTableViewController.h"
-#import "PiwikTracker+WMFExtensions.h"
-#import "NSString+WMFExtras.h"
-#import "NSUserActivity+WMFExtensions.h"
-
-#import "MWKDataStore.h"
-
-#import "MWKSavedPageList.h"
-
-#import "MWKArticle.h"
-
-#import "WMFSaveButtonController.h"
-
 #import "WMFArticleListTableViewCell.h"
-#import "UIView+WMFDefaultNib.h"
 #import "WMFTableViewUpdater.h"
+@import WMF;
 
 @interface WMFSavedArticleTableViewController ()
 @property (nonatomic, strong) NSFetchedResultsController *fetchedResultsController;
@@ -26,7 +14,7 @@
 
 - (void)awakeFromNib {
     [super awakeFromNib];
-    self.title = MWLocalizedString(@"saved-title", nil);
+    self.title = WMFLocalizedStringWithDefaultValue(@"saved-title", nil, nil, @"Saved", @"Title of the saved screen shown on the saved tab\n{{Identical|Saved}}");
 }
 
 - (void)dealloc {
@@ -58,7 +46,7 @@
     self.fetchedResultsController = frc;
     self.tableViewUpdater = [[WMFTableViewUpdater alloc] initWithFetchedResultsController:self.fetchedResultsController tableView:self.tableView];
     self.tableViewUpdater.delegate = self;
-    
+
     [self.fetchedResultsController performFetch:nil];
     [self.tableView reloadData];
 }
@@ -85,7 +73,7 @@
 - (void)configureCell:(WMFArticleListTableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
     WMFArticle *entry = [self objectAtIndexPath:indexPath];
     cell.titleText = entry.displayTitle;
-    cell.descriptionText = [entry.wikidataDescription wmf_stringByCapitalizingFirstCharacter];
+    cell.descriptionText = entry.capitalizedWikidataDescription;
     [cell setImageURL:entry.thumbnailURL];
 }
 
@@ -112,19 +100,19 @@
 }
 
 - (NSString *)deleteButtonText {
-    return MWLocalizedString(@"saved-clear-all", nil);
+    return WMFLocalizedStringWithDefaultValue(@"saved-clear-all", nil, nil, @"Clear", @"Text of the button shown at the top of saved pages which deletes all the saved pages\n{{Identical|Clear}}");
 }
 
 - (NSString *)deleteAllConfirmationText {
-    return MWLocalizedString(@"saved-pages-clear-confirmation-heading", nil);
+    return WMFLocalizedStringWithDefaultValue(@"saved-pages-clear-confirmation-heading", nil, nil, @"Are you sure you want to delete all your saved pages?", @"Heading text of delete all confirmation dialog");
 }
 
 - (NSString *)deleteText {
-    return MWLocalizedString(@"saved-pages-clear-delete-all", nil);
+    return WMFLocalizedStringWithDefaultValue(@"saved-pages-clear-delete-all", nil, nil, @"Yes, delete all", @"Button text for confirming delete all action\n{{Identical|Delete all}}");
 }
 
 - (NSString *)deleteCancelText {
-    return MWLocalizedString(@"saved-pages-clear-cancel", nil);
+    return WMFLocalizedStringWithDefaultValue(@"saved-pages-clear-cancel", nil, nil, @"Cancel", @"Button text for cancelling delete all action\n{{Identical|Cancel}}");
 }
 
 - (NSURL *)urlAtIndexPath:(NSIndexPath *)indexPath {
@@ -135,7 +123,7 @@
     return YES;
 }
 
-- (void)deleteItemAtIndexPath:(NSIndexPath*)indexPath{
+- (void)deleteItemAtIndexPath:(NSIndexPath *)indexPath {
     [[self savedPageList] removeEntryWithURL:[self urlAtIndexPath:indexPath]];
 }
 

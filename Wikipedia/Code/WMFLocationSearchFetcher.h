@@ -1,4 +1,3 @@
-#import <Foundation/Foundation.h>
 @import CoreLocation;
 
 @class WMFLocationSearchResults;
@@ -8,7 +7,8 @@ NS_ASSUME_NONNULL_BEGIN
 extern NSString *const WMFLocationSearchErrorDomain;
 
 typedef NS_ENUM(NSUInteger, WMFLocationSearchErrorCode) {
-    WMFLocationSearchErrorCodeUnknown = 0
+    WMFLocationSearchErrorCodeUnknown = 0,
+    WMFLocationSearchErrorCodeNoResults = 1
 };
 
 typedef NS_ENUM(NSUInteger, WMFLocationSearchSortStyle) {

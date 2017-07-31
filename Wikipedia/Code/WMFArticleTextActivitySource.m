@@ -1,5 +1,5 @@
 #import "WMFArticleTextActivitySource.h"
-#import "MWKArticle+WMFSharing.h"
+@import WMF;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -25,7 +25,7 @@ NS_ASSUME_NONNULL_BEGIN
     return [NSString string];
 }
 
-- (nullable id)activityViewController:(UIActivityViewController *)activityViewController itemForActivityType:(NSString *)activityType {
+- (nullable id)activityViewController:(UIActivityViewController *)activityViewController itemForActivityType:(UIActivityType)activityType {
     if ([activityType isEqualToString:UIActivityTypeCopyToPasteboard] || [activityType isEqualToString:UIActivityTypeAirDrop]) {
         if (self.shareText.length > 0) {
             return self.shareText;
@@ -34,7 +34,7 @@ NS_ASSUME_NONNULL_BEGIN
         }
     }
 
-    return [MWLocalizedString(@"share-article-name-on-wikipedia", nil) stringByReplacingOccurrencesOfString:@"$1" withString:self.article.url.wmf_title]; //send just the title for other sharing services
+    return [NSString localizedStringWithFormat:WMFLocalizedStringWithDefaultValue(@"share-article-name-on-wikipedia", nil, nil, @"\"%1$@\" on @Wikipedia:", @"Formatted string expressing article being on Wikipedia with at symbol handle. Please do not translate the \"@Wikipedia\" in the message, and preserve the spaces around it, as it refers specifically to the Wikipedia Twitter account. %1$@ will be an article title, which should be wrapped in the localized double quote marks."), self.article.url.wmf_title]; //send just the title for other sharing services
 }
 
 - (NSString *)activityViewController:(UIActivityViewController *)activityViewController subjectForActivityType:(nullable NSString *)activityType {

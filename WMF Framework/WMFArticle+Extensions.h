@@ -1,5 +1,8 @@
 #import "WMFArticle+CoreDataClass.h"
 
+@class MWKSearchResult;
+@class WMFFeedArticlePreview;
+
 typedef NS_ENUM(NSUInteger, WMFGeoType) {
     WMFGeoTypeUnknown = 0,
     WMFGeoTypeCountry,
@@ -32,6 +35,8 @@ typedef NS_ENUM(NSUInteger, WMFArticleAction) {
 @interface WMFArticle (WMFExtensions)
 
 @property (nonatomic, readonly, nullable) NSURL *URL;
+
+@property (nonatomic, readonly, nullable) NSString *capitalizedWikidataDescription;
 
 @property (nonatomic, nullable) NSURL *thumbnailURL; // Deprecated. Use imageURLForWidth:
 

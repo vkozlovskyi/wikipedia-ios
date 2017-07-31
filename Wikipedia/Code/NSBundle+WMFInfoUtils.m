@@ -1,4 +1,4 @@
-#import "NSBundle+WMFInfoUtils.h"
+#import <WMF/NSBundle+WMFInfoUtils.h>
 
 @implementation NSBundle (WMFInfoUtils)
 
@@ -34,16 +34,6 @@
 
 - (NSString *)wmf_versionForCurrentBundleIdentifier {
     return [self wmf_isAppStoreBundleIdentifier] ? [self wmf_releaseVersion] : [self wmf_debugVersion];
-}
-
-#pragma mark - Config
-
-- (NSString *)wmf_hockeyappIdentifier {
-    return [self objectForInfoDictionaryKey:@"WMFHockeyAppIdentifier"];
-}
-
-- (BOOL)wmf_shouldShowDebugMenu {
-    return [[self objectForInfoDictionaryKey:@"WMFShowDebugMenu"] boolValue];
 }
 
 @end

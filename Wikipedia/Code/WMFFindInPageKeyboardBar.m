@@ -1,4 +1,6 @@
 #import "WMFFindInPageKeyboardBar.h"
+@import WMF.Swift;
+@import WMF.WMFLocalization;
 
 @interface WMFFindInPageKeyboardBar () <UITextFieldDelegate>
 
@@ -36,7 +38,7 @@
 - (instancetype)initWithCoder:(NSCoder *)coder {
     self = [super initWithCoder:coder];
     if (self) {
-        self.tintColor = [UIColor colorWithRed:0.3373 green:0.3373 blue:0.3373 alpha:1.0];
+        self.tintColor = [UIColor wmf_darkGray];
     }
     return self;
 }
@@ -108,11 +110,10 @@
     if (self.textField.text.length == 0) {
         labelText = nil;
     } else if (count > 0 && index == -1) {
-        labelText = [NSString stringWithFormat:@"%lu", (unsigned long)count];
-    } else if (count == 0) {
-        labelText = MWLocalizedString(@"find-in-page-no-matches", nil);
+        labelText = [NSString localizedStringWithFormat:@"%lu", (unsigned long)count];
     } else {
-        labelText = [NSString stringWithFormat:@"%lu / %lu", (unsigned long)(index + 1), (unsigned long)count];
+        NSString *format = WMFLocalizedStringWithDefaultValue(@"find-in-page-number-matches", nil, nil, @"%1$@ / %2$@", @"Displayed to indicate how many matches were found even if no matches. Separator can be customized depending on the language. %1$@ is replaced with the numerator, %2$@ is replaced with the denominator.");
+        labelText = [NSString localizedStringWithFormat:format, @(index + 1), @(count)];
     }
     [self.currentMatchLabel setText:labelText];
 }

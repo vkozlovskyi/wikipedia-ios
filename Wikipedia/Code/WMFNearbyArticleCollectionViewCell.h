@@ -1,4 +1,5 @@
 #import "WMFExploreCollectionViewCell.h"
+@import WMF.WMFBlockDefinitions;
 @import CoreLocation;
 
 @class MWKImage;
@@ -8,6 +9,8 @@
 @property (nonatomic, copy) NSString *titleText;
 
 @property (nonatomic, copy) NSString *descriptionText;
+
+@property (nonatomic, copy) CLLocation *articleLocation;
 
 /**
  *  Set the recievers @c image using an MWKImage

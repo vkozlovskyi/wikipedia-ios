@@ -1,16 +1,7 @@
 #import "WMFHistoryTableViewController.h"
-#import "PiwikTracker+WMFExtensions.h"
-#import "NSUserActivity+WMFExtensions.h"
-
-#import "NSString+WMFExtras.h"
-#import "MWKHistoryList.h"
-
-#import "MWKArticle.h"
-#import "MWKSavedPageEntry.h"
-
 #import "WMFArticleListTableViewCell.h"
-#import "UIView+WMFDefaultNib.h"
 #import "WMFTableViewUpdater.h"
+@import WMF;
 
 @interface WMFHistoryTableViewController ()
 @property (nonatomic, strong) NSFetchedResultsController *fetchedResultsController;
@@ -23,7 +14,7 @@
 
 - (void)awakeFromNib {
     [super awakeFromNib];
-    self.title = MWLocalizedString(@"history-title", nil);
+    self.title = WMFLocalizedStringWithDefaultValue(@"history-title", nil, nil, @"History", @"Title of the history screen shown on history tab\n{{Identical|History}}");
 }
 
 - (void)dealloc {
@@ -99,9 +90,9 @@
 
     NSCalendar *calendar = [NSCalendar wmf_gregorianCalendar];
     if ([calendar isDateInToday:date]) {
-        return [padding stringByAppendingString:[MWLocalizedString(@"history-section-today", nil) uppercaseString]];
+        return [padding stringByAppendingString:[WMFLocalizedStringWithDefaultValue(@"history-section-today", nil, nil, @"Today", @"Subsection label for list of articles browsed today.\n{{Identical|Today}}") uppercaseString]];
     } else if ([calendar isDateInYesterday:date]) {
-        return [padding stringByAppendingString:[MWLocalizedString(@"history-section-yesterday", nil) uppercaseString]];
+        return [padding stringByAppendingString:[WMFLocalizedStringWithDefaultValue(@"history-section-yesterday", nil, nil, @"Yesterday", @"Subsection label for list of articles browsed yesterday.\n{{Identical|Yesterday}}") uppercaseString]];
     } else {
         return [padding stringByAppendingString:[[NSDateFormatter wmf_mediumDateFormatterWithoutTime] stringFromDate:date]];
     }
@@ -110,7 +101,7 @@
 - (void)configureCell:(WMFArticleListTableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
     WMFArticle *entry = [self objectAtIndexPath:indexPath];
     cell.titleText = entry.displayTitle;
-    cell.descriptionText = [entry.wikidataDescription wmf_stringByCapitalizingFirstCharacter];
+    cell.descriptionText = entry.capitalizedWikidataDescription;
     [cell setImageURL:entry.thumbnailURL];
 }
 
@@ -141,19 +132,19 @@
 }
 
 - (NSString *)deleteButtonText {
-    return MWLocalizedString(@"history-clear-all", nil);
+    return WMFLocalizedStringWithDefaultValue(@"history-clear-all", nil, nil, @"Clear", @"Text of the button shown at the top of history which deletes all history\n{{Identical|Clear}}");
 }
 
 - (NSString *)deleteAllConfirmationText {
-    return MWLocalizedString(@"history-clear-confirmation-heading", nil);
+    return WMFLocalizedStringWithDefaultValue(@"history-clear-confirmation-heading", nil, nil, @"Are you sure you want to delete all your recent items?", @"Heading text of delete all confirmation dialog");
 }
 
 - (NSString *)deleteText {
-    return MWLocalizedString(@"history-clear-delete-all", nil);
+    return WMFLocalizedStringWithDefaultValue(@"history-clear-delete-all", nil, nil, @"Yes, delete all", @"Button text for confirming delete all action");
 }
 
 - (NSString *)deleteCancelText {
-    return MWLocalizedString(@"history-clear-cancel", nil);
+    return WMFLocalizedStringWithDefaultValue(@"history-clear-cancel", nil, nil, @"Cancel", @"Button text for cancelling delete all action\n{{Identical|Cancel}}");
 }
 
 - (NSURL *)urlAtIndexPath:(NSIndexPath *)indexPath {
@@ -164,7 +155,7 @@
     return YES;
 }
 
-- (void)deleteItemAtIndexPath:(NSIndexPath*)indexPath{
+- (void)deleteItemAtIndexPath:(NSIndexPath *)indexPath {
     [[self historyList] removeEntryWithURL:[self urlAtIndexPath:indexPath]];
 }
 

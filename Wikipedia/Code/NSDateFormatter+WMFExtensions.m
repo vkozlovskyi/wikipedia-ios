@@ -1,3 +1,5 @@
+#import <WMF/NSDateFormatter+WMFExtensions.h>
+
 static NSString *const WMF_ISO8601_FORMAT = @"yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'";
 
 @implementation NSDateFormatter (WMFExtensions)
@@ -137,7 +139,7 @@ static NSString *const WMF_ISO8601_FORMAT = @"yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         _dateFormatter = [[NSDateFormatter alloc] init];
-        [_dateFormatter setLocalizedDateFormatFromTemplate:@"EEEEMMMMdd"];
+        [_dateFormatter setLocalizedDateFormatFromTemplate:@"EEEEMMMMd"];
     });
     return _dateFormatter;
 }

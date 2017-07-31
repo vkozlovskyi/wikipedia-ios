@@ -1,45 +1,40 @@
 import UIKit
-import MapKit
 import WMF
 
-class DebugAnnotation: NSObject, MKAnnotation {
-    public let coordinate: CLLocationCoordinate2D
-    public let title: String?
-    public let subtitle: String?
+class DebugAnnotation: MapAnnotation {
+    public var title: String?
+    public var subtitle: String?
     
-    
-    init?(coordinate: CLLocationCoordinate2D) {
+    override func setup() {
         self.title = nil
         self.subtitle = nil
-        self.coordinate = coordinate
     }
 }
 
-class ArticlePlace: NSObject, MKAnnotation {
-    public dynamic var coordinate: CLLocationCoordinate2D
+class ArticlePlace: MapAnnotation {
     public var nextCoordinate: CLLocationCoordinate2D?
     public let title: String?
     public let subtitle: String?
     public let articles: [WMFArticle]
-    public let identifier: String
+    public let identifier: Int
     
-    init?(coordinate: CLLocationCoordinate2D, nextCoordinate: CLLocationCoordinate2D?, articles: [WMFArticle], identifier: String) {
+    init?(coordinate: CLLocationCoordinate2D, nextCoordinate: CLLocationCoordinate2D?, articles: [WMFArticle], identifier: Int) {
         self.title = nil
         self.subtitle = nil
-        self.coordinate = coordinate
         self.nextCoordinate = nextCoordinate
         self.articles = articles
         self.identifier = identifier
+        super.init(coordinate: coordinate)
     }
     
-    public static func identifierForArticles(articles: [WMFArticle]) -> String {
-        return articles.map({ (article) -> Int in
+    public static func identifierForArticles(articles: [WMFArticle]) -> Int {
+        var hash = 0
+        for article in articles {
             guard let key = article.key else {
-                return 0
+                continue
             }
-            return key.hash
-        }).sorted().reduce("|") { (result, hash) -> String in
-            return result + "\(hash)|"
+            hash ^= key.hash
         }
+        return hash
     }
 }

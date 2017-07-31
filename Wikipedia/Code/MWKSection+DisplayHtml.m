@@ -1,6 +1,11 @@
 #import "MWKSection+DisplayHtml.h"
-#import "SessionSingleton.h"
-#import "NSString+WMFExtras.h"
+@import WMF.SessionSingleton;
+@import WMF.NSString_WMFExtras;
+@import WMF.MWKArticle;
+@import WMF.WMFMath;
+@import WMF.NSURL_WMFLinkParsing;
+@import WMF.WMFLocalization;
+@import WMF.WMFLogging;
 
 @implementation MWKSection (DisplayHtml)
 
@@ -14,7 +19,7 @@
     }
 
     if (!html) {
-        html = MWLocalizedString(@"article-unable-to-load-section", nil);
+        html = WMFLocalizedStringWithDefaultValue(@"article-unable-to-load-section", nil, nil, @"Unable to load this section. Try refreshing the article to see if it fixes the problem.", @"Displayed within the article content when a section fails to render for some reason.");
         ;
     }
 
@@ -59,7 +64,7 @@
     if (self.article.entityDescription.length == 0) {
         return @"";
     } else {
-        return [NSString stringWithFormat:@"<p id='entity_description'>%@</p>", [self.article.entityDescription wmf_stringByCapitalizingFirstCharacter]];
+        return [NSString stringWithFormat:@"<p id='entity_description'>%@</p>", [self.article.entityDescription wmf_stringByCapitalizingFirstCharacterUsingWikipediaLanguage:self.article.url.wmf_language]];
     }
 }
 
@@ -69,7 +74,7 @@
 
 - (NSString *)getEditPencilAnchor {
     return [NSString stringWithFormat:
-                         @"<a class='edit_section_button' data-action='edit_section' data-id='%d' id='edit_section_button_%d'></a>",
+                         @"<a class='edit_section_button' data-action='edit_section' onclick='window.webkit.messageHandlers.editClicked.postMessage({ sectionId: %d }); return false;' id='edit_section_button_%d'></a>",
                          self.sectionId,
                          self.sectionId];
 }

@@ -1,19 +1,8 @@
-#import "PiwikTracker+WMFExtensions.h"
-#import "NSBundle+WMFInfoUtils.h"
+#import <WMF/PiwikTracker+WMFExtensions.h>
+#import <WMF/NSBundle+WMFInfoUtils.h>
+#import <WMF/WMF-Swift.h>
 
 NS_ASSUME_NONNULL_BEGIN
-
-@implementation NSString (WMFAnalytics)
-
-- (NSString *)analyticsContext {
-    return self;
-}
-
-- (NSString *)analyticsContentType {
-    return self;
-}
-
-@end
 
 @implementation PiwikTracker (WMFExtensions)
 
@@ -86,7 +75,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)wmf_logActionShareInContext:(id<WMFAnalyticsContextProviding>)context
-                       contentType:(id<WMFAnalyticsContentTypeProviding>)contentType {
+                        contentType:(id<WMFAnalyticsContentTypeProviding>)contentType {
     [self wmf_sendEventWithCategory:[context analyticsContext]
                              action:@"Share"
                                name:[contentType analyticsContentType]

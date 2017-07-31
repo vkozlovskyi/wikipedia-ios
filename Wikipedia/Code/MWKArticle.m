@@ -1,10 +1,8 @@
-#import "MWKCitation.h"
 #import "MWKSection+DisplayHtml.h"
-#import "WMFImageURLParsing.h"
-#import <hpple/TFHpple.h>
-#import "WMFImageTagParser.h"
-#import "WMFImageTagList.h"
-#import "WMFImageTagList+ImageURLs.h"
+#import <WMF/WMFImageURLParsing.h>
+#import <WMF/WMFImageTagParser.h>
+#import <WMF/WMFImageTagList.h>
+#import <WMF/WMFImageTagList+ImageURLs.h>
 #import <WMF/WMF-Swift.h>
 
 @import CoreText;
@@ -44,7 +42,6 @@ static MWKArticleSchemaVersion const MWKArticleCurrentSchemaVersion = MWKArticle
 
 @property (readwrite, strong, nonatomic) MWKImage *thumbnail;
 @property (readwrite, strong, nonatomic) MWKImage *image;
-@property (readwrite, strong, nonatomic /*, nullable*/) NSArray *citations;
 @property (readwrite, strong, nonatomic) NSString *summary;
 @property (nonatomic) CLLocationCoordinate2D coordinate;
 
@@ -123,7 +120,7 @@ static MWKArticleSchemaVersion const MWKArticleCurrentSchemaVersion = MWKArticle
 
     dict[@"id"] = @(self.articleId);
     dict[@"languagecount"] = @(self.languagecount);
-    
+
     dict[@"ns"] = @(self.ns);
 
     [dict wmf_maybeSetObject:self.displaytitle forKey:@"displaytitle"];
@@ -142,12 +139,14 @@ static MWKArticleSchemaVersion const MWKArticleCurrentSchemaVersion = MWKArticle
     dict[@"mainpage"] = @(self.isMain);
 
     [dict wmf_maybeSetObject:self.acceptLanguageRequestHeader forKey:@"acceptLanguageRequestHeader"];
-    
+
     CLLocationCoordinate2D coordinate = self.coordinate;
     if (CLLocationCoordinate2DIsValid(coordinate)) {
-        [dict wmf_maybeSetObject:@{@"lat": @(coordinate.latitude), @"lon": @(coordinate.longitude)} forKey:@"coordinates"];
+        [dict wmf_maybeSetObject:@{ @"lat": @(coordinate.latitude),
+                                    @"lon": @(coordinate.longitude) }
+                          forKey:@"coordinates"];
     }
-    
+
     return [dict copy];
 }
 
@@ -159,7 +158,7 @@ static MWKArticleSchemaVersion const MWKArticleCurrentSchemaVersion = MWKArticle
     self.lastmodifiedby = [self requiredUser:@"lastmodifiedby" dict:dict];
     self.articleId = [[self requiredNumber:@"id" dict:dict] intValue];
     self.languagecount = [[self requiredNumber:@"languagecount" dict:dict] intValue];
-    
+
     self.ns = [[self optionalNumber:@"ns" dict:dict] integerValue];
 
     //We are getting crashes because of the protection status.
@@ -213,13 +212,13 @@ static MWKArticleSchemaVersion const MWKArticleCurrentSchemaVersion = MWKArticle
     if ([sectionsData count] > 0) {
         self.sections = [[MWKSectionList alloc] initWithArticle:self sections:sectionsData];
     }
-    
+
     id coordinates = dict[@"coordinates"];
     id coordinateDictionary = coordinates;
     if ([coordinates isKindOfClass:[NSArray class]]) {
         coordinateDictionary = [coordinates firstObject];
     }
-    
+
     CLLocationCoordinate2D coordinate = kCLLocationCoordinate2DInvalid;
     if ([coordinateDictionary isKindOfClass:[NSDictionary class]]) {
         id lat = coordinateDictionary[@"lat"];
@@ -438,10 +437,14 @@ static MWKArticleSchemaVersion const MWKArticleCurrentSchemaVersion = MWKArticle
     [imageURLs addObjectsFromArray:[self schemelessURLsRejectingNilURLs:thumbURLs]];
 
     NSURL *articleImageURL = [NSURL wmf_optionalURLWithString:self.imageURL];
-    [imageURLs wmf_safeAddObject:articleImageURL];
+    if (articleImageURL) {
+        [imageURLs addObject:articleImageURL];
+    }
 
     NSURL *articleThumbnailURL = [NSURL wmf_optionalURLWithString:self.thumbnailURL];
-    [imageURLs wmf_safeAddObject:articleThumbnailURL];
+    if (articleImageURL) {
+        [imageURLs addObject:articleThumbnailURL];
+    }
 
 #if !defined(NS_BLOCK_ASSERTIONS)
     for (NSURL *url in imageURLs) {
@@ -453,34 +456,6 @@ static MWKArticleSchemaVersion const MWKArticleCurrentSchemaVersion = MWKArticle
     return [imageURLs wmf_reject:^BOOL(id obj) {
         return [obj isEqual:[NSNull null]];
     }];
-}
-
-#pragma mark Citations
-
-static NSString *const WMFArticleReflistColumnSelector = @"/html/body/*[contains(@class,'reflist')]//*[contains(@class, 'references')]/li";
-
-- (NSArray *)citations {
-    if (!_citations) {
-        __block NSArray *referenceListItems;
-        [self.sections.entries enumerateObjectsWithOptions:NSEnumerationReverse
-                                                usingBlock:^(MWKSection *section, NSUInteger idx, BOOL *stop) {
-                                                    referenceListItems = [section elementsInTextMatchingXPath:WMFArticleReflistColumnSelector];
-                                                    if (referenceListItems.count > 0) {
-                                                        *stop = YES;
-                                                    }
-                                                }];
-        if (!referenceListItems) {
-            DDLogWarn(@"Failed to parse reflist"); // Can't reference self here, causes infinite loop
-            return nil;
-        }
-        _citations = [[referenceListItems wmf_map:^MWKCitation *(TFHppleElement *el) {
-            return [[MWKCitation alloc] initWithCitationIdentifier:el.attributes[@"id"]
-                                                           rawHTML:el.raw];
-        }] wmf_reject:^BOOL(id obj) {
-            return WMF_IS_EQUAL(obj, [NSNull null]);
-        }];
-    }
-    return _citations;
 }
 
 #pragma mark Section Paragraphs

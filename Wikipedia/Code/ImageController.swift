@@ -98,7 +98,7 @@ open class ImageController : NSObject {
         self.permanentStorageDirectory = permanentStorageDirectory
         memoryCache = NSCache<NSString, Image>()
         memoryCache.totalCostLimit = 10000000 //pixel count
-        let bundle = Bundle(identifier: "org.wikimedia.WMF")!
+        let bundle = Bundle.wmf
         let modelURL = bundle.url(forResource: "Cache", withExtension: "momd")!
         let model = NSManagedObjectModel(contentsOf: modelURL)!
         let containerURL = permanentStorageDirectory
@@ -483,6 +483,7 @@ open class ImageController : NSObject {
     
     
     public func fetchImage(withURL url: URL?, priority: Float, failure: @escaping (Error) -> Void, success: @escaping (ImageDownload) -> Void) {
+        assert(Thread.isMainThread)
         guard let url = url else {
             failure(ImageControllerError.invalidOrEmptyURL)
             return
@@ -493,7 +494,9 @@ open class ImageController : NSObject {
         }
         fetchData(withURL: url, priority: priority, failure: failure) { (data, response) in
             guard let image = self.createImage(data: data, mimeType: response.mimeType) else {
-                failure(ImageControllerError.invalidResponse)
+                DispatchQueue.main.async {
+                    failure(ImageControllerError.invalidResponse)
+                }
                 return
             }
             self.addToMemoryCache(image, url: url)
@@ -583,8 +586,11 @@ open class ImageController : NSObject {
     public func removeLegacyCache() {
         do {
             try fileManager.removeItem(at: legacyCacheFolderURL)
-        } catch let error {
-            DDLogError("Error migrating from legacy cache \(error)")
+        } catch let error as NSError {
+            guard error.domain != NSCocoaErrorDomain || error.code != NSFileNoSuchFileError else {
+                return
+            }
+            DDLogError("Error removing legacy cache \(error)")
         }
     }
 }

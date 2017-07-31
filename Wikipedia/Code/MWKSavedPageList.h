@@ -1,5 +1,4 @@
-#import <Foundation/Foundation.h>
-
+@import Foundation;
 @class WMFArticle, MWKDataStore;
 
 NS_ASSUME_NONNULL_BEGIN
@@ -24,6 +23,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (BOOL)isSaved:(NSURL *)url;
 
 #pragma mark - Update Methods
+
+/**
+ * Toggle the save state for the article with `key`.
+ *
+ * @param key to toggle state for, either saving or un-saving it. Key is a standardized version of the article URL obtained by the key property on WMFArticle or from a URL with wmf_articleDatabaseKey
+ * @return whether or not the key is now saved
+ */
+- (BOOL)toggleSavedPageForKey:(NSString *)key;
 
 /**
  * Toggle the save state for `url`.
@@ -55,7 +62,6 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - Migration
 
 - (void)migrateLegacyDataIfNeeded;
-
 
 @end
 

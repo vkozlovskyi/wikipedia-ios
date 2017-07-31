@@ -1,16 +1,15 @@
 #import "PreviewAndSaveViewController.h"
 #import "PreviewHtmlFetcher.h"
 #import "WikiTextSectionUploader.h"
-#import "SessionSingleton.h"
+#import <WMF/SessionSingleton.h>
 #import "PreviewWebViewContainer.h"
 #import "PaddedLabel.h"
-#import "NSString+WMFExtras.h"
 #import "MenuButton.h"
 #import "EditSummaryViewController.h"
 #import "PreviewLicenseView.h"
 #import "UIScrollView+ScrollSubviewToLocation.h"
 #import "AbuseFilterAlert.h"
-#import "MWLanguageInfo.h"
+#import <WMF/MWLanguageInfo.h>
 #import "UIViewController+WMFStoryboardUtilities.h"
 #import "UIBarButtonItem+WMFButtonConvenience.h"
 #import "SavedPagesFunnel.h"
@@ -18,12 +17,9 @@
 #import "WMFOpenExternalLinkDelegateProtocol.h"
 #import "Wikipedia-Swift.h"
 #import "UIViewController+WMFOpenExternalUrl.h"
-#import <Masonry/Masonry.h>
-#import "AFHTTPSessionManager+WMFCancelAll.h"
+@import Masonry;
+#import <WMF/AFHTTPSessionManager+WMFCancelAll.h>
 #import "WKWebView+LoadAssetsHtml.h"
-
-#define TERMS_LINK @"https://wikimediafoundation.org/wiki/Terms_of_Use"
-#define LICENSE_LINK @"https://creativecommons.org/licenses/by-sa/3.0/"
 
 typedef NS_ENUM(NSInteger, WMFCannedSummaryChoices) {
     CANNED_SUMMARY_TYPOS,
@@ -110,11 +106,14 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 }
 
 - (void)wmf_showAlertForTappedAnchorHref:(NSString *)href {
+    NSString *title = WMFLocalizedStringWithDefaultValue(@"wikitext-preview-link-preview-title", nil, nil, @"Link preview", @"Title for link preview popup");
+    NSString *message = [NSString localizedStringWithFormat:WMFLocalizedStringWithDefaultValue(@"wikitext-preview-link-preview-description", nil, nil, @"This link leads to '%1$@'", @"Description of the link URL. %1$@ is the URL."), href];
+
     UIAlertController *alertController =
-        [UIAlertController alertControllerWithTitle:href
-                                            message:nil
+        [UIAlertController alertControllerWithTitle:title
+                                            message:message
                                      preferredStyle:UIAlertControllerStyleAlert];
-    [alertController addAction:[UIAlertAction actionWithTitle:MWLocalizedString(@"button-ok", nil)
+    [alertController addAction:[UIAlertAction actionWithTitle:WMFLocalizedStringWithDefaultValue(@"button-ok", nil, nil, @"OK", @"Button text for ok button used in various places\n{{Identical|OK}}")
                                                         style:UIAlertActionStyleDefault
                                                       handler:nil]];
     [self presentViewController:alertController
@@ -194,7 +193,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 
     self.buttonLeftCaret = [UIBarButtonItem wmf_buttonType:WMFButtonTypeCaretLeft target:self action:@selector(goBack)];
 
-    self.buttonSave = [[UIBarButtonItem alloc] initWithTitle:MWLocalizedString(@"button-publish", nil) style:UIBarButtonItemStylePlain target:self action:@selector(goForward)];
+    self.buttonSave = [[UIBarButtonItem alloc] initWithTitle:WMFLocalizedStringWithDefaultValue(@"button-publish", nil, nil, @"Publish", @"Button text for publish button used in various places.\n{{Identical|Publish}}") style:UIBarButtonItemStylePlain target:self action:@selector(goForward)];
 
     self.mode = PREVIEW_MODE_EDIT_WIKITEXT_PREVIEW;
 
@@ -202,7 +201,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 
     self.previewLabel.font = [UIFont boldSystemFontOfSize:15.0];
 
-    self.previewLabel.text = MWLocalizedString(@"navbar-title-mode-edit-wikitext-preview", nil);
+    self.previewLabel.text = WMFLocalizedStringWithDefaultValue(@"navbar-title-mode-edit-wikitext-preview", nil, nil, @"Preview", @"Header text shown when wikitext changes are being previewed.\n{{Identical|Preview}}");
 
     [self.previewLabel addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(previewLabelTapped:)]];
 
@@ -303,7 +302,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 
 - (void)setupEditSummaryContainerSubviews {
     // Setup the canned edit summary buttons.
-    UIColor *color = [UIColor colorWithRed:0.03 green:0.48 blue:0.92 alpha:1.0];
+    UIColor *color = [UIColor wmf_blue];
     UIEdgeInsets padding = UIEdgeInsetsMake(6, 10, 6, 10);
     UIEdgeInsets margin = UIEdgeInsetsMake(8, 0, 8, 0);
     CGFloat fontSize = 14.0;
@@ -322,10 +321,10 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
         return button;
     };
 
-    self.cannedSummary01 = setupButton(MWLocalizedString(@"edit-summary-choice-fixed-typos", nil), CANNED_SUMMARY_TYPOS);
-    self.cannedSummary02 = setupButton(MWLocalizedString(@"edit-summary-choice-fixed-grammar", nil), CANNED_SUMMARY_GRAMMAR);
-    self.cannedSummary03 = setupButton(MWLocalizedString(@"edit-summary-choice-linked-words", nil), CANNED_SUMMARY_LINKS);
-    self.cannedSummary04 = setupButton(MWLocalizedString(@"edit-summary-choice-other", nil), CANNED_SUMMARY_OTHER);
+    self.cannedSummary01 = setupButton(WMFLocalizedStringWithDefaultValue(@"edit-summary-choice-fixed-typos", nil, nil, @"Fixed typo", @"Button text for quick 'fixed typos' edit summary selection"), CANNED_SUMMARY_TYPOS);
+    self.cannedSummary02 = setupButton(WMFLocalizedStringWithDefaultValue(@"edit-summary-choice-fixed-grammar", nil, nil, @"Fixed grammar", @"Button text for quick 'improved grammar' edit summary selection"), CANNED_SUMMARY_GRAMMAR);
+    self.cannedSummary03 = setupButton(WMFLocalizedStringWithDefaultValue(@"edit-summary-choice-linked-words", nil, nil, @"Added links", @"Button text for quick 'link addition' edit summary selection"), CANNED_SUMMARY_LINKS);
+    self.cannedSummary04 = setupButton(WMFLocalizedStringWithDefaultValue(@"edit-summary-choice-other", nil, nil, @"Other", @"Button text for quick \"other\" edit summary selection.\n{{Identical|Other}}"), CANNED_SUMMARY_OTHER);
 
     // Setup the canned edit summaries label.
     self.aboutLabel = [[UILabel alloc] init];
@@ -334,7 +333,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
     self.aboutLabel.textColor = [UIColor darkGrayColor];
     self.aboutLabel.lineBreakMode = NSLineBreakByWordWrapping;
     self.aboutLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    self.aboutLabel.text = MWLocalizedString(@"edit-summary-title", nil);
+    self.aboutLabel.text = WMFLocalizedStringWithDefaultValue(@"edit-summary-title", nil, nil, @"How did you improve the article?", @"Title for edit summary area of the preview page");
     self.aboutLabel.textAlignment = NSTextAlignmentNatural;
 
     [self.editSummaryContainer addSubview:self.aboutLabel];
@@ -491,8 +490,8 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
                             [self.funnel logCaptchaFailure];
                         }
 
-                        NSURL* captchaUrl = [[NSURL alloc] initWithString:error.userInfo[@"captchaUrl"]];
-                        NSString* captchaId = error.userInfo[@"captchaId"];
+                        NSURL *captchaUrl = [[NSURL alloc] initWithString:error.userInfo[@"captchaUrl"]];
+                        NSString *captchaId = error.userInfo[@"captchaId"];
                         [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
                         self.captchaViewController.captcha = [[WMFCaptcha alloc] initWithCaptchaID:captchaId captchaURL:captchaUrl];
                         [self revealCaptcha];
@@ -538,14 +537,14 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 }
 
 - (void)preview {
-    [[WMFAlertManager sharedInstance] showAlert:MWLocalizedString(@"wikitext-preview-changes", nil) sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
+    [[WMFAlertManager sharedInstance] showAlert:WMFLocalizedStringWithDefaultValue(@"wikitext-preview-changes", nil, nil, @"Retrieving preview of your changes...", @"Alert text shown when getting preview of user changes to wikitext") sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
 
     [[QueuesSingleton sharedInstance].sectionPreviewHtmlFetchManager wmf_cancelAllTasksWithCompletionHandler:^{
         self.previewHtmlFetcher =
-        [[PreviewHtmlFetcher alloc] initAndFetchHtmlForWikiText:self.wikiText
-                                                     articleURL:self.section.url
-                                                    withManager:[QueuesSingleton sharedInstance].sectionPreviewHtmlFetchManager
-                                             thenNotifyDelegate:self];
+            [[PreviewHtmlFetcher alloc] initAndFetchHtmlForWikiText:self.wikiText
+                                                         articleURL:self.section.url
+                                                        withManager:[QueuesSingleton sharedInstance].sectionPreviewHtmlFetchManager
+                                                 thenNotifyDelegate:self];
     }];
 }
 
@@ -555,7 +554,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
     // and your login session has expired), need to pop up alert asking user if they
     // want to log in before continuing with their edit
 
-    [[WMFAlertManager sharedInstance] showAlert:MWLocalizedString(@"wikitext-upload-save", nil) sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
+    [[WMFAlertManager sharedInstance] showAlert:WMFLocalizedStringWithDefaultValue(@"wikitext-upload-save", nil, nil, @"Publishing...", @"Alert text shown when changes to section wikitext are being published\n{{Identical|Publishing}}") sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
 
     [self.funnel logSaveAttempt];
     if (self.savedPagesFunnel) {
@@ -571,27 +570,30 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
         // Only the domain is used to actually fetch the token, the other values are
         // parked in EditTokenFetcher so the actual uploader can have quick read-only
         // access to the exact params which kicked off the token request.
-        
+
         NSURL *url = [[SessionSingleton sharedInstance] urlForLanguage:editURL.wmf_language];
         self.editTokenFetcher = [[WMFAuthTokenFetcher alloc] init];
         @weakify(self)
-        [self.editTokenFetcher fetchTokenOfType:WMFAuthTokenTypeCsrf siteURL:url success:^(WMFAuthToken* result){
-            @strongify(self)
+            [self.editTokenFetcher fetchTokenOfType:WMFAuthTokenTypeCsrf
+                siteURL:url
+                success:^(WMFAuthToken *result) {
+                    @strongify(self)
 
-            self.wikiTextSectionUploader =
-            [[WikiTextSectionUploader alloc] initAndUploadWikiText:self.wikiText
-                                                     forArticleURL:editURL
-                                                           section:[NSString stringWithFormat:@"%d", self.section.sectionId]
-                                                           summary:[self getSummary]
-                                                         captchaId:self.captchaViewController.captcha.captchaID
-                                                       captchaWord:self.captchaViewController.solution
-                                                             token:result.token
-                                                       withManager:[QueuesSingleton sharedInstance].sectionWikiTextUploadManager
-                                                thenNotifyDelegate:self];
+                        self.wikiTextSectionUploader =
+                        [[WikiTextSectionUploader alloc] initAndUploadWikiText:self.wikiText
+                                                                 forArticleURL:editURL
+                                                                       section:[NSString stringWithFormat:@"%d", self.section.sectionId]
+                                                                       summary:[self getSummary]
+                                                                     captchaId:self.captchaViewController.captcha.captchaID
+                                                                   captchaWord:self.captchaViewController.solution
+                                                                         token:result.token
+                                                                   withManager:[QueuesSingleton sharedInstance].sectionWikiTextUploadManager
+                                                            thenNotifyDelegate:self];
 
-        } failure:^(NSError* error){
-            [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
-        }];
+                }
+                failure:^(NSError *error) {
+                    [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
+                }];
 
     }];
 }
@@ -615,18 +617,17 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 }
 
 - (BOOL)textFieldShouldReturn:(UITextField *)textField {
-    if(self.captchaViewController.solution.length > 0){
+    if (self.captchaViewController.solution.length > 0) {
         [self save];
     }
     return YES;
 }
 
-- (NSURL * _Nonnull)captchaSiteURL {
+- (NSURL *_Nonnull)captchaSiteURL {
     return [SessionSingleton sharedInstance].currentArticleSiteURL;
 }
 
 - (void)captchaReloadPushed:(id)sender {
-
 }
 
 - (BOOL)captchaHideSubtitle {
@@ -637,7 +638,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
     [self save];
 }
 
-- (void)captchaSolutionChanged:(id)sender solutionText:(nullable NSString*)solutionText{
+- (void)captchaSolutionChanged:(id)sender solutionText:(nullable NSString *)solutionText {
     [self highlightCaptchaSubmitButton:(solutionText.length == 0) ? NO : YES];
 }
 
@@ -667,17 +668,22 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 
 - (void)previewLicenseViewTermsLicenseLabelWasTapped:(PreviewLicenseView *)previewLicenseview {
     UIAlertController *sheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleAlert];
-    [sheet addAction:[UIAlertAction actionWithTitle:MWLocalizedString(@"wikitext-upload-save-terms-name", nil)
+    [sheet addAction:[UIAlertAction actionWithTitle:WMFLicenses.localizedSaveTermsTitle
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction *_Nonnull action) {
-                                                [self wmf_openExternalUrl:[NSURL URLWithString:TERMS_LINK]];
+                                                [self wmf_openExternalUrl:WMFLicenses.saveTermsURL];
                                             }]];
-    [sheet addAction:[UIAlertAction actionWithTitle:MWLocalizedString(@"wikitext-upload-save-license-name", nil)
+    [sheet addAction:[UIAlertAction actionWithTitle:WMFLicenses.localizedCCBYSA3Title
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction *_Nonnull action) {
-                                                [self wmf_openExternalUrl:[NSURL URLWithString:LICENSE_LINK]];
+                                                [self wmf_openExternalUrl:WMFLicenses.CCBYSA3URL];
                                             }]];
-    [sheet addAction:[UIAlertAction actionWithTitle:MWLocalizedString(@"open-link-cancel", nil) style:UIAlertActionStyleCancel handler:NULL]];
+    [sheet addAction:[UIAlertAction actionWithTitle:WMFLicenses.localizedGDFLTitle
+                                              style:UIAlertActionStyleDefault
+                                            handler:^(UIAlertAction *_Nonnull action) {
+                                                [self wmf_openExternalUrl:WMFLicenses.GDFLURL];
+                                            }]];
+    [sheet addAction:[UIAlertAction actionWithTitle:WMFLocalizedStringWithDefaultValue(@"open-link-cancel", nil, nil, @"Cancel", @"Text for cancel button in popup menu of terms/license link options\n{{Identical|Cancel}}") style:UIAlertActionStyleCancel handler:NULL]];
     [self presentViewController:sheet animated:YES completion:NULL];
 }
 

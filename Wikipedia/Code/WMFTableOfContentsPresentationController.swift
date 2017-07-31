@@ -46,8 +46,8 @@ open class WMFTableOfContentsPresentationController: UIPresentationController {
         button.tintColor = UIColor.black
         button.addTarget(self, action: #selector(WMFTableOfContentsPresentationController.didTap(_:)), for: .touchUpInside)
         
-        button.accessibilityHint = localizedStringForKeyFallingBackOnEnglish("table-of-contents-close-accessibility-hint")
-        button.accessibilityLabel = localizedStringForKeyFallingBackOnEnglish("table-of-contents-close-accessibility-label")
+        button.accessibilityHint = WMFLocalizedString("table-of-contents-close-accessibility-hint", value:"Close", comment:"Accessibility hint for closing table of contents\n{{Identical|Close}}")
+        button.accessibilityLabel = WMFLocalizedString("table-of-contents-close-accessibility-label", value:"Close Table of contents", comment:"Accessibility label for closing table of contents")
 
         return button
     }()
@@ -71,16 +71,10 @@ open class WMFTableOfContentsPresentationController: UIPresentationController {
             _ = make?.width.equalTo()(44)
             _ = make?.height.equalTo()(44)
             switch self.displaySide {
+            case .right:
+                fallthrough
             case .left:
                 _ = make?.trailing.equalTo()(self.closeButton.superview!.mas_trailing)?.offset()(0 - self.closeButtonLeadingPadding)
-                if(self.traitCollection.verticalSizeClass == .compact){
-                    _ = make?.top.equalTo()(self.closeButtonTopPadding)
-                }else{
-                    _ = make?.top.equalTo()(self.closeButtonTopPadding + self.statusBarEstimatedHeight)
-                }
-                break
-            case .right:
-                _ = make?.leading.equalTo()(self.closeButton.superview!.mas_leading)?.offset()(self.closeButtonLeadingPadding)
                 if(self.traitCollection.verticalSizeClass == .compact){
                     _ = make?.top.equalTo()(self.closeButtonTopPadding)
                 }else{

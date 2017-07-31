@@ -10,9 +10,7 @@
 
 - (void)wmf_setLanguage:(MWLanguageInfo *)languageInfo;
 
-- (void)wmf_setPageProtected;
-
-- (void)wmf_setBottomPadding:(NSInteger)bottomPadding;
+- (void)wmf_setPageProtected:(BOOL)isProtected;
 
 - (void)wmf_scrollToFragment:(NSString *)fragment;
 

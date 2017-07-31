@@ -1,6 +1,7 @@
 #import "NSAttributedString+WMFSavedPagesAttributedStrings.h"
 #import "NSString+FormattedAttributedString.h"
-#import "NSString+WMFExtras.h"
+@import WMF.NSString_WMFExtras;
+@import WMF.UIColor_WMFHexColor;
 
 static NSInteger const kTitleColor = 0x000000;
 static CGFloat const kTitleFontSize = 21.0f;
@@ -21,7 +22,7 @@ static NSString *const kFormatString = @"$1$2$3$4$5";
 + (NSAttributedString *)wmf_attributedStringWithTitle:(NSString *)title
                                           description:(NSString *)description
                                              language:(NSString *)language {
-    description = [description wmf_stringByCapitalizingFirstCharacter];
+    description = [description wmf_stringByCapitalizingFirstCharacterUsingWikipediaLanguage:language];
 
     // Shrink super long titles.
     CGFloat titleSizeMultiplier = 1.0f;

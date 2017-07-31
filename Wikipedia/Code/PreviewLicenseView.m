@@ -5,10 +5,6 @@
 #import "UIFont+WMFStyle.h"
 #import "Wikipedia-Swift.h"
 
-#define PREVIEW_BLUE_COLOR [UIColor colorWithRed:0.2 green:0.4784 blue:1.0 alpha:1.0]
-
-//#import "NSString+WMFExtras.h"
-
 @interface PreviewLicenseView ()
 
 @property (weak, nonatomic) IBOutlet NSLayoutConstraint *topDividerHeight;
@@ -36,11 +32,11 @@
     self.licenseTitleLabel.font = [UIFont systemFontOfSize:11.0];
     self.licenseLoginLabel.font = [UIFont systemFontOfSize:11.0];
 
-    self.licenseTitleLabel.text = MWLocalizedString(@"wikitext-upload-save-terms-and-license", nil);
+    self.licenseTitleLabel.text = WMFLocalizedStringWithDefaultValue(@"wikitext-upload-save-terms-cc-by-sa-and-gdfl", nil, nil, @"By publishing changes, you agree to the %1$@and agree to release your contribution under the %2$@ and %3$@ license.", @"Button text for information about the Terms of Use and edit licenses. Parameters:\n* %1$@ - 'Terms of Use' link ([[Wikimedia:Wikipedia-ios-wikitext-upload-save-terms-name]])\n* %2$@ - license name link 1\n* %3$@ - license name link 2");
     [self styleLinks:self.licenseTitleLabel];
     [self.licenseTitleLabel addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(termsLicenseLabelTapped:)]];
 
-    self.licenseLoginLabel.text = MWLocalizedString(@"wikitext-upload-save-anonymously-warning", nil);
+    self.licenseLoginLabel.text = WMFLocalizedStringWithDefaultValue(@"wikitext-upload-save-anonymously-warning", nil, nil, @"Edits will be attributed to the IP address of your device. If you %1$@ you will have more privacy.", @"Button sub-text informing user or draw-backs of not signing in before saving wikitext. Parameters:\n* %1$@ - sign in button text");
     [self underlineSignIn:self.licenseLoginLabel];
 
     self.licenseCCLabel.attributedText = [self getCCIconAttributedString];
@@ -79,14 +75,11 @@
     NSDictionary *linkAttributes =
         @{
            //NSUnderlineStyleAttributeName: @(NSUnderlineStyleSingle),
-           NSForegroundColorAttributeName: PREVIEW_BLUE_COLOR
+           NSForegroundColorAttributeName: [UIColor wmf_blue]
         };
 
-    label.attributedText =
-        [label.text attributedStringWithAttributes:baseAttributes
-                               substitutionStrings:@[MWLocalizedString(@"wikitext-upload-save-terms-name", nil),
-                                                     MWLocalizedString(@"wikitext-upload-save-license-name", nil)]
-                            substitutionAttributes:@[linkAttributes, linkAttributes]];
+    label.attributedText = [label.text attributedStringWithAttributes:baseAttributes
+                                                  substitutionStrings:@[WMFLicenses.localizedSaveTermsTitle, WMFLicenses.localizedCCBYSA3Title, WMFLicenses.localizedGDFLTitle] substitutionAttributes:@[linkAttributes, linkAttributes, linkAttributes]];
 }
 
 - (void)termsLicenseLabelTapped:(UITapGestureRecognizer *)recognizer {
@@ -105,12 +98,12 @@
     NSDictionary *substitutionAttributes =
         @{
             NSUnderlineStyleAttributeName: @(NSUnderlineStyleSingle),
-            NSForegroundColorAttributeName: PREVIEW_BLUE_COLOR
+            NSForegroundColorAttributeName: [UIColor wmf_blue]
         };
 
     label.attributedText =
         [label.text attributedStringWithAttributes:baseAttributes
-                               substitutionStrings:@[MWLocalizedString(@"wikitext-upload-save-sign-in", nil)]
+                               substitutionStrings:@[WMFLocalizedStringWithDefaultValue(@"wikitext-upload-save-sign-in", nil, nil, @"Log in", @"{{Identical|Log in}}")]
                             substitutionAttributes:@[substitutionAttributes]];
 }
 
@@ -118,7 +111,7 @@
     return [[NSAttributedString alloc] initWithString:WIKIGLYPH_CC
                                            attributes:@{
                                                NSFontAttributeName: [UIFont wmf_glyphFontOfSize:42.0],
-                                               NSForegroundColorAttributeName: PREVIEW_BLUE_COLOR,
+                                               NSForegroundColorAttributeName: [UIColor wmf_blue],
                                                NSBaselineOffsetAttributeName: @1.5
                                            }];
 }

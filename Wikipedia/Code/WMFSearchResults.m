@@ -1,8 +1,6 @@
 #import "WMFSearchResults_Internal.h"
-#import "MWKArticle.h"
-#import "UIView+WMFDefaultNib.h"
-#import "MWKSearchResult.h"
 #import "MWKSearchRedirectMapping.h"
+@import WMF;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -96,8 +94,18 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)mergeResultsFromModel:(WMFSearchResults *)searchResults {
+    NSMutableSet *displayTitlesOfExistingResults = [NSMutableSet new];
+    for (MWKSearchResult *obj in self.results) {
+        if (obj.displayTitle) {
+            [displayTitlesOfExistingResults addObject:obj.displayTitle];
+        }
+    }
+
     NSArray *newResults = [searchResults.results wmf_reject:^BOOL(MWKSearchResult *obj) {
-        return [self.results containsObject:obj];
+        if (obj.displayTitle) {
+            return [displayTitlesOfExistingResults containsObject:obj.displayTitle];
+        }
+        return YES;
     }];
     [self.mutableResults addObjectsFromArray:newResults];
 }
