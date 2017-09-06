@@ -324,7 +324,7 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
         //update imageTagContents by changing the src, disabling the srcset, and adding other attributes used for scaling
         NSString *newImageTagContents = [self stringByUpdatingImageTagAttributesForProxyAndScalingInImageTagContents:imageTagContents withBaseURL:baseURL targetImageWidth:targetImageWidth];
         //append the updated image tag to the new string
-        [newHTMLString appendString:[@[@"<img ", newImageTagContents, @">"] componentsJoinedByString:@""]];
+        [newHTMLString appendString:[@[@"<span ", newImageTagContents, @">"] componentsJoinedByString:@""]];
 
         location = range.location + range.length;
     }];
@@ -356,17 +356,16 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
         if (src) {
             NSString *srcWithProxy = [self proxyURLForImageURLString:src].absoluteString;
             if (srcWithProxy) {
-                NSString *newSrcAttribute = [@[@"src=\"", srcWithProxy, @"\""] componentsJoinedByString:@""];
-                imageTag.src = newSrcAttribute;
-                newImageTagContents = [imageTag.imageTagContents mutableCopy];
+                [imageTag setValue:srcWithProxy forAttribute:@"src"];
+                newImageTagContents = [imageTag.placeholderTagContents mutableCopy];
             }
         }
     }
 
-    [newImageTagContents replaceOccurrencesOfString:@"srcset" withString:@"data-srcset-disabled" options:0 range:NSMakeRange(0, newImageTagContents.length)]; //disable the srcset since we put the correct resolution image in the src
+    [newImageTagContents replaceOccurrencesOfString:@"data-srcset" withString:@"data-data-srcset-disabled" options:0 range:NSMakeRange(0, newImageTagContents.length)]; //disable the srcset since we put the correct resolution image in the src
 
     if (resizedSrc) {
-        [newImageTagContents appendString:@" data-image-gallery=\"true\""]; //the javascript looks for this to know if it should attempt widening
+        [newImageTagContents appendString:@" data-data-image-gallery=\"true\""]; //the javascript looks for this to know if it should attempt widening
     }
 
     return newImageTagContents;

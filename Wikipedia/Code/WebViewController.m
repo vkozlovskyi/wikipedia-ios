@@ -236,14 +236,7 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 - (void)handleImageClickedScriptMessage:(NSDictionary *)messageDict {
     [self wmf_dismissReferencePopoverAnimated:NO
                                    completion:^{
-                                       WMFImageTag *imageTagClicked = [[WMFImageTag alloc] initWithSrc:messageDict[@"src"]
-                                                                                                srcset:nil
-                                                                                                   alt:nil
-                                                                                                 width:messageDict[@"width"]
-                                                                                                height:messageDict[@"height"]
-                                                                                         dataFileWidth:messageDict[@"data-file-width"]
-                                                                                        dataFileHeight:messageDict[@"data-file-height"]
-                                                                                               baseURL:nil];
+                                       WMFImageTag *imageTagClicked = [[WMFImageTag alloc] initWithAttributes:messageDict baseURL:nil];
 
                                        if (imageTagClicked == nil) {
                                            //yes, this would have caught in the if below, but keeping this here in case that check ever goes away

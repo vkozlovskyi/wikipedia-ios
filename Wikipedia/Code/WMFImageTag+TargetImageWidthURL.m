@@ -22,7 +22,9 @@
     if (sizeFromSrcUrl != NSNotFound) {
 
         // One of these widths was set for us to even get here.
-        NSNumber *safeCanonicalWidthAssumption = self.dataFileWidth ? self.dataFileWidth : self.width;
+        NSString *dataFileWidthAttribute = self.attributes[@"data-file-width"];
+        NSString *widthAttribute = dataFileWidthAttribute ?: self.attributes[@"width"];
+        NSNumber *safeCanonicalWidthAssumption = @([widthAttribute integerValue]);
         NSString *canonicalExtension = [[[tagSrc stringByDeletingLastPathComponent] lastPathComponent] pathExtension];
 
         if ([canonicalExtension isEqualToString:@"svg"]) {
@@ -35,7 +37,7 @@
         NSInteger width = MAX(sizeFromSrcUrl, safeCanonicalWidthAssumption.integerValue);
         width = MIN(width, targetWidth);
 
-        if (width == self.dataFileWidth.integerValue) {
+        if (width == dataFileWidthAttribute.integerValue) {
             // The scaler wont scale raster images greater *or equal* to their canonical width.
             // So we need to get rid of "/thumb/" path component and "px-" size prefix last
             // path component, but only if we're actually dealing with a "thumb" scaled variant.
