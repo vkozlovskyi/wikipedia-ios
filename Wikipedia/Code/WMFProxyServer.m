@@ -361,7 +361,7 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
         [newImageTagContents replaceOccurrencesOfString:@"srcset" withString:@"data-srcset-disabled" options:0 range:NSMakeRange(0, newImageTagContents.length)]; //disable the srcset since we put the correct resolution image in the src
 
         if (resizedSrc) {
-            [newImageTagContents appendString:@" data-image-gallery=\"true\""]; //the javascript looks for this to know if it should attempt widening
+            [newImageTagContents appendString:@" data-data-image-gallery=\"true\""]; //the javascript looks for this to know if it should attempt widening
             //append the updated image tag to the new string
             NSString *percentageString = [NSString stringWithFormat:@"%lli", (long long)aspectPercentage];
             [newHTMLString appendString:[@[@"<span ", newImageTagContents, @"><span style=\"padding-top:", percentageString, @"%;\"></span></span"] componentsJoinedByString:@""]];
