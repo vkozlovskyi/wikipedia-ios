@@ -12,6 +12,8 @@ static CGSize const WMFImageTagMinimumSizeForGalleryInclusion = {64, 64};
 @property (nonatomic, copy, readonly) NSString *imageTagContents;
 @property (nonatomic, copy, readonly) NSString *placeholderTagContents;
 
+- (NSInteger)integerValueForAttribute:(nonnull NSString *)attribute;
+
 - (nullable instancetype)initWithAttributes:(nullable NSDictionary<NSString *, NSString *> *)attributes baseURL:(nullable NSURL *)baseURL NS_DESIGNATED_INITIALIZER;
 
 - (nullable instancetype)initWithImageTagContents:(NSString *)imageTagContents baseURL:(nullable NSURL *)baseURL;

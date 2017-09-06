@@ -80,11 +80,11 @@ NS_ASSUME_NONNULL_BEGIN
     return [self initWithAttributes:attributes baseURL:baseURL];
 }
 
-- (NSInteger)integerValueForAttributeKey:(nonnull NSString *)key {
-    if (!key) {
+- (NSInteger)integerValueForAttribute:(nonnull NSString *)attribute {
+    if (!attribute) {
         return 0;
     }
-    id value = self.attributes[key];
+    id value = self.attributes[attribute];
     if (![value respondsToSelector:@selector(integerValue)]) {
         return 0;
     }
@@ -103,11 +103,11 @@ NS_ASSUME_NONNULL_BEGIN
 
     return
         // Ensure images which are just used as tiny icons are not included in gallery.
-        [self integerValueForAttributeKey:@"width"] >= WMFImageTagMinimumSizeForGalleryInclusion.width &&
-        [self integerValueForAttributeKey:@"height"] >= WMFImageTagMinimumSizeForGalleryInclusion.height &&
+        [self integerValueForAttribute:@"width"] >= WMFImageTagMinimumSizeForGalleryInclusion.width &&
+        [self integerValueForAttribute:@"height"] >= WMFImageTagMinimumSizeForGalleryInclusion.height &&
         // Also make sure we only try to show them in the gallery if their canonical size is of sufficient resolution.
-        [self integerValueForAttributeKey:@"data-file-width"] >= WMFImageTagMinimumSizeForGalleryInclusion.width &&
-        [self integerValueForAttributeKey:@"data-file-height"] >= WMFImageTagMinimumSizeForGalleryInclusion.height;
+        [self integerValueForAttribute:@"data-file-width"] >= WMFImageTagMinimumSizeForGalleryInclusion.width &&
+        [self integerValueForAttribute:@"data-file-height"] >= WMFImageTagMinimumSizeForGalleryInclusion.height;
 }
 
 - (NSString *)description {
@@ -144,7 +144,7 @@ NS_ASSUME_NONNULL_BEGIN
         NSString *attributeString = [@[@" style=\"width:", width, @"px;\""] componentsJoinedByString:@""];
         newImageTagContents = [newImageTagContents stringByAppendingString:attributeString];
     }
-    newImageTagContents = [newImageTagContents stringByAppendingString:@"class=\"pagelib_lazy_load_placeholder pagelib_lazy_load_placeholder_pending\""];
+    newImageTagContents = [newImageTagContents stringByAppendingString:@" class=\"pagelib_lazy_load_placeholder pagelib_lazy_load_placeholder_pending\""];
 
     return newImageTagContents;
 }
