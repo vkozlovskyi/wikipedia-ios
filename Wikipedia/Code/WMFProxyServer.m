@@ -320,51 +320,54 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
         //append the next chunk that we didn't match on to the new string
         NSString *nonMatchingStringToAppend = [HTMLString substringWithRange:NSMakeRange(location, range.location - location)];
         [newHTMLString appendString:nonMatchingStringToAppend];
-        
+
         //update imageTagContents by changing the src, disabling the srcset, and adding other attributes used for scaling
-        
+
         NSInteger aspectPercentage = 100;
         NSMutableString *newImageTagContents = [imageTagContents mutableCopy];
-        
+
         NSString *resizedSrc = nil;
-        
+
         WMFImageTag *imageTag = [[WMFImageTag alloc] initWithImageTagContents:imageTagContents baseURL:baseURL];
-        
+
         if (imageTag != nil) {
             NSString *src = imageTag.src;
-            
+
             if ([imageTag isSizeLargeEnoughForGalleryInclusion]) {
                 resizedSrc = [[imageTag URLForTargetWidth:targetImageWidth] absoluteString];
                 if (resizedSrc) {
                     src = resizedSrc;
                 }
             }
-            
+
             if (src) {
                 NSString *srcWithProxy = [self proxyURLForImageURLString:src].absoluteString;
                 if (srcWithProxy) {
                     [imageTag setValue:srcWithProxy forAttribute:@"src"];
-                    newImageTagContents = [imageTag.placeholderTagContents mutableCopy];
+                    if (resizedSrc) {
+                        NSInteger width = [imageTag integerValueForAttribute:@"width"];
+                        NSInteger height = [imageTag integerValueForAttribute:@"height"];
+                        if (width > 0) {
+                            aspectPercentage = round(100.0 * height / width);
+                        }
+                        newImageTagContents = [imageTag.placeholderTagContents mutableCopy];
+                    } else {
+                        newImageTagContents = [imageTag.imageTagContents mutableCopy];
+                    }
                 }
             }
-            
-            NSInteger width = [imageTag integerValueForAttribute:@"width"];
-            NSInteger height = [imageTag integerValueForAttribute:@"height"];
-            
-            if (width > 0) {
-                aspectPercentage = round(100.0 * height / width);
-            }
-        }
-        
-        [newImageTagContents replaceOccurrencesOfString:@"data-srcset" withString:@"data-data-srcset-disabled" options:0 range:NSMakeRange(0, newImageTagContents.length)]; //disable the srcset since we put the correct resolution image in the src
-        
-        if (resizedSrc) {
-            [newImageTagContents appendString:@" data-data-image-gallery=\"true\""]; //the javascript looks for this to know if it should attempt widening
         }
 
-        //append the updated image tag to the new string
-        NSString *percentageString = [NSString stringWithFormat:@"%lli", (long long)aspectPercentage];
-        [newHTMLString appendString:[@[@"<span ", newImageTagContents, @"><span style=\"padding-top:", percentageString, @"%;\"></span></span"] componentsJoinedByString:@""]];
+        [newImageTagContents replaceOccurrencesOfString:@"srcset" withString:@"data-srcset-disabled" options:0 range:NSMakeRange(0, newImageTagContents.length)]; //disable the srcset since we put the correct resolution image in the src
+
+        if (resizedSrc) {
+            [newImageTagContents appendString:@" data-image-gallery=\"true\""]; //the javascript looks for this to know if it should attempt widening
+            //append the updated image tag to the new string
+            NSString *percentageString = [NSString stringWithFormat:@"%lli", (long long)aspectPercentage];
+            [newHTMLString appendString:[@[@"<span ", newImageTagContents, @"><span style=\"padding-top:", percentageString, @"%;\"></span></span"] componentsJoinedByString:@""]];
+        } else {
+            [newHTMLString appendString:[@[@"<img ", newImageTagContents, @">"] componentsJoinedByString:@""]];
+        }
 
         location = range.location + range.length;
     }];
