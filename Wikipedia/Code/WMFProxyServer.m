@@ -324,7 +324,7 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
         //update imageTagContents by changing the src, disabling the srcset, and adding other attributes used for scaling
         NSString *newImageTagContents = [self stringByUpdatingImageTagAttributesForProxyAndScalingInImageTagContents:imageTagContents withBaseURL:baseURL targetImageWidth:targetImageWidth];
         //append the updated image tag to the new string
-        [newHTMLString appendString:[@[@"<span ", newImageTagContents, @">"] componentsJoinedByString:@""]];
+        [newHTMLString appendString:[@[@"<span ", newImageTagContents, @"><span style=\"padding-top: 59%;\"></span></span"] componentsJoinedByString:@""]];
 
         location = range.location + range.length;
     }];

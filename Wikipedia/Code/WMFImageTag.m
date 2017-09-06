@@ -10,10 +10,9 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation WMFImageTag
 
-- (nullable instancetype)initWithAttributes:(nullable NSDictionary<NSString *,NSString *> *)attributes baseURL:(nullable NSURL *)baseURL
-                           {
-                               
-   NSString *src = attributes[@"src"];
+- (nullable instancetype)initWithAttributes:(nullable NSDictionary<NSString *, NSString *> *)attributes baseURL:(nullable NSURL *)baseURL {
+
+    NSString *src = attributes[@"src"];
     NSParameterAssert(src);
     if (!src) {
         return nil;
@@ -21,7 +20,7 @@ NS_ASSUME_NONNULL_BEGIN
     if ([[src stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]] length] == 0) {
         return nil;
     }
-    
+
     NSURLComponents *srcURLComponents = [NSURLComponents componentsWithString:src];
     if (srcURLComponents == nil) {
         return nil;
@@ -58,7 +57,6 @@ NS_ASSUME_NONNULL_BEGIN
         NSString *attributePattern = @"([a-zA-Z-]+)(?:=\")([^\"]+)(?:\")";
         attributeRegex = [NSRegularExpression regularExpressionWithPattern:attributePattern options:NSRegularExpressionCaseInsensitive error:nil];
     });
-    
 
     NSMutableDictionary *attributes = [NSMutableDictionary new];
     NSInteger attributeOffset = 0;
@@ -102,14 +100,13 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (BOOL)isSizeLargeEnoughForGalleryInclusion {
-    
-    
+
     return
         // Ensure images which are just used as tiny icons are not included in gallery.
         [self integerValueForAttributeKey:@"width"] >= WMFImageTagMinimumSizeForGalleryInclusion.width &&
         [self integerValueForAttributeKey:@"height"] >= WMFImageTagMinimumSizeForGalleryInclusion.height &&
         // Also make sure we only try to show them in the gallery if their canonical size is of sufficient resolution.
-       [self integerValueForAttributeKey:@"data-file-width"] >= WMFImageTagMinimumSizeForGalleryInclusion.width &&
+        [self integerValueForAttributeKey:@"data-file-width"] >= WMFImageTagMinimumSizeForGalleryInclusion.width &&
         [self integerValueForAttributeKey:@"data-file-height"] >= WMFImageTagMinimumSizeForGalleryInclusion.height;
 }
 
@@ -133,23 +130,22 @@ NS_ASSUME_NONNULL_BEGIN
 - (NSString *)placeholderTagContents {
     NSString *newImageTagContents = @"";
     NSDictionary *attributes = [self.attributes copy];
-    
-    static NSSet *attributesToCopy;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        attributesToCopy = [NSSet setWithObjects:@"width", @"class", nil];
-    });
+
     for (NSString *attribute in attributes) {
         NSString *value = attributes[attribute];
         if (value) {
-            if ([attributesToCopy containsObject:[attribute lowercaseString]]) { //attributes to copy should be added without the data- prefix and with the data- prefix (below)
-                NSString *attributeString = [@[@" ", attribute, @"=\"", value, @"\""] componentsJoinedByString:@""];
-                newImageTagContents = [newImageTagContents stringByAppendingString:attributeString];
-            }
             NSString *attributeString = [@[@" data-", attribute, @"=\"", value, @"\""] componentsJoinedByString:@""];
             newImageTagContents = [newImageTagContents stringByAppendingString:attributeString];
         }
     }
+
+    NSString *width = attributes[@"width"];
+    if (width) {
+        NSString *attributeString = [@[@" style=\"width:", width, @"px;\""] componentsJoinedByString:@""];
+        newImageTagContents = [newImageTagContents stringByAppendingString:attributeString];
+    }
+    newImageTagContents = [newImageTagContents stringByAppendingString:@"class=\"pagelib_lazy_load_placeholder pagelib_lazy_load_placeholder_pending\""];
+
     return newImageTagContents;
 }
 
