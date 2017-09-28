@@ -14,7 +14,8 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
     var userStore: MWKDataStore!
     var contentSource: WMFFeedContentSource!
 
-    
+    @IBOutlet weak var chevronImageView: UIImageView!
+
     let databaseDateFormatter = DateFormatter.wmf_englishUTCNonDelimitedYearMonthDay()
     let headerDateFormatter = DateFormatter.wmf_shortMonthNameDayOfMonthNumber()
     let daysToShowInSparkline = 5
@@ -73,7 +74,9 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
+        chevronImageView.image = UIImage(named: "chevronRightSmall", in: Bundle.wmf, compatibleWith:nil)
+
         guard let appLanguage = MWKLanguageLinkController.sharedInstance().appLanguage else {
             return
         }

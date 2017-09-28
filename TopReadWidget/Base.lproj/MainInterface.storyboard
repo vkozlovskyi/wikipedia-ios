@@ -104,6 +104,7 @@
                     <size key="freeformSize" width="320" height="336"/>
                     <connections>
                         <outlet property="activityIndicatorView" destination="TLb-bW-unM" id="Arl-00-ffu"/>
+                        <outlet property="chevronImageView" destination="yW4-n9-fo6" id="jIm-bD-9IH"/>
                         <outlet property="footerLabel" destination="y2A-ih-w95" id="yi7-i6-1aB"/>
                         <outlet property="footerLabelLeadingConstraint" destination="DMb-nL-ovQ" id="R1M-6m-AHJ"/>
                         <outlet property="footerSeparatorView" destination="l3r-sP-PRE" id="ZFY-FI-3aX"/>
