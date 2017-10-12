@@ -10,9 +10,17 @@ then
 	export CACHEROOT="$SRCROOT/Carthage Cache"
 fi
 
+xcconfig=$(mktemp /tmp/static.xcconfig.XXXXXX)
+trap 'rm -f "$xcconfig"' INT TERM HUP EXIT
+
+echo "LD = $SRCROOT/scripts/ld.py" >> $xcconfig
+echo "DEBUG_INFORMATION_FORMAT = dwarf" >> $xcconfig
+
+export XCODE_XCCONFIG_FILE="$xcconfig"
+
 export CARTHAGE="$SRCROOT/Carthage"
 rm -rf "$CARTHAGE"
-carthage update --platform iOS --cache-builds
+carthage update --platform iOS --no-use-binaries
 export CARTHAGE_SHA=`$SRCROOT/scripts/carthage_sha`
 echo "CARTHAGE_SHA is $CARTHAGE_SHA"
 echo $CARTHAGE_SHA > "$SRCROOT/Cartfile.hash"
