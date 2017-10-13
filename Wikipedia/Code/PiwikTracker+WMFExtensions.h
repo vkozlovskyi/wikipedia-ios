@@ -1,4 +1,4 @@
-#import <Piwik/PiwikTracker.h>
+@import Piwik;
 
 @protocol WMFAnalyticsContextProviding;
 @protocol WMFAnalyticsContentTypeProviding;
