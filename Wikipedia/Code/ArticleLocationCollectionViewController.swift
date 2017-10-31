@@ -82,6 +82,9 @@ extension ArticleLocationCollectionViewController {
         if let ac = articleCell as Themeable? {
             ac.apply(theme: theme)
         }
+        
+        articleCell.contentView.semanticContentAttribute = MWLanguageInfo.semanticContentAttribute(forWMFLanguage: article.url?.wmf_language)
+        
         return articleCell
     }
 }
