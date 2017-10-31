@@ -164,6 +164,7 @@
 		832289DE1F7291BA0081A5FB /* SizeThatFitsReusableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 832289DA1F7291BA0081A5FB /* SizeThatFitsReusableView.swift */; };
 		832289DF1F7291BA0081A5FB /* SizeThatFitsReusableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 832289DA1F7291BA0081A5FB /* SizeThatFitsReusableView.swift */; };
 		832D56211FA8B74B00D582E8 /* WikipediaUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 832D56201FA8B74B00D582E8 /* WikipediaUITests.swift */; };
+		832D56361FA8BF5800D582E8 /* ArticleLoadTesting.xcappdata in Resources */ = {isa = PBXBuildFile; fileRef = 832D56351FA8BF5800D582E8 /* ArticleLoadTesting.xcappdata */; };
 		836944DC1F572452007BD6DA /* ThemeableTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = D82E954B1F15397D007BD960 /* ThemeableTextField.swift */; };
 		8383446C1F62EBD000BD5A37 /* UIView+Constraints.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8383446B1F62EBD000BD5A37 /* UIView+Constraints.swift */; };
 		83836ECC1F615E5B007D1A05 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83836ECA1F615E5B007D1A05 /* ShareViewController.swift */; };
@@ -3097,6 +3098,7 @@
 		832D561E1FA8B74B00D582E8 /* WikipediaUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WikipediaUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		832D56201FA8B74B00D582E8 /* WikipediaUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WikipediaUITests.swift; sourceTree = "<group>"; };
 		832D56221FA8B74B00D582E8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		832D56351FA8BF5800D582E8 /* ArticleLoadTesting.xcappdata */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = ArticleLoadTesting.xcappdata; sourceTree = "<group>"; };
 		8383446B1F62EBD000BD5A37 /* UIView+Constraints.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIView+Constraints.swift"; sourceTree = "<group>"; };
 		83836ECA1F615E5B007D1A05 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
 		83836ECB1F615E5B007D1A05 /* ShareViewController.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = ShareViewController.xib; sourceTree = "<group>"; };
@@ -5694,6 +5696,7 @@
 			isa = PBXGroup;
 			children = (
 				832D56201FA8B74B00D582E8 /* WikipediaUITests.swift */,
+				832D56351FA8BF5800D582E8 /* ArticleLoadTesting.xcappdata */,
 				832D56221FA8B74B00D582E8 /* Info.plist */,
 			);
 			path = WikipediaUITests;
@@ -8631,6 +8634,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				832D56361FA8BF5800D582E8 /* ArticleLoadTesting.xcappdata in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

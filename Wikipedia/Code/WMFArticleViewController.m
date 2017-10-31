@@ -1145,7 +1145,20 @@ static const CGFloat WMFArticleViewControllerTableOfContentsSectionUpdateScrollD
         [self articleDidLoad];
         return;
     }
-
+    
+#if TEST // ArticleLoadTesting.xcappdata has this library value set so we can ignore network load time in first paint tests
+    if([[self.dataStore.viewContext wmf_numberValueForKey:@"WMFCachedArticlesOnly"] boolValue]) {
+        [self endRefreshing];
+        [self updateProgress:[self totalProgressWithArticleFetcherProgress:1.0] animated:YES];
+        MWKArticle *cachedArticle = [self.dataStore articleFromDiskWithURL:self.articleURL];
+        if (cachedArticle) {
+            self.article = cachedArticle;
+            [self articleDidLoad];
+        }
+        return;
+    }
+#endif
+    
     //only show a blank view if we have nothing to show
     if (!self.article) {
         [self.view bringSubviewToFront:self.progressView];

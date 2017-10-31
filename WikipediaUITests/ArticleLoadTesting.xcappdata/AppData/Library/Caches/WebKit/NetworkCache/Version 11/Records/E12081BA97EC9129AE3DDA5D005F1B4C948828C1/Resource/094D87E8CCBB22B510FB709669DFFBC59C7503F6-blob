@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    <meta charset="UTF-8">
+    <script src="index.js"></script>
+    <meta name="viewport" id="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+    <link href="styles.css" rel="stylesheet" type="text/css"></link>
+    <link href="wikimedia-page-library-transform.css" rel="stylesheet" type="text/css"></link>
+    <link href="styleoverrides.css" rel="stylesheet" type="text/css"></link>
+    
+<style type='text/css'>
+    body {
+        -webkit-text-size-adjust: 100%;
+    }
+</style>
+<base href="https://en.wikipedia.org/wiki/Mercer_Museum">
+<script type='text/javascript'>
+    window.wmf.compatibility.enableSupport(document);
+    window.wmf.platform.classify(window);
+    window.wmf.themes.setTheme(document, window.wmf.themes.THEME.DEFAULT);window.wmf.imageDimming.dim(window, false);
+</script>
+    </head>
+    <body style="padding-top: 210px;">
+        <div class="content" id="content" style="margin-left: 16px;margin-right: 16px;">
+            <div id='section_heading_and_content_block_0'><h1 class='section_heading'  sectionId='0'>Mercer Museum</h1><div id='content_block_0' class='content_block'><hr id='content_block_0_hr'><table class="infobox" style="width:22em;width:250px; border-spacing:1px;"><tr><td colspan="2" style="text-align:center;padding:0; border:none;"></td>
+</tr><tr><td colspan="2" style="text-align:center">
+<div style="width:100%; font-size:105%; font-weight:bold; background: #A8EDEF; line-height:1.5">Mercer Museum</div>
+</td>
+</tr><tr><td colspan="2" style="text-align:center">
+<div style="width:100%; text-align:center; line-height:1.5; background: #A8EDEF;"><a href="/wiki/National_Register_of_Historic_Places" title="National Register of Historic Places">U.S. National Register of Historic Places</a></div>
+</td>
+</tr><tr><td colspan="2" style="text-align:center">
+<div style="width:100%; text-align:center; line-height:1.4; background: #CCFFCC"><a href="/wiki/National_Historic_Landmark" title="National Historic Landmark">U.S. National Historic Landmark District</a><br><a href="/wiki/Contributing_Property" class="mw-redirect" title="Contributing Property">Contributing Property</a></div>
+</td>
+</tr><tr style="display:none"><td colspan="2"></td>
+</tr><tr><td colspan="2" style="text-align:center"><a href="/wiki/File:MercerMuseum.jpg" class="image"><img alt="MercerMuseum.jpg" src="http://localhost:49689/9E3F76E4-F5B6-4136-A566-EFE63BF6891C/imageProxy?originalSrc=//upload.wikimedia.org/wikipedia/commons/thumb/0/08/MercerMuseum.jpg/640px-MercerMuseum.jpg" width="250" height="188" data-srcset-disabled="//upload.wikimedia.org/wikipedia/commons/thumb/0/08/MercerMuseum.jpg/375px-MercerMuseum.jpg 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/0/08/MercerMuseum.jpg/500px-MercerMuseum.jpg 2x" data-file-width="1280" data-file-height="960" data-image-gallery="true"></a>
+<div style="font-size:95%;">Mercer Museum</div>
+</td>
+</tr><tr><td colspan="2" style="text-align:center">
+<div class="switcher-container">
+<div class="center">
+<div style="width:250px;float:none;clear:both;margin-left:auto;margin-right:auto">
+<div style="width:250px;padding:0">
+<div style="position:relative;width:250px"><a href="/wiki/File:USA_Pennsylvania_location_map.svg" class="image" title="Mercer Museum is located in Pennsylvania"><img alt="Mercer Museum is located in Pennsylvania" src="http://localhost:49689/9E3F76E4-F5B6-4136-A566-EFE63BF6891C/imageProxy?originalSrc=//upload.wikimedia.org/wikipedia/commons/thumb/9/9d/USA_Pennsylvania_location_map.svg/640px-USA_Pennsylvania_location_map.svg.png" width="250" height="168" data-srcset-disabled="//upload.wikimedia.org/wikipedia/commons/thumb/9/9d/USA_Pennsylvania_location_map.svg/375px-USA_Pennsylvania_location_map.svg.png 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/9/9d/USA_Pennsylvania_location_map.svg/500px-USA_Pennsylvania_location_map.svg.png 2x" data-file-width="1201" data-file-height="805" data-image-gallery="true"></a>
+<div style="position:absolute;top:74.757%;left:89.884%">
+<div style="position:absolute;left:-4px;top:-4px;line-height:0"><img alt="Mercer Museum" src="http://localhost:49689/9E3F76E4-F5B6-4136-A566-EFE63BF6891C/imageProxy?originalSrc=//upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Red_pog.svg/7px-Red_pog.svg.png" title="Mercer Museum" width="7" height="7" data-srcset-disabled="//upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Red_pog.svg/11px-Red_pog.svg.png 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Red_pog.svg/14px-Red_pog.svg.png 2x" data-file-width="64" data-file-height="64"></div>
+</div>
+</div>
+<span class="switcher-label" style="display:none">Show map of Pennsylvania</span></div>
+</div>
+</div>
+<div class="center">
+<div style="width:250px;float:none;clear:both;margin-left:auto;margin-right:auto">
+<div style="width:250px;padding:0">
+<div style="position:relative;width:250px"><a href="/wiki/File:Usa_edcp_location_map.svg" class="image" title="Mercer Museum is located in the US"><img alt="Mercer Museum is located in the US" src="http://localhost:49689/9E3F76E4-F5B6-4136-A566-EFE63BF6891C/imageProxy?originalSrc=//upload.wikimedia.org/wikipedia/commons/thumb/2/20/Usa_edcp_location_map.svg/640px-Usa_edcp_location_map.svg.png" width="250" height="155" data-srcset-disabled="//upload.wikimedia.org/wikipedia/commons/thumb/2/20/Usa_edcp_location_map.svg/375px-Usa_edcp_location_map.svg.png 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/2/20/Usa_edcp_location_map.svg/500px-Usa_edcp_location_map.svg.png 2x" data-file-width="1181" data-file-height="731" data-image-gallery="true"></a>
+<div style="position:absolute;top:37.611%;left:84.107%">
+<div style="position:absolute;left:-4px;top:-4px;line-height:0"><img alt="Mercer Museum" src="http://localhost:49689/9E3F76E4-F5B6-4136-A566-EFE63BF6891C/imageProxy?originalSrc=//upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Red_pog.svg/7px-Red_pog.svg.png" title="Mercer Museum" width="7" height="7" data-srcset-disabled="//upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Red_pog.svg/11px-Red_pog.svg.png 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/0/0c/Red_pog.svg/14px-Red_pog.svg.png 2x" data-file-width="64" data-file-height="64"></div>
+</div>
+</div>
+<span class="switcher-label" style="display:none">Show map of the US</span></div>
+</div>
+</div>
+</div>
+</td>
+</tr><tr><th scope="row" style="font-weight:bold; border: 0;">Location</th>
+<td style="border: 0;"><a href="/wiki/Doylestown,_Pennsylvania" title="Doylestown, Pennsylvania">Doylestown, Pennsylvania</a></td>
+</tr><tr><th scope="row" style="font-weight:bold; border: 0;">Coordinates</th>
+<td style="border: 0;"><span class="plainlinks nourlexpansion"><a class="external text" href="//tools.wmflabs.org/geohack/geohack.php?pagename=Mercer_Museum&amp;params=40_18_28_N_75_7_38_W_type:landmark_region:US-PA"><span class="geo-default"><span class="geo-dms" title="Maps, aerial photos, and other data for this location"><span class="latitude">40°18′28″N</span> <span class="longitude">75°7′38″W</span></span></span><span class="geo-multi-punct">﻿ / ﻿</span><span class="geo-nondefault"><span class="geo-dec" title="Maps, aerial photos, and other data for this location">40.30778°N 75.12722°W</span><span style="display:none">﻿ / <span class="geo">40.30778; -75.12722</span></span></span></a></span><span style="font-size: small;"><span id="coordinates"><a href="/wiki/Geographic_coordinate_system" title="Geographic coordinate system">Coordinates</a>: <span class="plainlinks nourlexpansion"><a class="external text" href="//tools.wmflabs.org/geohack/geohack.php?pagename=Mercer_Museum&amp;params=40_18_28_N_75_7_38_W_type:landmark_region:US-PA"><span class="geo-default"><span class="geo-dms" title="Maps, aerial photos, and other data for this location"><span class="latitude">40°18′28″N</span> <span class="longitude">75°7′38″W</span></span></span><span class="geo-multi-punct">﻿ / ﻿</span><span class="geo-nondefault"><span class="geo-dec" title="Maps, aerial photos, and other data for this location">40.30778°N 75.12722°W</span><span style="display:none">﻿ / <span class="geo">40.30778; -75.12722</span></span></span></a></span></span></span></td>
+</tr><tr><th scope="row" style="font-weight:bold; border: 0;">Built</th>
+<td style="border: 0;">1904</td>
+</tr><tr><th scope="row" style="font-weight:bold; border: 0;">Architect</th>
+<td style="border: 0;">Dr. Henry Mercer</td>
+</tr><tr><th scope="row" style="font-weight:bold; border: 0;">Architectural style</th>
+<td style="border: 0;">Colonial Revival, Other</td>
+</tr><tr><th scope="row" style="font-weight:bold; border: 0;">Part of</th>
+<td style="border: 0;"><a href="/wiki/Fonthill,_Mercer_Museum,_and_Moravian_Pottery_and_Tile_Works" class="mw-redirect" title="Fonthill, Mercer Museum, and Moravian Pottery and Tile Works">Fonthill, Mercer Museum, and Moravian Pottery and Tile Works</a> (<a rel="nofollow" class="external text" href="https://npgallery.nps.gov/AssetDetail/NRIS/85002366">#85002366</a>)</td>
+</tr><tr><th scope="row" style="font-weight:bold; border: 0;">NRHP reference #</th>
+<td style="border: 0;"><a rel="nofollow" class="external text" href="https://npgallery.nps.gov/AssetDetail/NRIS/72001097">72001097</a><sup id="cite_ref-nris_1-0" class="reference"><a href="#cite_note-nris-1">[1]</a></sup></td>
+</tr><tr><th colspan="2" style="text-align:center;background: #A8EDEF">Significant dates</th>
+</tr><tr><th scope="row" style="font-weight:bold; border: 0;">Added to NRHP</th>
+<td style="border: 0;">March 16, 1972<sup id="cite_ref-nris_1-1" class="reference"><a href="#cite_note-nris-1">[1]</a></sup></td>
+</tr><tr><th scope="row" style="font-weight:bold; border: 0;">Designated NHLDCP</th>
+<td style="border: 0;">February 4, 1985<sup id="cite_ref-nhl_2-0" class="reference"><a href="#cite_note-nhl-2">[2]</a></sup></td>
+</tr></table><p>The <b>Mercer Museum</b> is a museum located in <a href="/wiki/Doylestown,_Pennsylvania" title="Doylestown, Pennsylvania">Doylestown, Pennsylvania</a>, <a href="/wiki/United_States" title="United States">United States</a>. The Bucks County Historical Society operates the Mercer Museum, as well as the Research Library, and <a href="/wiki/Fonthill_(house)" title="Fonthill (house)">Fonthill</a> Castle, former home of the museum's founder, <a href="/wiki/Archeologist" class="mw-redirect" title="Archeologist">archeologist</a> <a href="/wiki/Henry_Chapman_Mercer" title="Henry Chapman Mercer">Henry Chapman Mercer</a>. The museum was individually listed on the <a href="/wiki/National_Register_of_Historic_Places" title="National Register of Historic Places">National Register of Historic Places</a> in 1972,<sup id="cite_ref-nris_1-2" class="reference"><a href="#cite_note-nris-1">[1]</a></sup> and was later included in a <a href="/wiki/National_Historic_Landmark_District" class="mw-redirect" title="National Historic Landmark District">National Historic Landmark District</a> along with the <a href="/wiki/Moravian_Pottery_and_Tile_Works" title="Moravian Pottery and Tile Works">Moravian Pottery and Tile Works</a> and <a href="/wiki/Fonthill_(house)" title="Fonthill (house)">Fonthill</a>. These three structures are the only poured-in-place <a href="/wiki/Concrete" title="Concrete">concrete</a> structures built by Mercer.<sup id="cite_ref-nhl_2-1" class="reference"><a href="#cite_note-nhl-2">[2]</a></sup></p>
+<p></p></div></div><div id='section_heading_and_content_block_1'><h2 class='section_heading' data-id='1' id='History'>History</h2><div id='content_block_1' class='content_block'><div class="thumb tleft">
+<div class="thumbinner" style="width:102px;"><a href="/wiki/File:Cropped_Tile.jpg" class="image"><img alt="" src="http://localhost:49689/9E3F76E4-F5B6-4136-A566-EFE63BF6891C/imageProxy?originalSrc=//upload.wikimedia.org/wikipedia/en/c/cd/Cropped_Tile.jpg" width="100" height="238" class="thumbimage" data-srcset-disabled="//upload.wikimedia.org/wikipedia/en/thumb/c/cd/Cropped_Tile.jpg/150px-Cropped_Tile.jpg 1.5x, //upload.wikimedia.org/wikipedia/en/thumb/c/cd/Cropped_Tile.jpg/200px-Cropped_Tile.jpg 2x" data-file-width="336" data-file-height="800" data-image-gallery="true"></a>
+<div class="thumbcaption">
+<div class="magnify"><a href="/wiki/File:Cropped_Tile.jpg" class="internal" title="Enlarge"></a></div>
+Sample of tile work from the on-site production facility in the Mercer Museum</div>
+</div>
+</div>
+<p>Henry Mercer was a gentleman anthropologist. On a cruise up the <a href="/wiki/Ruhr_(river)" title="Ruhr (river)">Ruhr</a> in early adulthood, Mercer was impressed by the eclipse of artisanal culture by industrial production, and resolved himself to preserving artifacts of preindustrial life. In the late 19th and early 20th centuries, Mercer collected <a href="/wiki/Pre-industrial" class="mw-redirect" title="Pre-industrial">pre-industrial</a> <a href="/wiki/Hand_tools" class="mw-redirect" title="Hand tools">hand tools</a> and other implements of the past. He believed that the story of human progress and accomplishments was told by the tools and objects that people used and saw these time-honored crafts slowly disappearing from memory.</p>
+<p>Mercer personally designed plans for a museum to house his collection, six stories tall and cast of poured-in-place <a href="/wiki/Concrete" title="Concrete">concrete</a>. Mercer's museum was completed in 1916. In addition to tools, it displays furnishings of early <a href="/wiki/United_States" title="United States">America</a>, carriages, <a href="/wiki/Stove" title="Stove">stove</a> plates, a <a href="/wiki/Gallows" title="Gallows">gallows</a>, antique <a href="/wiki/Fire_apparatus" class="mw-redirect" title="Fire apparatus">fire engines</a>, a <a href="/wiki/Whaleboat" title="Whaleboat">whaleboat</a>, and the <a href="/wiki/Lenape_Stone" title="Lenape Stone">Lenape Stone</a>. The Spruance Library, which houses the Bucks County Historical Society's archive of historical research materials, is located on its third floor. In June 2011, construction was completed on a new, extensive visitors center at the front of the museum.</p></div></div><div id='section_heading_and_content_block_2'><h2 class='section_heading' data-id='2' id='Why_concrete.3F'>Why concrete?</h2><div id='content_block_2' class='content_block'><p>The museum is one of three poured-in-place <a href="/wiki/Concrete" title="Concrete">concrete</a> structures built by Mercer. The others include his home Fonthill and the <a href="/wiki/Moravian_Pottery_and_Tile_Works" title="Moravian Pottery and Tile Works">Moravian Pottery and Tile Works</a>, both of which are located one mile from the museum.</p>
+<p>Mercer decided to build with concrete after the <a href="/wiki/Great_Boston_Fire_of_1872" class="mw-redirect" title="Great Boston Fire of 1872">Great Boston Fire of 1872</a> destroyed his aunt's prized collection of medieval armor, which had been stored in wooden structures. He did not want his own collections to suffer the same fate. Locals mocked his choice of building materials, but on completion of the museum, he lit a bonfire on its roof to prove that it was fireproof <a rel="nofollow" class="external autonumber" href="http://curiousexpeditions.org/?p=319">[1]</a>. Mercer's museum was an early demonstration of <a href="/wiki/Rebar" title="Rebar">rebar</a>-reinforced concrete as a structural material.</p>
+<ul class="gallery mw-gallery-packed"><li class="gallerybox" style="width: 211.33333333333px">
+<div style="width: 211.33333333333px">
+<div class="thumb" style="width: 209.33333333333px;">
+<div style="margin:0px auto;"><a href="/wiki/File:View_of_Atrium_in_Mercer_Museum,_Doylestown.jpg" class="image"><img alt="" src="http://localhost:49689/9E3F76E4-F5B6-4136-A566-EFE63BF6891C/imageProxy?originalSrc=//upload.wikimedia.org/wikipedia/commons/thumb/1/12/View_of_Atrium_in_Mercer_Museum%252C_Doylestown.jpg/640px-View_of_Atrium_in_Mercer_Museum%252C_Doylestown.jpg" width="210" height="200" data-srcset-disabled="//upload.wikimedia.org/wikipedia/commons/thumb/1/12/View_of_Atrium_in_Mercer_Museum%2C_Doylestown.jpg/471px-View_of_Atrium_in_Mercer_Museum%2C_Doylestown.jpg 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/1/12/View_of_Atrium_in_Mercer_Museum%2C_Doylestown.jpg/628px-View_of_Atrium_in_Mercer_Museum%2C_Doylestown.jpg 2x" data-file-width="2438" data-file-height="2328" data-image-gallery="true"></a></div>
+</div>
+<div class="gallerytext">
+<p>Inside the Mercer Museum.Note the quasi "fun-house" effect with pieces hanging from the ceiling and walls.</p>
+</div>
+</div>
+</li>
+<li class="gallerybox" style="width: 152px">
+<div style="width: 152px">
+<div class="thumb" style="width: 150px;">
+<div style="margin:0px auto;"><a href="/wiki/File:Cigar_Store_Figures.jpg" class="image"><img alt="" src="http://localhost:49689/9E3F76E4-F5B6-4136-A566-EFE63BF6891C/imageProxy?originalSrc=//upload.wikimedia.org/wikipedia/commons/thumb/3/31/Cigar_Store_Figures.jpg/640px-Cigar_Store_Figures.jpg" width="150" height="200" data-srcset-disabled="//upload.wikimedia.org/wikipedia/commons/thumb/3/31/Cigar_Store_Figures.jpg/337px-Cigar_Store_Figures.jpg 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/3/31/Cigar_Store_Figures.jpg/450px-Cigar_Store_Figures.jpg 2x" data-file-width="3000" data-file-height="4000" data-image-gallery="true"></a></div>
+</div>
+<div class="gallerytext">
+<p>19th Century cigar store figures</p>
+</div>
+</div>
+</li>
+</ul></div></div><div id='section_heading_and_content_block_3'><h2 class='section_heading' data-id='3' id='References'>References</h2><div id='content_block_3' class='content_block'><table><th>References</th><tr><td><div class="reflist" style="list-style-type: decimal;">
+<div class="mw-references-wrap">
+<ol class="references"><li id="cite_note-nris-1"><span class="mw-cite-backlink">^ <a href="#cite_ref-nris_1-0"><sup><i><b>a</b></i></sup></a> <a href="#cite_ref-nris_1-1"><sup><i><b>b</b></i></sup></a> <a href="#cite_ref-nris_1-2"><sup><i><b>c</b></i></sup></a></span> <span class="reference-text"><cite class="citation web"><a href="/wiki/National_Park_Service" title="National Park Service">National Park Service</a> (2009-03-13). <a rel="nofollow" class="external text" href="http://nrhp.focus.nps.gov/natreg/docs/All_Data.html">"National Register Information System"</a>. <i>National Register of Historic Places</i>. National Park Service.</cite><span title="ctx_ver=Z39.88-2004&amp;rfr_id=info%3Asid%2Fen.wikipedia.org%3AMercer+Museum&amp;rft.atitle=National+Register+Information+System&amp;rft.au=National+Park+Service&amp;rft.date=2009-03-13&amp;rft.genre=unknown&amp;rft.jtitle=National+Register+of+Historic+Places&amp;rft_id=http%3A%2F%2Fnrhp.focus.nps.gov%2Fnatreg%2Fdocs%2FAll_Data.html&amp;rft_val_fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal" class="Z3988"><span style="display:none;"> </span></span></span></li>
+<li id="cite_note-nhl-2"><span class="mw-cite-backlink">^ <a href="#cite_ref-nhl_2-0"><sup><i><b>a</b></i></sup></a> <a href="#cite_ref-nhl_2-1"><sup><i><b>b</b></i></sup></a></span> <span class="reference-text"><cite class="citation web"><a rel="nofollow" class="external text" href="http://focus.nps.gov/pdfhost/docs/NHLS/Text/85002366.pdf">"Fonthill, Mercer Museum, and Moravian Pottery and Tile Works"</a> <span style="font-size:85%;">(PDF)</span>. <i>National Historic Landmark listing</i>. National Park Service<span class="reference-accessdate">. Retrieved <span class="nowrap">2013-12-16</span></span>.</cite><span title="ctx_ver=Z39.88-2004&amp;rfr_id=info%3Asid%2Fen.wikipedia.org%3AMercer+Museum&amp;rft.atitle=Fonthill%2C+Mercer+Museum%2C+and+Moravian+Pottery+and+Tile+Works&amp;rft.genre=unknown&amp;rft.jtitle=National+Historic+Landmark+listing&amp;rft_id=http%3A%2F%2Ffocus.nps.gov%2Fpdfhost%2Fdocs%2FNHLS%2FText%2F85002366.pdf&amp;rft_val_fmt=info%3Aofi%2Ffmt%3Akev%3Amtx%3Ajournal" class="Z3988"><span style="display:none;"> </span></span></span></li>
+</ol></div>
+</div></td></tr></table></div></div><div id='section_heading_and_content_block_4'><h2 class='section_heading' data-id='4' id='External_links'>External links</h2><div id='content_block_4' class='content_block'><table><th>External links</th><tr><td><table role="presentation" class="mbox-small plainlinks sistersitebox" style="background-color:#f9f9f9;border:1px solid #aaa;color:#000"><tr><td class="mbox-image"><img alt="" src="http://localhost:49689/9E3F76E4-F5B6-4136-A566-EFE63BF6891C/imageProxy?originalSrc=//upload.wikimedia.org/wikipedia/en/thumb/4/4a/Commons-logo.svg/30px-Commons-logo.svg.png" width="30" height="40" class="noviewer" data-srcset-disabled="//upload.wikimedia.org/wikipedia/en/thumb/4/4a/Commons-logo.svg/45px-Commons-logo.svg.png 1.5x, //upload.wikimedia.org/wikipedia/en/thumb/4/4a/Commons-logo.svg/59px-Commons-logo.svg.png 2x" data-file-width="1024" data-file-height="1376"></td>
+<td class="mbox-text plainlist">Wikimedia Commons has media related to <i><b><a href="https://commons.wikimedia.org/wiki/Category:Mercer_Museum" class="extiw" title="commons:Category:Mercer Museum">Mercer Museum</a></b></i>.</td>
+</tr></table><ul><li><span class="official-website"><span class="url"><a rel="nofollow" class="external text" href="http://www.mercermuseum.org/">Official website</a></span></span></li>
+<li>Panoramic images: <a rel="nofollow" class="external text" href="http://www.gigapan.org/viewGigapan.php?id=6335">exterior</a>, <a rel="nofollow" class="external text" href="http://www.gigapan.org/viewGigapan.php?id=6347">main chamber</a>, <a rel="nofollow" class="external text" href="http://www.gigapan.org/viewGigapan.php?id=6338">stove plate gallery</a></li>
+<li><a rel="nofollow" class="external text" href="http://www.loc.gov/pictures/item/pa0216/">Mercer Museum, Pine &amp; Ashland Streets, Doylestown, Bucks County, PA</a> - historic images from the <a href="/wiki/Historic_American_Buildings_Survey" class="mw-redirect" title="Historic American Buildings Survey">Historic American Buildings Survey</a></li>
+</ul><div role="navigation" aria-label="Portals" class="noprint portal plainlist tright" style="margin:0.5em 0 0.5em 1em;border:solid #aaa 1px">
+<ul style="display:table;box-sizing:border-box;padding:0.1em;max-width:175px;background:#f9f9f9;font-size:85%;line-height:110%;font-style:italic;font-weight:bold"><li style="display:table-row"><span style="display:table-cell;padding:0.2em;vertical-align:middle;text-align:center"><img alt="" src="http://localhost:49689/9E3F76E4-F5B6-4136-A566-EFE63BF6891C/imageProxy?originalSrc=//upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Libertybell_alone_small.jpg/22px-Libertybell_alone_small.jpg" width="22" height="28" class="noviewer" data-srcset-disabled="//upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Libertybell_alone_small.jpg/33px-Libertybell_alone_small.jpg 1.5x, //upload.wikimedia.org/wikipedia/commons/thumb/7/7a/Libertybell_alone_small.jpg/44px-Libertybell_alone_small.jpg 2x" data-file-width="236" data-file-height="300"></span><span style="display:table-cell;padding:0.2em 0.2em 0.2em 0.3em;vertical-align:middle"><a href="/wiki/Portal:Philadelphia" title="Portal:Philadelphia">Philadelphia portal</a></span></li>
+</ul></div></td></tr></table></div></div>
+        </div>
+    </body>
+</html>
