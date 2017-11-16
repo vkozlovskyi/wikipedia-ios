@@ -2,6 +2,8 @@
 #import <WMF/CIDetector+WMFFaceDetection.h>
 #import "UIImage+WMFNormalization.h"
 #import <WMF/MWKImage.h>
+#import <Vision/Vision.h>
+#import <WMF/WMF-Swift.h>
 
 @interface WMFFaceDetectionCache ()
 
@@ -75,13 +77,36 @@
 }
 
 - (void)getFaceBoundsInImage:(UIImage *)image onGPU:(BOOL)onGPU failure:(WMFErrorHandler)failure success:(WMFSuccessIdHandler)success {
-    CIDetector *detector = onGPU ? [CIDetector wmf_sharedGPUFaceDetector] : [CIDetector wmf_sharedCPUFaceDetector];
-    [detector wmf_detectFeaturelessFacesInImage:image
-                                    withFailure:failure
-                                        success:^(NSArray *features) {
-                                            NSArray<NSValue *> *faceBounds = [image wmf_normalizeAndConvertBoundsFromCIFeatures:features];
-                                            success(faceBounds);
-                                        }];
+    if (@available(iOS 11.0, *)) {
+        dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0), ^{
+            VNRequest *request = [[VNDetectFaceRectanglesRequest alloc] initWithCompletionHandler:^(VNRequest * _Nonnull request, NSError * _Nullable error) {
+                NSArray<VNFaceObservation *> *results = request.results;
+                NSArray *faceBounds = [results wmf_map:^id(VNFaceObservation *observation) {
+                    return [NSValue valueWithCGRect:observation.boundingBox];
+                }];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    success(faceBounds);
+                });
+            }];
+            request.preferBackgroundProcessing = YES;
+            request.usesCPUOnly = !onGPU;
+            VNImageRequestHandler *handler = [[VNImageRequestHandler alloc] initWithCGImage:image.CGImage options:@{}];
+            NSError *error = nil;
+            if (![handler performRequests:@[request] error:&error]) {
+                DDLogError(@"Error: %@", error);
+                failure(error);
+            }
+        });
+    } else {
+        CIDetector *detector = onGPU ? [CIDetector wmf_sharedGPUFaceDetector] : [CIDetector wmf_sharedCPUFaceDetector];
+        [detector wmf_detectFeaturelessFacesInImage:image
+                                        withFailure:failure
+                                            success:^(NSArray *features) {
+                                                NSArray<NSValue *> *faceBounds = [image wmf_normalizeAndConvertBoundsFromCIFeatures:features];
+                                                success(faceBounds);
+                                            }];
+
+    }
 }
 
 #pragma mark - Cache methods
