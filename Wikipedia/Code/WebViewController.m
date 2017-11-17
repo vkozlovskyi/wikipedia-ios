@@ -826,6 +826,7 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
         [self.webView getScrollViewRectForHtmlElementWithId:fragment
                                                  completion:^(CGRect rect) {
                                                      if (!CGRectIsNull(rect)) {
+                                                         [self setNavBarHidden:NO];
                                                          [self.webView.scrollView wmf_safeSetContentOffset:CGPointMake(self.webView.scrollView.contentOffset.x, rect.origin.y)
                                                                                                   animated:animated
                                                                                                 completion:nil];
