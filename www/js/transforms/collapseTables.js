@@ -7,8 +7,8 @@ function footerDivClickCallback(container) {
   }
 }
 
-function hideTables(content, isMainPage, pageTitle, infoboxTitle, otherTitle, footerTitle) {
-  tableCollapser.collapseTables(window, content, pageTitle, isMainPage, infoboxTitle, otherTitle, footerTitle, footerDivClickCallback)
+function adjustTables(content, isMainPage, isInitiallyHidden, pageTitle, infoboxTitle, otherTitle, footerTitle) {
+  tableCollapser.adjustTables(window, content, pageTitle, isMainPage, isInitiallyHidden, infoboxTitle, otherTitle, footerTitle, footerDivClickCallback)
 
   // Prevents some collapsed tables from scrolling side-to-side.
   // May want to move this to wikimedia-page-library if there are no issues.
@@ -16,4 +16,4 @@ function hideTables(content, isMainPage, pageTitle, infoboxTitle, otherTitle, fo
     .forEach(function(el) {el.classList.remove('nowrap')})
 }
 
-exports.hideTables = hideTables
+exports.adjustTables = adjustTables

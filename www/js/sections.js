@@ -135,7 +135,7 @@ const applyTransformationsToFragment = (fragment, article, isLead) => {
     }
   }
 
-  requirements.tables.hideTables(fragment, article.ismain, article.displayTitle, this.collapseTablesLocalizedStrings.tableInfoboxTitle, this.collapseTablesLocalizedStrings.tableOtherTitle, this.collapseTablesLocalizedStrings.tableFooterTitle)
+  requirements.tables.adjustTables(fragment, article.ismain, this.collapseTablesInitially, article.displayTitle, this.collapseTablesLocalizedStrings.tableInfoboxTitle, this.collapseTablesLocalizedStrings.tableOtherTitle, this.collapseTablesLocalizedStrings.tableFooterTitle)
   requirements.images.widenImages(fragment)
 
   // Classifies some tricky elements like math formula images (examples are first images on
@@ -206,7 +206,7 @@ const fetchTransformAndAppendSectionsToDocument = (article, articleSectionsURL, 
 
 // Object containing the following localized strings key/value pairs: 'tableInfoboxTitle', 'tableOtherTitle', 'tableFooterTitle'
 exports.collapseTablesLocalizedStrings = undefined
-
+exports.collapseTablesInitially = false
 exports.sectionErrorMessageLocalizedString  = undefined
 exports.fetchTransformAndAppendSectionsToDocument = fetchTransformAndAppendSectionsToDocument
 exports.Language = Language
