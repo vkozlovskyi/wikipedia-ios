@@ -60,27 +60,19 @@ public class ReadingListsController: NSObject {
         return list
     }
     
-    public func delete(readingListsNamed names: [String]) throws -> [ReadingList] {
-        
+    public func delete(readingLists: [ReadingList]) throws {
+        assert(Thread.isMainThread)
+
         let moc = dataStore.viewContext
-        let readingListsToDeleteRequest: NSFetchRequest<ReadingList> = ReadingList.fetchRequest()
         
-        readingListsToDeleteRequest.predicate = NSPredicate(format: "name IN %@", names)
-        
-        let readingListsToDelete = try moc.fetch(readingListsToDeleteRequest)
-        
-        var deletedReadingLists: [ReadingList] = []
-        
-        for readingList in readingListsToDelete {
+        for readingList in readingLists {
             moc.delete(readingList)
-            deletedReadingLists.append(readingList)
         }
         
         if moc.hasChanges {
             try moc.save()
         }
         
-        return deletedReadingLists
     }
     
     public func add(articles: [WMFArticle], to readingList: ReadingList) throws {
@@ -112,20 +104,17 @@ public class ReadingListsController: NSObject {
 
     }
     
-    public func remove(articles: [WMFArticle], fromReadingListNamed readingListName: String) throws {
+    public func remove(articles: [WMFArticle], fromReadingList readingList: ReadingList) throws {
         assert(Thread.isMainThread)
         
         let moc = dataStore.viewContext
-        
-        // will throw ReadingListError.listWithProvidedNameNotFound if list not found
-        let _ = try fetchReadingList(named: readingListName)
         
         let keysToDelete = articles.flatMap { (article) -> String? in
             return article.key
         }
         
         let entriesToDeleteRequest: NSFetchRequest<ReadingListEntry> = ReadingListEntry.fetchRequest()
-        entriesToDeleteRequest.predicate = NSPredicate(format: "list.name MATCHES[cd] %@ && articleKey IN %@", readingListName, keysToDelete)
+        entriesToDeleteRequest.predicate = NSPredicate(format: "list == %@ && articleKey IN %@", readingList, keysToDelete)
         
         let entriesToDelete = try moc.fetch(entriesToDeleteRequest)
         
@@ -138,15 +127,21 @@ public class ReadingListsController: NSObject {
         }
     }
     
-    fileprivate func fetchReadingList(named name: String) throws -> ReadingList {
+    @objc public func fetchReadingLists(with names: [String]) throws -> [ReadingList] {
         let moc = dataStore.viewContext
-        let readingListRequest: NSFetchRequest<ReadingList> = ReadingList.fetchRequest()
-        readingListRequest.predicate = NSPredicate(format: "name MATCHES[cd] %@", name)
-        readingListRequest.fetchLimit = 1
-        guard let readingList = try moc.fetch(readingListRequest).first else {
-            throw ReadingListError.listWithProvidedNameNotFound(name: name)
+        let readingListRequest: NSFetchRequest<ReadingList> = ReadingList.fetchRequest(
+        )
+        var predicates: [NSPredicate] = []
+        
+        for name in names {
+            let predicate = NSPredicate(format: "name MATCHES[cd] %@", name)
+            predicates.append(predicate)
         }
-        return readingList
+        
+        readingListRequest.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: predicates)
+        readingListRequest.fetchLimit = predicates.count
+        
+        return try moc.fetch(readingListRequest)
     }
     
 }

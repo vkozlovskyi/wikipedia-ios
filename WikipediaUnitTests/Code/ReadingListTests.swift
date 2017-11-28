@@ -58,8 +58,7 @@ class ReadingListTests: XCTestCase {
         }
         
         do {
-            let deletedLists = try dataStore.readingListsController.delete(readingListsNamed: readingListNames)
-            XCTAssert(deletedLists.wmf_containsObjectsInAnyOrderAndMatchesCount(readingLists))
+            try dataStore.readingListsController.delete(readingLists: readingLists)
         } catch let error {
             XCTAssert(false, "Should be able to delete \(readingListNames) reading lists: \(error)")
         }
@@ -76,8 +75,11 @@ class ReadingListTests: XCTestCase {
         }
         
         do {
-            let deletedLists = try dataStore.readingListsController.delete(readingListsNamed: readingListNames)
-            XCTAssert(deletedLists.wmf_containsObjectsInAnyOrderAndMatchesCount(readingLists))
+            let fetchedReadingLists = try dataStore.readingListsController.fetchReadingLists(with: readingListNames)
+            XCTAssert(fetchedReadingLists.wmf_containsObjectsInAnyOrderAndMatchesCount(readingLists))
+            try dataStore.readingListsController.delete(readingLists: readingLists)
+            let readingLists = try dataStore.readingListsController.fetchReadingLists(with: readingListNames)
+            XCTAssert(readingLists.isEmpty)
         } catch let error {
             XCTAssert(false, "Should attempt to delete \(readingListNames) reading lists: \(error)")
         }
