@@ -93,7 +93,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
         }
         
         if syncState.contains(.needsLocalReset) {
-            try moc.wmf_batchProcessObjects(handler: { (readingListEntry: ReadingListEntry) in
+            try moc.wmf_batchProcessObjects(parentProgress: progress, handler: { (readingListEntry: ReadingListEntry) in
                 readingListEntry.readingListEntryID = nil
                 readingListEntry.isUpdatedLocally = true
                 readingListEntry.errorCode = nil
@@ -101,7 +101,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
                     throw ReadingListsOperationError.cancelled
                 }
             })
-            try moc.wmf_batchProcessObjects(handler: { (readingList: ReadingList) in
+            try moc.wmf_batchProcessObjects(parentProgress: progress, handler: { (readingList: ReadingList) in
                 readingList.readingListID = nil
                 readingList.isUpdatedLocally = true
                 readingList.errorCode = nil
@@ -116,7 +116,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
         }
         
         if syncState.contains(.needsLocalListClear) {
-            try moc.wmf_batchProcess(matchingPredicate: NSPredicate(format: "isDefault != YES"), handler: { (lists: [ReadingList]) in
+            try moc.wmf_batchProcess(matchingPredicate: NSPredicate(format: "isDefault != YES"), parentProgress: progress, handler: { (lists: [ReadingList]) in
                 try self.readingListsController.markLocalDeletion(for: lists)
                 guard !self.isCancelled else {
                     throw ReadingListsOperationError.cancelled
@@ -222,7 +222,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
     }
     
     func executeFullSync(on moc: NSManagedObjectContext) throws {
-        try processLocalUpdates(in: moc)
+        try processLocalUpdates(in: moc, parentProgress: progress)
         if moc.hasChanges {
             try moc.save()
         }
@@ -250,7 +250,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
         
         let group = WMFTaskGroup()
         
-        try createOrUpdate(remoteReadingLists: allAPIReadingLists, deleteMissingLocalLists: true, inManagedObjectContext: moc)
+        try createOrUpdate(remoteReadingLists: allAPIReadingLists, deleteMissingLocalLists: true, inManagedObjectContext: moc, parentProgress: progress)
         
         // Get all entries
         var remoteEntriesByReadingListID: [Int64: [APIReadingListEntry]] = [:]
@@ -272,7 +272,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
         }
         
         for (readingListID, remoteReadingListEntries) in remoteEntriesByReadingListID {
-            try createOrUpdate(remoteReadingListEntries: remoteReadingListEntries, for: readingListID, deleteMissingLocalEntries: true, inManagedObjectContext: moc)
+            try createOrUpdate(remoteReadingListEntries: remoteReadingListEntries, for: readingListID, deleteMissingLocalEntries: true, inManagedObjectContext: moc, parentProgress: progress)
         }
         
         if let since = nextSince {
@@ -320,8 +320,8 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
             throw error
         }
         
-        try createOrUpdate(remoteReadingLists: updatedLists, inManagedObjectContext: moc)
-        try createOrUpdate(remoteReadingListEntries: updatedEntries, inManagedObjectContext: moc)
+        try createOrUpdate(remoteReadingLists: updatedLists, inManagedObjectContext: moc, parentProgress: progress)
+        try createOrUpdate(remoteReadingListEntries: updatedEntries, inManagedObjectContext: moc, parentProgress: progress)
         
         if let since = nextSince {
             moc.wmf_setValue(since as NSString, forKey: WMFReadingListUpdateKey)
@@ -397,7 +397,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
     }
     
     
-    func processLocalUpdates(in moc: NSManagedObjectContext) throws {
+    func processLocalUpdates(in moc: NSManagedObjectContext, parentProgress: Progress? = nil) throws {
         let taskGroup = WMFTaskGroup()
         let listsToCreateOrUpdateFetch: NSFetchRequest<ReadingList> = ReadingList.fetchRequest()
         listsToCreateOrUpdateFetch.sortDescriptors = [NSSortDescriptor(key: "createdDate", ascending: false)]
@@ -409,6 +409,15 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
         var deletedReadingLists: [Int64: ReadingList] = [:]
         var listsToCreate: [ReadingList] = []
         var requestCount = 0
+        
+        var progress: Progress?
+        if let parentProgress = parentProgress {
+            let actualProgress = Progress(totalUnitCount: Int64(listsToUpdate.count))
+            parentProgress.totalUnitCount += actualProgress.totalUnitCount
+            parentProgress.addChild(actualProgress, withPendingUnitCount: actualProgress.totalUnitCount)
+            progress = actualProgress
+        }
+        
         for localReadingList in listsToUpdate {
             autoreleasepool {
                 guard let readingListName = localReadingList.name else {
@@ -429,6 +438,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
                     taskGroup.enter()
                     self.apiController.deleteList(withListID: readingListID, completion: { (deleteError) in
                         defer {
+                            progress?.completedUnitCount += 1
                             taskGroup.leave()
                         }
                         guard deleteError == nil else {
@@ -442,6 +452,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
                     taskGroup.enter()
                     self.apiController.updateList(withListID: readingListID, name: readingListName, description: localReadingList.readingListDescription, completion: { (updateError) in
                         defer {
+                            progress?.completedUnitCount += 1
                             taskGroup.leave()
                         }
                         guard updateError == nil else {
@@ -468,6 +479,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
                 taskGroup.enter()
                 self.apiController.createLists(listNamesAndDescriptionsToCreate, completion: { (readingListIDs, createError) in
                     defer {
+                        progress?.completedUnitCount += Int64(end - start)
                         taskGroup.leave()
                     }
                     guard let readingListIDs = readingListIDs else {
@@ -523,7 +535,9 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
         entriesToCreateOrUpdateFetch.sortDescriptors = [NSSortDescriptor(key: "createdDate", ascending: false)]
         let localReadingListEntriesToUpdate =  try moc.fetch(entriesToCreateOrUpdateFetch)
         
-       
+        parentProgress?.completedUnitCount += Int64(localReadingListEntriesToUpdate.count)
+        progress?.completedUnitCount += Int64(localReadingListEntriesToUpdate.count)
+        
         var deletedReadingListEntries: [Int64: ReadingListEntry] = [:]
         var entriesToAddByListID: [Int64: [(project: String, title: String, entry: ReadingListEntry)]] = [:]
         
@@ -550,6 +564,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
                     taskGroup.enter()
                     self.apiController.removeEntry(withEntryID: readingListEntryID, fromListWithListID: readingListID, completion: { (deleteError) in
                         defer {
+                            progress?.completedUnitCount += 1
                             taskGroup.leave()
                         }
                         guard deleteError == nil else {
@@ -601,6 +616,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
                     let entryProjectAndTitles = entries[start..<end].map { (project: $0.project, title: $0.title) }
                     self.apiController.addEntriesToList(withListID: readingListID, entries: entryProjectAndTitles, completion: { (readingListEntryIDs, createError) in
                         defer {
+                            progress?.completedUnitCount += Int64(end - start)
                             taskGroup.leave()
                         }
                         guard let readingListEntryIDs = readingListEntryIDs else {
@@ -776,10 +792,19 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
         }
     }
     
-    internal func createOrUpdate(remoteReadingLists: [APIReadingList], deleteMissingLocalLists: Bool = false, inManagedObjectContext moc: NSManagedObjectContext) throws {
+    internal func createOrUpdate(remoteReadingLists: [APIReadingList], deleteMissingLocalLists: Bool = false, inManagedObjectContext moc: NSManagedObjectContext, parentProgress: Progress? = nil) throws {
         guard remoteReadingLists.count > 0 || deleteMissingLocalLists else {
             return
         }
+        
+        var progress: Progress?
+        if let parentProgress = parentProgress {
+            let actualProgress = Progress(totalUnitCount: Int64(remoteReadingLists.count))
+            parentProgress.totalUnitCount += actualProgress.totalUnitCount
+            parentProgress.addChild(actualProgress, withPendingUnitCount: actualProgress.totalUnitCount)
+            progress = actualProgress
+        }
+        
         // Arrange remote lists by ID and name for merging with local lists
         var remoteReadingListsByID: [Int64: APIReadingList] = [:]
         var remoteReadingListsByName: [String: [Int64: APIReadingList]] = [:] // server still allows multiple lists with the same name
@@ -834,6 +859,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
             } else {
                 localReadingList.update(with: remoteReadingListForUpdate)
             }
+            progress?.completedUnitCount += 1
         }
         
         if deleteMissingLocalLists {
@@ -863,7 +889,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
         }
     }
     
-    internal func createOrUpdate(remoteReadingListEntries: [APIReadingListEntry], for readingListID: Int64? = nil, deleteMissingLocalEntries: Bool = false, inManagedObjectContext moc: NSManagedObjectContext) throws {
+    internal func createOrUpdate(remoteReadingListEntries: [APIReadingListEntry], for readingListID: Int64? = nil, deleteMissingLocalEntries: Bool = false, inManagedObjectContext moc: NSManagedObjectContext, parentProgress: Progress? = nil) throws {
         guard remoteReadingListEntries.count > 0 || deleteMissingLocalEntries else {
             return
         }
@@ -883,6 +909,14 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
             }
             
             remoteReadingListEntriesByReadingListID[listID, default: [:]][articleKey] = remoteReadingListEntry
+        }
+        
+        var progress: Progress?
+        if let parentProgress = parentProgress {
+            let actualProgress = Progress(totalUnitCount: Int64(remoteReadingListEntriesByReadingListID.count))
+            parentProgress.totalUnitCount += actualProgress.totalUnitCount
+            parentProgress.addChild(actualProgress, withPendingUnitCount: actualProgress.totalUnitCount)
+            progress = actualProgress
         }
         
         var entriesToDelete: [ReadingListEntry] = []
@@ -938,6 +972,7 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
                     moc.reset()
                 }
             }
+            progress?.completedUnitCount += 1
         }
     }
 }

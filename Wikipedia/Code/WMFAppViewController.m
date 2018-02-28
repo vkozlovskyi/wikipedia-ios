@@ -151,6 +151,11 @@ static NSString *const WMFLastRemoteAppConfigCheckAbsoluteTimeKey = @"WMFLastRem
                                              selector:@selector(articleWasUpdated:)
                                                  name:WMFArticleUpdatedNotification
                                                object:nil];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(syncProgressFractionCompletedDidChange:)
+                                                 name:WMFReadingListsController.syncProgressDidChangeNotification
+                                               object:nil];
 }
 
 - (UIStatusBarStyle)preferredStatusBarStyle {
@@ -1552,6 +1557,14 @@ static NSString *const WMFDidShowOnboarding = @"DidShowOnboarding5.3";
         [[NSUserDefaults wmf_userDefaults] wmf_setAppTheme:theme];
         [self.settingsViewController loadSections];
     }
+}
+
+#pragma mark - Sync progress change
+
+- (void)syncProgressFractionCompletedDidChange:(NSNotification *)note {
+    NSNumber *fractionCompleted = note.userInfo[WMFReadingListsController.syncProgressDidChangeFractionCompletedKey];
+    
+    NSLog(@"fractionCompleted: %f", fractionCompleted.doubleValue);
 }
 
 #pragma mark - Article saved state changed
