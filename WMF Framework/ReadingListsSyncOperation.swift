@@ -51,7 +51,8 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
     }
     
     func executeSync(on moc: NSManagedObjectContext) throws {
-        
+        DDLogDebug("RLAPI sync start")
+
         let syncEndpointsAreAvailable = moc.wmf_isSyncRemotelyEnabled
         
         let rawSyncState = moc.wmf_numberValue(forKey: WMFReadingListSyncStateKey)?.int64Value ?? 0
@@ -209,6 +210,9 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
         if moc.hasChanges {
             try moc.save()
         }
+        
+        DDLogDebug("RLAPI sync end")
+        
         finish()
     }
 
@@ -305,6 +309,8 @@ internal class ReadingListsSyncOperation: ReadingListsOperation {
         let taskGroup = WMFTaskGroup()
         taskGroup.enter()
         apiController.updatedListsAndEntries(since: since, completion: { (lists, entries, since, error) in
+            DDLogDebug("RLAPI updated lists:\n\(lists)")
+            DDLogDebug("RLAPI updated entries:\n\(entries)")
             updateError = error
             updatedLists =  lists
             updatedEntries = entries
