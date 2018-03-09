@@ -82,14 +82,14 @@ public enum ReadingListError: Error, Equatable {
 @objc(WMFReadingListsController)
 public class ReadingListsController: NSObject {
     @objc public static let syncStateDidChangeNotification = NSNotification.Name(rawValue: "WMFReadingListsSyncStateDidChangeNotification")
-    @objc public static let syncProgressDidChangeNotification = NSNotification.Name(rawValue:"WMFSyncProgressDidChangeNotification")
-    @objc public static let syncProgressDidChangeFractionCompletedKey = "fractionCompleted"
+//    @objc public static let syncProgressDidChangeNotification = NSNotification.Name(rawValue:"WMFSyncProgressDidChangeNotification")
+//    @objc public static let syncProgressDidChangeFractionCompletedKey = "fractionCompleted"
     
     internal weak var dataStore: MWKDataStore!
     internal let apiController = ReadingListsAPIController()
     
-    private var observedOperations: [Operation: NSKeyValueObservation] = [:]
-    private var observedProgresses: [Operation: NSKeyValueObservation] = [:]
+//    private var observedOperations: [Operation: NSKeyValueObservation] = [:]
+//    private var observedProgresses: [Operation: NSKeyValueObservation] = [:]
     
     private let operationQueue = OperationQueue()
     private var updateTimer: Timer?
@@ -100,27 +100,27 @@ public class ReadingListsController: NSObject {
         operationQueue.maxConcurrentOperationCount = 1
     }
     
-    private func postSyncProgressDidChangeNotificationOnTheMainThread(_ fractionCompleted: Double) {
-        DispatchQueue.main.async {
-            let userInfo = [ReadingListsController.syncProgressDidChangeFractionCompletedKey: fractionCompleted]
-            NotificationCenter.default.post(name: ReadingListsController.syncProgressDidChangeNotification, object: nil, userInfo: userInfo)
-        }
-    }
+//    private func postSyncProgressDidChangeNotificationOnTheMainThread(_ fractionCompleted: Double) {
+//        DispatchQueue.main.async {
+//            let userInfo = [ReadingListsController.syncProgressDidChangeFractionCompletedKey: fractionCompleted]
+//            NotificationCenter.default.post(name: ReadingListsController.syncProgressDidChangeNotification, object: nil, userInfo: userInfo)
+//        }
+//    }
     
-    private func addOperation(_ operation: ReadingListsOperation) {
-        observedOperations[operation] = operation.observe(\.isFinished, changeHandler: { (operation, change) in
-            if operation.isFinished {
-                self.observedOperations.removeValue(forKey: operation)?.invalidate()
-                self.observedProgresses.removeValue(forKey: operation)?.invalidate()
-            } else if operation.isExecuting {
-                self.postSyncProgressDidChangeNotificationOnTheMainThread(operation.progress.fractionCompleted)
-            }
-        })
-        observedProgresses[operation] = operation.progress.observe(\.fractionCompleted, changeHandler: { (progress, change) in
-            self.postSyncProgressDidChangeNotificationOnTheMainThread(progress.fractionCompleted)
-        })
-        operationQueue.addOperation(operation)
-    }
+//    private func addOperation(_ operation: ReadingListsOperation) {
+//        observedOperations[operation] = operation.observe(\.isFinished, changeHandler: { (operation, change) in
+//            if operation.isFinished {
+//                self.observedOperations.removeValue(forKey: operation)?.invalidate()
+//                self.observedProgresses.removeValue(forKey: operation)?.invalidate()
+//            } else if operation.isExecuting {
+//                self.postSyncProgressDidChangeNotificationOnTheMainThread(operation.progress.fractionCompleted)
+//            }
+//        })
+//        observedProgresses[operation] = operation.progress.observe(\.fractionCompleted, changeHandler: { (progress, change) in
+//            self.postSyncProgressDidChangeNotificationOnTheMainThread(progress.fractionCompleted)
+//        })
+//        operationQueue.addOperation(operation)
+//    }
     
     // User-facing actions. Everything is performed on the main context
     public func createReadingList(named name: String, description: String? = nil, with articles: [WMFArticle] = []) throws -> ReadingList {
@@ -419,7 +419,7 @@ public class ReadingListsController: NSObject {
         #if TEST
         #else
         let sync = ReadingListsSyncOperation(readingListsController: self)
-        addOperation(sync)
+        operationQueue.addOperation(sync)
         operationQueue.addOperation {
             DispatchQueue.main.async(execute: completion)
         }
@@ -436,7 +436,7 @@ public class ReadingListsController: NSObject {
                 self.syncState = newValue
             }
             let sync = ReadingListsSyncOperation(readingListsController: self)
-            addOperation(sync)
+            operationQueue.addOperation(sync)
             operationQueue.addOperation {
                 DispatchQueue.main.async(execute: completion)
             }
@@ -445,7 +445,7 @@ public class ReadingListsController: NSObject {
     
     @objc private func _sync() {
         let sync = ReadingListsSyncOperation(readingListsController: self)
-        addOperation(sync)
+        operationQueue.addOperation(sync)
     }
     
     @objc private func _syncIfNotSyncing() {
