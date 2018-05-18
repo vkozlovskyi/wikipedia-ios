@@ -19,8 +19,18 @@
         WMF_SAFE_KEYPATH(WMFAnnouncement.new, actionURL): @"action.url",
         WMF_SAFE_KEYPATH(WMFAnnouncement.new, captionHTML): @"caption_HTML",
         WMF_SAFE_KEYPATH(WMFAnnouncement.new, caption): @"caption_HTML",
-        WMF_SAFE_KEYPATH(WMFAnnouncement.new, imageURL): @"image_url",
+        WMF_SAFE_KEYPATH(WMFAnnouncement.new, imageURL): @[@"image_url", @"image"],
+        WMF_SAFE_KEYPATH(WMFAnnouncement.new, minVersion): @"min_version",
+        WMF_SAFE_KEYPATH(WMFAnnouncement.new, maxVersion): @"max_version",
+        WMF_SAFE_KEYPATH(WMFAnnouncement.new, beta): @"beta",
+        WMF_SAFE_KEYPATH(WMFAnnouncement.new, loggedIn): @"logged_in",
+        WMF_SAFE_KEYPATH(WMFAnnouncement.new, readingListSyncEnabled): @"reading_list_sync_enabled",
+        WMF_SAFE_KEYPATH(WMFAnnouncement.new, negativeText): @"negative_text",
     };
+}
+
++ (NSUInteger)modelVersion {
+    return 2;
 }
 
 + (NSValueTransformer *)actionURLJSONTransformer {
@@ -39,15 +49,20 @@
 
 + (NSValueTransformer *)imageURLJSONTransformer {
     return [MTLValueTransformer
-        transformerUsingForwardBlock:^NSURL *(NSString *urlString,
+        transformerUsingForwardBlock:^NSURL *(NSDictionary *values,
                                               BOOL *success,
                                               NSError *__autoreleasing *error) {
+            NSString *urlString = values[@"image_url"] ?: values[@"image"];
             return [NSURL wmf_optionalURLWithString:urlString];
         }
-        reverseBlock:^NSString *(NSURL *URL,
+        reverseBlock:^NSDictionary *(NSURL *URL,
                                  BOOL *success,
                                  NSError *__autoreleasing *error) {
-            return [URL absoluteString];
+            NSString *URLString = [URL absoluteString];
+            if (!URLString) {
+                return @{};
+            }
+            return  @{@"image_url": URLString, @"image": URLString};
         }];
 }
 
