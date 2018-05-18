@@ -95,16 +95,27 @@
 }
 
 - (NSArray<WMFAnnouncement *> *)filterAnnouncementsForiOSPlatform:(NSArray<WMFAnnouncement *> *)announcements {
-
+    NSString *version = [[NSBundle mainBundle] wmf_shortVersionString];
     NSArray<WMFAnnouncement *> *validAnnouncements = [announcements wmf_select:^BOOL(WMFAnnouncement *obj) {
         if (![obj isKindOfClass:[WMFAnnouncement class]]) {
             return NO;
         }
-        if ([obj.platforms containsObject:@"iOSApp"]) {
-            return YES;
-        } else {
+        
+        if (![obj.platforms containsObject:@"iOSAppV2"]) {
             return NO;
         }
+        
+        NSString *minVersion = obj.minVersion;
+        if (version && minVersion && [minVersion compare:version options:NSNumericSearch] == NSOrderedDescending) {
+            return NO;
+        }
+        
+        NSString *maxVersion = obj.maxVersion;
+        if (version && maxVersion && [version compare:maxVersion options:NSNumericSearch] == NSOrderedDescending) {
+            return NO;
+        }
+        
+        return YES;
     }];
     return validAnnouncements;
 }
