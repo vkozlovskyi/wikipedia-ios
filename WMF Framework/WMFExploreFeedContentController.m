@@ -412,6 +412,38 @@ NSString *const WMFExploreFeedPreferencesMightChangeNotification = @"WMFExploreF
     }];
 }
 
+- (void)saveNewExploreFeedPreferences:(NSDictionary *)newExploreFeedPreferences updateFeed:(BOOL)updateFeed {
+    WMFAsyncBlockOperation *op = [[WMFAsyncBlockOperation alloc] initWithAsyncBlock:^(WMFAsyncBlockOperation *_Nonnull op) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSManagedObjectContext *moc = self.dataStore.feedImportContext;
+            [moc wmf_setValue:newExploreFeedPreferences forKey:WMFExploreFeedPreferencesKey];
+            [self applyExploreFeedPreferencesToAllObjectsInManagedObjectContext:moc];
+            [self save:moc];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (updateFeed) {
+                    [self updateFeedSourcesUserInitiated:YES completion:nil];
+                }
+                [op finish];
+            });
+        });
+    }];
+    [self.operationQueue addOperation:op];
+}
+
+- (void)rejectNewExploreFeedPreferences:(NSDictionary *)oldExploreFeedPreferences {
+    WMFAsyncBlockOperation *op = [[WMFAsyncBlockOperation alloc] initWithAsyncBlock:^(WMFAsyncBlockOperation *_Nonnull op) {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            NSManagedObjectContext *moc = self.dataStore.feedImportContext;
+            [moc wmf_setValue:oldExploreFeedPreferences forKey:WMFExploreFeedPreferencesKey];
+            [self save:moc];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [op finish];
+            });
+        });
+    }];
+    [self.operationQueue addOperation:op];
+}
+
 - (void)updateExploreFeedPreferences:(void(^)(NSMutableDictionary *newPreferences))update completion:(nullable dispatch_block_t)completion {
     WMFAssertMainThread(@"updateExploreFeedPreferences: must be called on the main thread");
     WMFAsyncBlockOperation *op = [[WMFAsyncBlockOperation alloc] initWithAsyncBlock:^(WMFAsyncBlockOperation *_Nonnull op) {
