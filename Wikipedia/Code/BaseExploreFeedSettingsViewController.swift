@@ -205,7 +205,7 @@ extension BaseExploreFeedSettingsViewController {
             guard self.shouldReload else {
                 return
             }
-            self.tableView.reloadRows(at: self.indexPathsForCellsThatNeedReloading, with: .automatic)
+            self.tableView.reloadRows(at: self.indexPathsForCellsThatNeedReloading, with: .none)
         }
     }
 }
