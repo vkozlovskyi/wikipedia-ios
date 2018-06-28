@@ -311,7 +311,7 @@ NSString *const WMFExploreFeedPreferencesMightChangeNotification = @"WMFExploreF
                 return;
             }
             self.exploreFeedPreferences = newExploreFeedPreferences;
-            [NSNotificationCenter.defaultCenter postNotificationName:WMFExplorePreferencesDidChangeNotification object:self.exploreFeedPreferences];
+            [NSNotificationCenter.defaultCenter postNotificationName:WMFExploreFeedPreferencesDidChangeNotification object:self.exploreFeedPreferences];
         }
     }
 }

@@ -79,7 +79,7 @@ class BaseExploreFeedSettingsViewController: UIViewController {
         tableView.register(WMFSettingsTableViewCell.wmf_classNib(), forCellReuseIdentifier: WMFSettingsTableViewCell.identifier)
         tableView.register(WMFTableHeaderFooterLabelView.wmf_classNib(), forHeaderFooterViewReuseIdentifier: WMFTableHeaderFooterLabelView.identifier)
         apply(theme: theme)
-        NotificationCenter.default.addObserver(self, selector: #selector(exploreFeedPreferencesDidChange(_:)), name: NSNotification.Name.WMFExplorePreferencesDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(exploreFeedPreferencesDidChange(_:)), name: NSNotification.Name.WMFExploreFeedPreferencesDidChange, object: nil)
     }
 
     var preferredLanguages: [MWKLanguageLink] {
