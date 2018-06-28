@@ -2,10 +2,12 @@
 
 @import UIKit;
 
+@class WMFExploreFeedContentController;
 @class MWKDataStore;
 
 extern NSString *_Nonnull const WMFExploreFeedContentControllerBusyStateDidChange;
-extern NSString *_Nonnull const WMFExplorePreferencesDidChangeNotification;
+extern NSString *_Nonnull const WMFExploreFeedPreferencesDidChangeNotification;
+extern NSString *_Nonnull const WMFExploreFeedPreferencesMightChangeNotification;
 
 extern const NSInteger WMFExploreFeedMaximumNumberOfDays;
 
@@ -72,6 +74,9 @@ extern const NSInteger WMFExploreFeedMaximumNumberOfDays;
  Returns a set of integers that represent customizable content group kinds.
  */
 + (nonnull NSSet<NSNumber *> *)customizableContentGroupKindNumbers;
+
+- (void)saveNewExploreFeedPreferences:(nonnull NSDictionary *)newExploreFeedPreferences updateFeed:(BOOL)updateFeed;
+- (void)rejectNewExploreFeedPreferences:(nonnull NSDictionary *)oldExploreFeedPreferences;
 
 #if WMF_TWEAKS_ENABLED
 - (void)debugSendRandomInTheNewsNotification;
