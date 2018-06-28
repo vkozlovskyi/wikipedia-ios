@@ -1,11 +1,11 @@
 import UIKit
 
-private struct FeedCard: ExploreFeedSettingsSwitchItem {
+private class FeedCard: ExploreFeedSettingsSwitchItem {
+    let contentGroupKind: WMFContentGroupKind
     let title: String
-    let subtitle: String?
+    var subtitle: String?
     let disclosureType: WMFSettingsMenuItemDisclosureType
-    let disclosureText: String?
-    let type: ExploreFeedSettingsItemType
+    var disclosureText: String? = nil
     let iconName: String?
     let iconColor: UIColor?
     let iconBackgroundColor: UIColor?
@@ -13,32 +13,14 @@ private struct FeedCard: ExploreFeedSettingsSwitchItem {
     var isOn: Bool = true
 
     init(contentGroupKind: WMFContentGroupKind, displayType: DisplayType) {
-        type = ExploreFeedSettingsItemType.feedCard(contentGroupKind)
-
-        let languageCodes = SessionSingleton.sharedInstance().dataStore.feedContentController.languageCodes(for: contentGroupKind)
-
-        let disclosureTextString: () -> String = {
-            let preferredLanguages = MWKLanguageLinkController.sharedInstance().preferredLanguages
-            switch languageCodes.count {
-            case 1... where contentGroupKind.isGlobal:
-                return CommonStrings.onTitle
-            case preferredLanguages.count:
-                return CommonStrings.onAllTitle
-            case 1...:
-                return CommonStrings.onTitle(languageCodes.count)
-            default:
-                return CommonStrings.offTitle
-            }
-        }
+        self.contentGroupKind = contentGroupKind
 
         var singleLanguageDescription: String?
-        var multipleLanguagesDescription: String?
 
         switch contentGroupKind {
         case .news:
             title = CommonStrings.inTheNewsTitle
             singleLanguageDescription = WMFLocalizedString("explore-feed-preferences-in-the-news-description", value: "Articles about current events", comment: "Description of In the news section of Explore feed")
-            multipleLanguagesDescription = languageCodes.joined(separator: ", ").uppercased()
             iconName = "in-the-news-mini"
             iconColor = .wmf_lightGray
             iconBackgroundColor = .wmf_lighterGray
@@ -100,23 +82,60 @@ private struct FeedCard: ExploreFeedSettingsSwitchItem {
             iconBackgroundColor = nil
         }
 
-        if contentGroupKind.isGlobal {
-            multipleLanguagesDescription = "Not language specific"
-        } else {
-            multipleLanguagesDescription = languageCodes.joined(separator: ", ").uppercased()
-        }
-
         if displayType == .singleLanguage {
             subtitle = singleLanguageDescription
             disclosureType = .switch
-            disclosureText = nil
             controlTag = Int(contentGroupKind.rawValue)
             isOn = contentGroupKind.isInFeed
         } else {
-            subtitle = multipleLanguagesDescription
             disclosureType = .viewControllerWithDisclosureText
-            disclosureText = disclosureTextString()
+            disclosureText = multipleLanguagesDisclosureText(for: contentGroupKind)
+            subtitle = multipleLanguagesSubtitle(for: contentGroupKind)
         }
+    }
+
+    private func multipleLanguagesDisclosureText(for contentGroupKind: WMFContentGroupKind) -> String {
+        let preferredLanguages = MWKLanguageLinkController.sharedInstance().preferredLanguages
+        let languageCodes = contentGroupKind.languageCodes
+        switch languageCodes.count {
+        case 1... where contentGroupKind.isGlobal:
+            return CommonStrings.onTitle
+        case preferredLanguages.count:
+            return CommonStrings.onAllTitle
+        case 1...:
+            return CommonStrings.onTitle(languageCodes.count)
+        default:
+            return CommonStrings.offTitle
+        }
+    }
+
+    func updateIsOn(for displayType: DisplayType) {
+        guard displayType == .singleLanguage else {
+            return
+        }
+        isOn = contentGroupKind.isInFeed
+    }
+
+    func updateDisclosureText(for displayType: DisplayType) {
+        guard displayType == .multipleLanguages else {
+            return
+        }
+        disclosureText = multipleLanguagesDisclosureText(for: contentGroupKind)
+    }
+
+    private func multipleLanguagesSubtitle(for contentGroupKind: WMFContentGroupKind) -> String {
+        if contentGroupKind.isGlobal {
+            return WMFLocalizedString("explore-feed-preferences-global-cards-subtitle", value: "Not language specific", comment: "Subtitle desribing non-language specific feed cards")
+        } else {
+            return contentGroupKind.languageCodes.joined(separator: ", ").uppercased()
+        }
+    }
+
+    func updateSubtitle(for displayType: DisplayType) {
+        guard displayType == .multipleLanguages else {
+            return
+        }
+        subtitle = multipleLanguagesSubtitle(for: contentGroupKind)
     }
 }
 
@@ -149,11 +168,19 @@ class ExploreFeedSettingsViewController: BaseExploreFeedSettingsViewController {
         return item is FeedCard
     }
 
+    override func reload() {
+        for feedCard in feedCards {
+            feedCard.updateDisclosureText(for: displayType)
+            feedCard.updateSubtitle(for: displayType)
+        }
+        tableView.reloadRows(at: indexPathsForCellsThatNeedReloading, with: .none)
+    }
+
     override func isLanguageSwitchOn(for languageLink: MWKLanguageLink) -> Bool {
         return languageLink.isInFeed
     }
 
-    override var sections: [ExploreFeedSettingsSection] {
+    private lazy var feedCards: [FeedCard] = {
         let inTheNews = FeedCard(contentGroupKind: .news, displayType: displayType)
         let onThisDay = FeedCard(contentGroupKind: .onThisDay, displayType: displayType)
         let featuredArticle = FeedCard(contentGroupKind: .featuredArticle, displayType: displayType)
@@ -163,10 +190,13 @@ class ExploreFeedSettingsViewController: BaseExploreFeedSettingsViewController {
         let pictureOfTheDay = FeedCard(contentGroupKind: .pictureOfTheDay, displayType: displayType)
         let continueReading = FeedCard(contentGroupKind: .continueReading, displayType: displayType)
         let relatedPages = FeedCard(contentGroupKind: .relatedPages, displayType: displayType)
+        return [inTheNews, onThisDay, featuredArticle, topRead, places, randomizer, pictureOfTheDay, continueReading, relatedPages]
+    }()
 
+    override var sections: [ExploreFeedSettingsSection] {
         let togglingFeedCardsFooterText = WMFLocalizedString("explore-feed-preferences-languages-footer-text", value: "Hiding all Explore feed cards in all of your languages will turn off the Explore tab.", comment: "Text for explaining the effects of hiding all feed cards")
 
-        let customization = ExploreFeedSettingsSection(headerTitle: WMFLocalizedString("explore-feed-preferences-customize-explore-feed", value: "Customize the Explore feed", comment: "Title of the Settings section that allows users to customize the Explore feed"), footerTitle: String.localizedStringWithFormat("%@ %@", WMFLocalizedString("explore-feed-preferences-customize-explore-feed-footer-text", value: "Hiding a card type will stop this card type from appearing in the Explore feed.", comment: "Text for explaining the effects of hiding feed cards"), togglingFeedCardsFooterText), items: [inTheNews, onThisDay, featuredArticle, topRead, places, randomizer, pictureOfTheDay, continueReading, relatedPages])
+        let customization = ExploreFeedSettingsSection(headerTitle: WMFLocalizedString("explore-feed-preferences-customize-explore-feed", value: "Customize the Explore feed", comment: "Title of the Settings section that allows users to customize the Explore feed"), footerTitle: String.localizedStringWithFormat("%@ %@", WMFLocalizedString("explore-feed-preferences-customize-explore-feed-footer-text", value: "Hiding a card type will stop this card type from appearing in the Explore feed.", comment: "Text for explaining the effects of hiding feed cards"), togglingFeedCardsFooterText), items: feedCards)
 
         var languageItems: [ExploreFeedSettingsItem] = self.languages
         languageItems.append(ExploreFeedSettingsGlobalCards())
@@ -191,14 +221,12 @@ extension ExploreFeedSettingsViewController {
             return
         }
         let item = getItem(at: indexPath)
-        switch item.type {
-        case .feedCard(let contentGroupKind):
-            let feedCardSettingsViewController = FeedCardSettingsViewController()
-            feedCardSettingsViewController.configure(with: item.title, dataStore: dataStore, contentGroupKind: contentGroupKind, theme: theme)
-            navigationController?.pushViewController(feedCardSettingsViewController, animated: true)
-        default:
+        guard let feedCard = item as? FeedCard else {
             return
         }
+        let feedCardSettingsViewController = FeedCardSettingsViewController()
+        feedCardSettingsViewController.configure(with: item.title, dataStore: dataStore, contentGroupKind: feedCard.contentGroupKind, theme: theme)
+        navigationController?.pushViewController(feedCardSettingsViewController, animated: true)
         self.tableView.deselectRow(at: indexPath, animated: true)
     }
 }
