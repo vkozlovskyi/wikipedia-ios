@@ -17,6 +17,7 @@ static const NSString *kvo_WMFExploreFeedContentController_operationQueue_operat
 
 NSString *const WMFExploreFeedPreferencesKey = @"WMFExploreFeedPreferencesKey";
 NSString *const WMFExploreFeedPreferencesDidChangeNotification = @"WMFExploreFeedPreferencesDidChangeNotification";
+NSString *const WMFExploreFeedPreferencesMightChangeNotification = @"WMFExploreFeedPreferencesMightChangeNotification";
 
 @interface WMFExploreFeedContentController ()
 
