@@ -113,7 +113,7 @@ class ExploreFeedSettingsViewController: BaseExploreFeedSettingsViewController {
     }()
 
     override var shouldReload: Bool {
-        return displayType == .multipleLanguages && !didToggleMasterSwitch
+        return !didToggleMasterSwitch
     }
 
     override func viewDidLoad() {
