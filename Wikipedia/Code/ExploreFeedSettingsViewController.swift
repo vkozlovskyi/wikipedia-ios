@@ -19,62 +19,79 @@ private struct FeedCard: ExploreFeedSettingsSwitchItem {
 
         let disclosureTextString: () -> String = {
             let preferredLanguages = MWKLanguageLinkController.sharedInstance().preferredLanguages
-            if (languageCodes.count == preferredLanguages.count) {
-                return WMFLocalizedString("explore-feed-preferences-feed-card-visibility-all-languages", value: "On all", comment: "Text for Explore feed card setting indicating that the feed card is active in all preferred languages")
-            } else if languageCodes.count > 0 {
-                return String.localizedStringWithFormat(WMFLocalizedString("explore-feed-preferences-feed-card-visibility-languages-count", value:"On %1$d", comment: "Text for Explore feed card setting indicating the number of languages it's visible in - %1$d is replaced with the number of languages"), languageCodes.count)
-            } else {
-                return WMFLocalizedString("explore-feed-preferences-feed-card-visibility-no-languages", value: "On all", comment: "Text for Explore feed card setting indicating that the feed card is hidden in all preferred languages")
+            switch languageCodes.count {
+            case 1... where contentGroupKind.isGlobal:
+                return CommonStrings.onTitle
+            case preferredLanguages.count:
+                return CommonStrings.onAllTitle
+            case 1...:
+                return CommonStrings.onTitle(languageCodes.count)
+            default:
+                return CommonStrings.offTitle
             }
         }
 
-        var feedCardDescription: String?
+        var singleLanguageDescription: String?
+        var multipleLanguagesDescription: String?
 
         switch contentGroupKind {
         case .news:
             title = CommonStrings.inTheNewsTitle
-            feedCardDescription = WMFLocalizedString("explore-feed-preferences-in-the-news-description", value: "Articles about current events", comment: "Description of In the news section of Explore feed")
+            singleLanguageDescription = WMFLocalizedString("explore-feed-preferences-in-the-news-description", value: "Articles about current events", comment: "Description of In the news section of Explore feed")
+            multipleLanguagesDescription = languageCodes.joined(separator: ", ").uppercased()
             iconName = "in-the-news-mini"
             iconColor = .wmf_lightGray
             iconBackgroundColor = .wmf_lighterGray
         case .onThisDay:
             title = CommonStrings.onThisDayTitle
-            feedCardDescription = WMFLocalizedString("explore-feed-preferences-on-this-day-description", value: "Events in history on this day", comment: "Description of On this day section of Explore feed")
+            singleLanguageDescription = WMFLocalizedString("explore-feed-preferences-on-this-day-description", value: "Events in history on this day", comment: "Description of On this day section of Explore feed")
             iconName = "on-this-day-mini"
             iconColor = .wmf_blue
             iconBackgroundColor = .wmf_lightBlue
         case .featuredArticle:
             title = "Featured article"
-            feedCardDescription = WMFLocalizedString("explore-feed-preferences-featured-article-description", value: "Daily featured article on Wikipedia", comment: "Description of Featured article section of Explore feed")
+            singleLanguageDescription = WMFLocalizedString("explore-feed-preferences-featured-article-description", value: "Daily featured article on Wikipedia", comment: "Description of Featured article section of Explore feed")
             iconName = "featured-mini"
             iconColor = .wmf_yellow
             iconBackgroundColor = .wmf_lightYellow
         case .topRead:
             title = CommonStrings.topReadTitle
-            feedCardDescription = WMFLocalizedString("explore-feed-preferences-top-read-description", value: "Daily most read articles", comment: "Description of Top read section of Explore feed")
+            singleLanguageDescription = WMFLocalizedString("explore-feed-preferences-top-read-description", value: "Daily most read articles", comment: "Description of Top read section of Explore feed")
             iconName = "trending-mini"
             iconColor = .wmf_blue
             iconBackgroundColor = .wmf_lightBlue
-        case .pictureOfTheDay:
-            title = CommonStrings.pictureOfTheDayTitle
-            feedCardDescription = WMFLocalizedString("explore-feed-preferences-picture-of-the-day-description", value: "Daily featured image from Commons", comment: "Description of Picture of the day section of Explore feed")
-            iconName = "potd-mini"
-            iconColor = .wmf_purple
-            iconBackgroundColor = .wmf_lightPurple
         case .location:
             fallthrough
         case .locationPlaceholder:
             title = CommonStrings.placesTabTitle
-            feedCardDescription = WMFLocalizedString("explore-feed-preferences-places-description", value: "Wikipedia articles near your location", comment: "Description of Places section of Explore feed")
+            singleLanguageDescription = WMFLocalizedString("explore-feed-preferences-places-description", value: "Wikipedia articles near your location", comment: "Description of Places section of Explore feed")
             iconName = "nearby-mini"
             iconColor = .wmf_green
             iconBackgroundColor = .wmf_lightGreen
         case .random:
             title = CommonStrings.randomizerTitle
-            feedCardDescription = WMFLocalizedString("explore-feed-preferences-randomizer-description", value: "Generate random artilces to read", comment: "Description of Randomizer section of Explore feed")
+            singleLanguageDescription = WMFLocalizedString("explore-feed-preferences-randomizer-description", value: "Generate random articles to read", comment: "Description of Randomizer section of Explore feed")
             iconName = "random-mini"
             iconColor = .wmf_red
             iconBackgroundColor = .wmf_lightRed
+        case .pictureOfTheDay:
+            title = CommonStrings.pictureOfTheDayTitle
+            singleLanguageDescription = WMFLocalizedString("explore-feed-preferences-potd-description", value: "Daily featured image from Commons", comment: "Description of Picture of the day section of Explore feed")
+            iconName = "potd-mini"
+            iconColor = .wmf_purple
+            iconBackgroundColor = .wmf_lightPurple
+        case .continueReading:
+            title = "Continue reading"
+            singleLanguageDescription = WMFLocalizedString("explore-feed-preferences-continue-reading-description", value: "Quick link back to reading an open article", comment: "Description of Continue reading section of Explore feed")
+            iconName = "today-mini"
+            iconColor = .wmf_lightGray
+            iconBackgroundColor = .wmf_lighterGray
+        case .relatedPages:
+            title = CommonStrings.relatedPagesTitle
+            singleLanguageDescription = WMFLocalizedString("explore-feed-preferences-related-pages-description", value: "Suggestions based on reading history", comment: "Description of Related pages section of Explore feed")
+            iconName = "recent-mini"
+            iconColor = .wmf_lightGray
+            iconBackgroundColor = .wmf_lighterGray
         default:
             assertionFailure("Group of kind \(contentGroupKind) is not customizable")
             title = ""
@@ -83,14 +100,20 @@ private struct FeedCard: ExploreFeedSettingsSwitchItem {
             iconBackgroundColor = nil
         }
 
+        if contentGroupKind.isGlobal {
+            multipleLanguagesDescription = "Not language specific"
+        } else {
+            multipleLanguagesDescription = languageCodes.joined(separator: ", ").uppercased()
+        }
+
         if displayType == .singleLanguage {
-            subtitle = feedCardDescription
+            subtitle = singleLanguageDescription
             disclosureType = .switch
             disclosureText = nil
             controlTag = Int(contentGroupKind.rawValue)
             isOn = contentGroupKind.isInFeed
         } else {
-            subtitle = languageCodes.joined(separator: ", ").uppercased()
+            subtitle = multipleLanguagesDescription
             disclosureType = .viewControllerWithDisclosureText
             disclosureText = disclosureTextString()
         }
@@ -135,19 +158,28 @@ class ExploreFeedSettingsViewController: BaseExploreFeedSettingsViewController {
         let onThisDay = FeedCard(contentGroupKind: .onThisDay, displayType: displayType)
         let featuredArticle = FeedCard(contentGroupKind: .featuredArticle, displayType: displayType)
         let topRead = FeedCard(contentGroupKind: .topRead, displayType: displayType)
-        let pictureOfTheDay = FeedCard(contentGroupKind: .pictureOfTheDay, displayType: displayType)
         let places = FeedCard(contentGroupKind: WMFLocationManager.isAuthorized() ? .location : .locationPlaceholder, displayType: displayType)
         let randomizer = FeedCard(contentGroupKind: .random, displayType: displayType)
+        let pictureOfTheDay = FeedCard(contentGroupKind: .pictureOfTheDay, displayType: displayType)
+        let continueReading = FeedCard(contentGroupKind: .continueReading, displayType: displayType)
+        let relatedPages = FeedCard(contentGroupKind: .relatedPages, displayType: displayType)
 
         let togglingFeedCardsFooterText = WMFLocalizedString("explore-feed-preferences-languages-footer-text", value: "Hiding all Explore feed cards in all of your languages will turn off the Explore tab.", comment: "Text for explaining the effects of hiding all feed cards")
 
-        let customization = ExploreFeedSettingsSection(headerTitle: WMFLocalizedString("explore-feed-preferences-customize-explore-feed", value: "Customize the Explore feed", comment: "Title of the Settings section that allows users to customize the Explore feed"), footerTitle: String.localizedStringWithFormat("%@ %@", WMFLocalizedString("explore-feed-preferences-customize-explore-feed-footer-text", value: "Hiding a card type will stop this card type from appearing in the Explore feed.", comment: "Text for explaining the effects of hiding feed cards"), togglingFeedCardsFooterText), items: [inTheNews, onThisDay, featuredArticle, topRead, pictureOfTheDay, places, randomizer])
-        let languages = ExploreFeedSettingsSection(headerTitle: CommonStrings.languagesTitle, footerTitle: togglingFeedCardsFooterText, items: self.languages)
+        let customization = ExploreFeedSettingsSection(headerTitle: WMFLocalizedString("explore-feed-preferences-customize-explore-feed", value: "Customize the Explore feed", comment: "Title of the Settings section that allows users to customize the Explore feed"), footerTitle: String.localizedStringWithFormat("%@ %@", WMFLocalizedString("explore-feed-preferences-customize-explore-feed-footer-text", value: "Hiding a card type will stop this card type from appearing in the Explore feed.", comment: "Text for explaining the effects of hiding feed cards"), togglingFeedCardsFooterText), items: [inTheNews, onThisDay, featuredArticle, topRead, places, randomizer, pictureOfTheDay, continueReading, relatedPages])
+
+        var languageItems: [ExploreFeedSettingsItem] = self.languages
+        languageItems.append(ExploreFeedSettingsGlobalCards())
+        let languages = ExploreFeedSettingsSection(headerTitle: CommonStrings.languagesTitle, footerTitle: togglingFeedCardsFooterText, items: languageItems)
+
         let master = ExploreFeedSettingsMaster(title: WMFLocalizedString("explore-feed-preferences-turn-off-feed", value: "Turn off Explore tab", comment: "Text for the setting that allows users to turn off Explore tab"), isOn: UserDefaults.wmf_userDefaults().defaultTabType != .explore)
         let main = ExploreFeedSettingsSection(headerTitle: nil, footerTitle: WMFLocalizedString("explore-feed-preferences-turn-off-feed-disclosure", value: "Turning off the Explore tab will replace the Explore tab with a Settings tab.", comment: "Text for explaining the effects of turning off the Explore tab"), items: [master])
 
-        let sections = displayType == .singleLanguage ? [customization, main] : [customization, languages, main]
-        return sections
+        if displayType == .singleLanguage {
+            return [customization, main]
+        } else {
+            return [customization, languages, main]
+        }
     }
 }
 
@@ -183,6 +215,10 @@ extension ExploreFeedSettingsViewController {
         guard controlTag != -1 else { // master switch
             didToggleMasterSwitch = true
             UserDefaults.wmf_userDefaults().defaultTabType = sender.isOn ? .settings : .explore
+            return
+        }
+        guard controlTag != -2 else { // global cards
+            feedContentController.toggleGlobalContentGroupKinds(sender.isOn)
             return
         }
         if displayType == .singleLanguage {

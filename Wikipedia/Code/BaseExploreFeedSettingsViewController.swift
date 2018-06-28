@@ -32,11 +32,12 @@ struct ExploreFeedSettingsSection {
 enum ExploreFeedSettingsItemType {
     case feedCard(WMFContentGroupKind)
     case language(MWKLanguageLink)
-    case masterSwitch
+    case genericSwitch
 }
 
 struct ExploreFeedSettingsLanguage: ExploreFeedSettingsSwitchItem {
     let title: String
+    let subtitle: String?
     let type: ExploreFeedSettingsItemType
     let controlTag: Int
     let isOn: Bool
@@ -45,15 +46,25 @@ struct ExploreFeedSettingsLanguage: ExploreFeedSettingsSwitchItem {
     init(_ languageLink: MWKLanguageLink, controlTag: Int, isOn: Bool) {
         type = ExploreFeedSettingsItemType.language(languageLink)
         title = languageLink.localizedName
+        subtitle = languageLink.languageCode.uppercased()
         self.controlTag = controlTag
         self.isOn = isOn
         siteURL = languageLink.siteURL()
     }
 }
 
+struct ExploreFeedSettingsGlobalCards: ExploreFeedSettingsSwitchItem {
+    let type: ExploreFeedSettingsItemType = .genericSwitch
+    let disclosureType: WMFSettingsMenuItemDisclosureType = .switch
+    let title: String = WMFLocalizedString("explore-feed-preferences-global-cards-title", value: "Global cards", comment: "Title for the setting that allows users to toggle non-language specific feed cards")
+    let subtitle: String? = WMFLocalizedString("explore-feed-preferences-global-cards-description", value: "Non-language specific cards", comment: "Description of global feed cards")
+    let controlTag: Int = -2
+    let isOn: Bool = SessionSingleton.sharedInstance().dataStore.feedContentController.areGlobalContentGroupKindsInFeed
+}
+
 struct ExploreFeedSettingsMaster: ExploreFeedSettingsSwitchItem {
     let title: String
-    let type: ExploreFeedSettingsItemType = .masterSwitch
+    let type: ExploreFeedSettingsItemType = .genericSwitch
     let controlTag: Int = -1
     let isOn: Bool
 
