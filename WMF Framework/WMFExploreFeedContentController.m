@@ -307,9 +307,6 @@ NSString *const WMFExploreFeedPreferencesMightChangeNotification = @"WMFExploreF
                 continue;
             }
             NSDictionary *newExploreFeedPreferences = (NSDictionary *)keyValue.value;
-            if (self.exploreFeedPreferences == newExploreFeedPreferences) {
-                return;
-            }
             self.exploreFeedPreferences = newExploreFeedPreferences;
             [NSNotificationCenter.defaultCenter postNotificationName:WMFExploreFeedPreferencesDidChangeNotification object:self.exploreFeedPreferences];
         }
