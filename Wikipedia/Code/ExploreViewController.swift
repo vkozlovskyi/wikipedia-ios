@@ -402,12 +402,7 @@ class ExploreViewController: ColumnarCollectionViewController, ExploreCardViewCo
         cell.titleLabel.text = group.headerTitle
         cell.subtitleLabel.text = group.headerSubTitle
         cell.footerButton.setTitle(group.moreTitle, for: .normal)
-        switch group.contentGroupKind {
-        case .relatedPages, .locationPlaceholder:
-            cell.customizationButton.isHidden = false
-        default:
-            cell.customizationButton.isHidden = true
-        }
+        cell.customizationButton.isHidden = !group.contentGroupKind.isCustomizable
         cell.apply(theme: theme)
         cell.delegate = self
     }
@@ -529,6 +524,37 @@ extension ExploreViewController: ReadingListsAlertControllerDelegate {
     }
 }
 
+private extension WMFContentGroupKind {
+    var hideCardsActionTitle: String {
+        switch self {
+        case .featuredArticle:
+            return WMFLocalizedString("explore-feed-preferences-hide-featured-article-action-title", value: "Hide all Featured article cards", comment: "Title for action that allows users to hide all Featured article cards")
+        case .topRead:
+            return WMFLocalizedString("explore-feed-preferences-hide-top-read-action-title", value: "Hide all Top read cards", comment: "Title for action that allows users to hide all Top read cards")
+        case .news:
+            return WMFLocalizedString("explore-feed-preferences-hide-news-action-title", value: "Hide all Top read cards", comment: "Title for action that allows users to hide all In the news cards")
+        case .onThisDay:
+            return WMFLocalizedString("explore-feed-preferences-hide-on-this-day-action-title", value: "Hide all On this day cards", comment: "Title for action that allows users to hide all On this day cards")
+        case .location:
+            fallthrough
+        case .locationPlaceholder:
+            return WMFLocalizedString("explore-feed-preferences-hide-places-action-title", value: "Hide all Places cards", comment: "Title for action that allows users to hide all Places cards")
+        case .random:
+            return WMFLocalizedString("explore-feed-preferences-hide-randomizer-action-title", value: "Hide all Randomizer cards", comment: "Title for action that allows users to hide all Randomizer cards")
+        case .pictureOfTheDay:
+            return WMFLocalizedString("explore-feed-preferences-hide-picture-of-the-day-action-title", value: "Hide all Picture of the day cards", comment: "Title for action that allows users to hide all Picture of the day cards")
+        case .continueReading:
+            return WMFLocalizedString("explore-feed-preferences-hide-continue-reading-action-title", value: "Hide all Continue reading cards", comment: "Title for action that allows users to hide all Continue reading cards")
+        case .relatedPages:
+            return WMFLocalizedString("explore-feed-preferences-hide-because-you-read-action-title", value: "Hide all Because you read cards", comment: "Title for action that allows users to hide all Because you read cards")
+        default:
+            assertionFailure("\(self) is not customizable")
+            return ""
+            
+        }
+    }
+}
+
 extension ExploreViewController: ExploreCardCollectionViewCellDelegate {
     func exploreCardCollectionViewCellWantsCustomization(_ cell: ExploreCardCollectionViewCell) {
         guard let vc = cell.cardContent as? ExploreCardViewController,
@@ -540,32 +566,33 @@ extension ExploreViewController: ExploreCardCollectionViewCellDelegate {
         }
         present(sheet, animated: true)
     }
-    
+
     private func menuActionSheetForGroup(_ group: WMFContentGroup) -> UIAlertController? {
-        switch group.contentGroupKind {
-        case .relatedPages:
-            guard let url = group.headerContentURL else {
-                return nil
-            }
-            let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-            sheet.addAction(UIAlertAction(title: WMFLocalizedString("home-hide-suggestion-prompt", value: "Hide this suggestion", comment: "Title of button shown for users to confirm the hiding of a suggestion in the explore feed"), style: .destructive, handler: { (action) in
-                self.dataStore.setIsExcludedFromFeed(true, withArticleURL: url)
-                self.dataStore.viewContext.remove(group)
-            }))
-            sheet.addAction(UIAlertAction(title: WMFLocalizedString("home-hide-suggestion-cancel", value: "Cancel", comment: "Title of the button for cancelling the hiding of an explore feed suggestion\n{{Identical|Cancel}}"), style: .cancel, handler: nil))
-            return sheet
-        case .locationPlaceholder:
-            let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
-            sheet.addAction(UIAlertAction(title: WMFLocalizedString("explore-nearby-placeholder-dismiss", value: "Dismiss", comment: "Action button that will dismiss the nearby placeholder\n{{Identical|Dismiss}}"), style: .destructive, handler: { (action) in
-                UserDefaults.wmf_userDefaults().wmf_setPlacesDidPromptForLocationAuthorization(true)
-                group.wasDismissed = true
-                group.updateVisibility()
-            }))
-            sheet.addAction(UIAlertAction(title: WMFLocalizedString("explore-nearby-placeholder-cancel", value: "Cancel", comment: "Action button that will cancel dismissal of the nearby placeholder\n{{Identical|Cancel}}"), style: .cancel, handler: nil))
-            return sheet
-        default:
+        guard group.contentGroupKind.isCustomizable else {
             return nil
         }
+        let sheet = UIAlertController(title: nil, message: nil, preferredStyle: .actionSheet)
+        let customizeExploreFeed = UIAlertAction(title: WMFLocalizedString("explore-feed-preferences-customize-explore-feed-action-title", value: "Customize Explore feed", comment: "Title for action that allows users to go to the Explore feed settings screen"), style: .default) { (_) in
+            let exploreFeedSettingsViewController = ExploreFeedSettingsViewController()
+            exploreFeedSettingsViewController.showCloseButton = true
+            exploreFeedSettingsViewController.apply(theme: self.theme)
+            let themeableNavigationController = WMFThemeableNavigationController(rootViewController: exploreFeedSettingsViewController, theme: self.theme)
+            self.present(themeableNavigationController, animated: true)
+        }
+        let hideThisCard = UIAlertAction(title: WMFLocalizedString("explore-feed-preferences-hide-card-action-title", value: "Hide this card", comment: "Title for action that allows users to hide a feed card"), style: .default) { (_) in
+            self.dataStore.viewContext.remove(group)
+            group.updateVisibility()
+        }
+        let hideAllCards = UIAlertAction(title: group.contentGroupKind.hideCardsActionTitle, style: .default) { (_) in
+            self.dataStore.feedContentController.toggleContentGroup(of: group.contentGroupKind, isOn: false)
+        }
+        let cancel = UIAlertAction(title: CommonStrings.cancelActionTitle, style: .cancel)
+        sheet.addAction(hideThisCard)
+        sheet.addAction(hideAllCards)
+        sheet.addAction(customizeExploreFeed)
+        sheet.addAction(cancel)
+
+        return sheet
     }
     
     
