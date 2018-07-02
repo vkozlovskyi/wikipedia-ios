@@ -193,8 +193,8 @@ static NSString *const WMFLastRemoteAppConfigCheckAbsoluteTimeKey = @"WMFLastRem
                                            context:NULL];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(exploreFeedPreferencesMightChange:)
-                                                 name:WMFExploreFeedPreferencesMightChangeNotification
+                                             selector:@selector(exploreFeedPreferencesDidChange:)
+                                                 name:WMFExploreFeedPreferencesDidChangeNotification
                                                object:nil];
 
     self.readingListsAlertController = [[WMFReadingListsAlertController alloc] init];
@@ -453,7 +453,7 @@ static NSString *const WMFLastRemoteAppConfigCheckAbsoluteTimeKey = @"WMFLastRem
                                            tapCallBack:nil];
 }
 
-- (void)exploreFeedPreferencesMightChange:(NSNotification *)note {
+- (void)exploreFeedPreferencesDidChange:(NSNotification *)note {
     ExploreFeedPreferencesUpdateCoordinator *exploreFeedPreferencesUpdateCoordinator = (ExploreFeedPreferencesUpdateCoordinator *)note.object;
     [exploreFeedPreferencesUpdateCoordinator coordinateUpdateFrom:self];
 }

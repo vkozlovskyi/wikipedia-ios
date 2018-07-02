@@ -81,7 +81,7 @@ class BaseExploreFeedSettingsViewController: UIViewController {
         tableView.sectionFooterHeight = UITableViewAutomaticDimension
         tableView.estimatedSectionFooterHeight = 44
         apply(theme: theme)
-        NotificationCenter.default.addObserver(self, selector: #selector(exploreFeedPreferencesDidChange(_:)), name: NSNotification.Name.WMFExploreFeedPreferencesDidChange, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(exploreFeedPreferencesDidSave(_:)), name: NSNotification.Name.WMFExploreFeedPreferencesDidSave, object: nil)
     }
 
     var preferredLanguages: [MWKLanguageLink] {
@@ -218,7 +218,7 @@ extension BaseExploreFeedSettingsViewController: WMFSettingsTableViewCellDelegat
 // MARK: - Notifications
 
 extension BaseExploreFeedSettingsViewController {
-    @objc private func exploreFeedPreferencesDidChange(_ notification: Notification) {
+    @objc private func exploreFeedPreferencesDidSave(_ notification: Notification) {
         DispatchQueue.main.async {
             guard self.shouldReload else {
                 return

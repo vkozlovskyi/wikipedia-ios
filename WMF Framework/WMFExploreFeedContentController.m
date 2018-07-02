@@ -17,7 +17,6 @@ static const NSString *kvo_WMFExploreFeedContentController_operationQueue_operat
 
 NSString *const WMFExploreFeedPreferencesKey = @"WMFExploreFeedPreferencesKey";
 NSString *const WMFExploreFeedPreferencesDidChangeNotification = @"WMFExploreFeedPreferencesDidChangeNotification";
-NSString *const WMFExploreFeedPreferencesMightChangeNotification = @"WMFExploreFeedPreferencesMightChangeNotification";
 
 @interface WMFExploreFeedContentController ()
 
@@ -482,7 +481,7 @@ NSString *const WMFExploreFeedPreferencesMightChangeNotification = @"WMFExploreF
                 NSMutableDictionary *newPreferences = [oldPreferences mutableCopy];
                 update(newPreferences);
                 ExploreFeedPreferencesUpdateCoordinator *exploreFeedPreferencesUpdateCoordinator = [[ExploreFeedPreferencesUpdateCoordinator alloc] initWithFeedContentController:self oldExploreFeedPreferences:oldPreferences newExploreFeedPreferences:newPreferences];
-                [[NSNotificationCenter defaultCenter] postNotificationName:WMFExploreFeedPreferencesMightChangeNotification object:exploreFeedPreferencesUpdateCoordinator];
+                [[NSNotificationCenter defaultCenter] postNotificationName:WMFExploreFeedPreferencesDidChangeNotification object:exploreFeedPreferencesUpdateCoordinator];
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [op finish];
                 });
