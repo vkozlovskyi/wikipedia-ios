@@ -180,6 +180,7 @@ class ExploreFeedSettingsViewController: BaseExploreFeedSettingsViewController {
 
     override func reload() {
         for feedCard in feedCards {
+            feedCard.updateIsOn(for: displayType)
             feedCard.updateDisclosureText(for: displayType)
             feedCard.updateSubtitle(for: displayType)
         }
