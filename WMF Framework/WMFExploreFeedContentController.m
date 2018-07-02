@@ -16,6 +16,7 @@ static NSTimeInterval WMFFeedRefreshBackgroundTimeout = 30;
 static const NSString *kvo_WMFExploreFeedContentController_operationQueue_operationCount = @"kvo_WMFExploreFeedContentController_operationQueue_operationCount";
 
 NSString *const WMFExploreFeedPreferencesKey = @"WMFExploreFeedPreferencesKey";
+NSString *const WMFExploreFeedPreferencesDidSaveNotification = @"WMFExploreFeedPreferencesDidSaveNotification";
 NSString *const WMFExploreFeedPreferencesDidChangeNotification = @"WMFExploreFeedPreferencesDidChangeNotification";
 
 @interface WMFExploreFeedContentController ()
@@ -34,7 +35,7 @@ NSString *const WMFExploreFeedPreferencesDidChangeNotification = @"WMFExploreFee
     if (self) {
         self.operationQueue = [[NSOperationQueue alloc] init];
         self.operationQueue.maxConcurrentOperationCount = 1;
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(viewContextDidChange:) name:NSManagedObjectContextObjectsDidChangeNotification object:self.dataStore.viewContext];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(viewContextDidSave:) name:NSManagedObjectContextDidSaveNotification object:self.dataStore.viewContext];
     }
     return self;
 }
@@ -293,12 +294,12 @@ NSString *const WMFExploreFeedPreferencesDidChangeNotification = @"WMFExploreFee
 
 #pragma mark - Preferences
 
-- (void)viewContextDidChange:(NSNotification *)note {
+- (void)viewContextDidSave:(NSNotification *)note {
     NSDictionary *userInfo = note.userInfo;
     NSArray<NSString *> *keys = @[NSInsertedObjectsKey, NSUpdatedObjectsKey, NSDeletedObjectsKey, NSRefreshedObjectsKey, NSInvalidatedObjectsKey];
     for (NSString *key in keys) {
-        NSSet<NSManagedObject *> *changedObjects = userInfo[key];
-        for (NSManagedObject *object in changedObjects) {
+        NSSet<NSManagedObject *> *savedObjects = userInfo[key];
+        for (NSManagedObject *object in savedObjects) {
             if (![object isKindOfClass:[WMFKeyValue class]]) {
                 continue;
             }
@@ -308,7 +309,7 @@ NSString *const WMFExploreFeedPreferencesDidChangeNotification = @"WMFExploreFee
             }
             NSDictionary *newExploreFeedPreferences = (NSDictionary *)keyValue.value;
             self.exploreFeedPreferences = newExploreFeedPreferences;
-            [NSNotificationCenter.defaultCenter postNotificationName:WMFExploreFeedPreferencesDidChangeNotification object:self.exploreFeedPreferences];
+            [NSNotificationCenter.defaultCenter postNotificationName:WMFExploreFeedPreferencesDidSaveNotification object:self.exploreFeedPreferences];
         }
     }
 }

@@ -6,6 +6,7 @@
 @class MWKDataStore;
 
 extern NSString *_Nonnull const WMFExploreFeedContentControllerBusyStateDidChange;
+extern NSString *_Nonnull const WMFExploreFeedPreferencesDidSaveNotification;
 extern NSString *_Nonnull const WMFExploreFeedPreferencesDidChangeNotification;
 
 extern const NSInteger WMFExploreFeedMaximumNumberOfDays;
