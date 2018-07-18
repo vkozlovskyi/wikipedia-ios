@@ -2,6 +2,22 @@ import UIKit
 
 open class WMFArticlePreviewViewController: UIViewController {
 
+    public var titleTextStyle: DynamicTextStyle = .headline
+    public var titleTextColor: UIColor = .black {
+        didSet {
+            titleLabel.textColor = titleTextColor
+        }
+    }
+    @objc public var titleHTML: String? {
+        didSet {
+            updateTitle()
+        }
+    }
+    
+    private func updateTitle() {
+        titleLabel.attributedText = titleHTML?.byAttributingHTML(with: titleTextStyle, matching: traitCollection)
+    }
+    
     @IBOutlet weak open var marginWidthConstraint: NSLayoutConstraint!
     @IBOutlet weak open var imageView: UIImageView!
     @IBOutlet weak open var subtitleLabel: UILabel!
@@ -27,14 +43,25 @@ open class WMFArticlePreviewViewController: UIViewController {
     open override func viewDidLoad() {
         rankLabel.textColor = .wmf_darkGray
         separatorView.backgroundColor = .wmf_darkGray
+        if #available(iOSApplicationExtension 11.0, *) {
+            imageView.accessibilityIgnoresInvertColors = true
+        }
     }
 
     open override func awakeFromNib() {
         collapseImageAndWidenLabels = true
     }
     
+    private func updateFonts() {
+        updateTitle()
+    }
     
-    open var collapseImageAndWidenLabels: Bool = true {
+    open override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        updateFonts()
+    }
+    
+    @objc open var collapseImageAndWidenLabels: Bool = true {
         didSet {
             imageWidthConstraint.constant = collapseImageAndWidenLabels ? 0 : 86
             titleLabelTrailingConstraint.constant = collapseImageAndWidenLabels ? 0 : 8

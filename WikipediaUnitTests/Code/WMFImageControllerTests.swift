@@ -1,6 +1,5 @@
 import UIKit
 import XCTest
-import Nimble
 import Nocilla
 
 class WMFImageControllerTests: XCTestCase {
@@ -8,26 +7,26 @@ class WMFImageControllerTests: XCTestCase {
     
     override func setUp() {
         super.setUp()
+        LSNocilla.sharedInstance().start()
         imageController = ImageController.temporaryController()
         imageController.deleteTemporaryCache()
     }
     
     override func tearDown() {
-        super.tearDown()
+        LSNocilla.sharedInstance().stop()
         // might have been set to nil in one of the tests. delcared as implicitly unwrapped for convenience
         imageController?.deleteTemporaryCache()
-        LSNocilla.sharedInstance().stop()
+        super.tearDown()
     }
     
     // MARK: - Simple fetching
     
     func testReceivingDataResponseResolves() {
         let testURL = URL(string: "https://upload.wikimedia.org/foo@\(Int(UIScreen.main.scale))x.png")!
-        let testImage = UIImage(named: "image-placeholder")!
+        let testImage = #imageLiteral(resourceName: "wikipedia-wordmark")
         let stubbedData = UIImagePNGRepresentation(testImage)
-        
-        LSNocilla.sharedInstance().start()
-        _ = stubRequest("GET", testURL.absoluteString as LSMatcheable!).andReturnRawResponse(stubbedData)
+
+        _ = stubRequest("GET", testURL.absoluteString as LSMatcheable?).andReturnRawResponse(stubbedData)
         
         let expectation = self.expectation(description: "wait for image download")
         
@@ -52,8 +51,7 @@ class WMFImageControllerTests: XCTestCase {
         let testURL = URL(string: "https://upload.wikimedia.org/foo")!
         let stubbedError = NSError(domain: NSURLErrorDomain, code: NSURLErrorNetworkConnectionLost, userInfo: nil)
         
-        LSNocilla.sharedInstance().start()
-        stubRequest("GET", testURL.absoluteString as LSMatcheable!).andFailWithError(stubbedError)
+        stubRequest("GET", testURL.absoluteString as LSMatcheable?).andFailWithError(stubbedError)
         
         let expectation = self.expectation(description: "wait for image download");
         
@@ -79,7 +77,7 @@ class WMFImageControllerTests: XCTestCase {
     }
     
     func testCancellationDoesNotAffectRetry() {
-        let testImage = UIImage(named: "image-placeholder")!
+        let testImage = #imageLiteral(resourceName: "wikipedia-wordmark")
         let stubbedData = UIImagePNGRepresentation(testImage)!
         let scale = Int(UIScreen.main.scale)
         let testURLString = "https://example.com/foo@\(scale)x.png"
@@ -97,17 +95,13 @@ class WMFImageControllerTests: XCTestCase {
         let success = { (imgDownload: ImageDownload) in
         }
         
-        imageController.fetchImage(withURL: testURL, failure:failure, success: success)
+        let token = imageController.fetchImage(withURL: testURL, priority: URLSessionTask.defaultPriority, failure:failure, success: success)
         
-        imageController.cancelFetch(withURL: testURL)
+        imageController.cancelFetch(withURL: testURL, token: token)
 
         URLProtocol.unregisterClass(WMFHTTPHangingProtocol.self)
-        LSNocilla.sharedInstance().start()
-        defer {
-            LSNocilla.sharedInstance().stop()
-        }
         
-        _ = stubRequest("GET", testURLString as LSMatcheable!).andReturnRawResponse(stubbedData)
+        _ = stubRequest("GET", testURLString as LSMatcheable?).andReturnRawResponse(stubbedData)
         
         let secondExpectation = self.expectation(description: "wait for image download");
         

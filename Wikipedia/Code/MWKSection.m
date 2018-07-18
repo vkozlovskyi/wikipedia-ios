@@ -42,7 +42,7 @@ NSString *const MWKSectionShareSnippetXPath = @"/html/body/p[not(.//span[@id='co
         self.index = [self optionalString:@"index" dict:dict];   // deceptively named, this must be a string
 
         if ([dict[@"fromtitle"] length] > 0) {
-            self.fromURL = [NSURL wmf_URLWithSiteURL:self.url unescapedDenormalizedTitleAndFragment:dict[@"fromtitle"]];
+            self.fromURL = [self.url wmf_URLWithTitle:dict[@"fromtitle"]];
         }
         self.anchor = [self optionalString:@"anchor" dict:dict];
         self.sectionId = [[self requiredNumber:@"id" dict:dict] intValue];
@@ -111,10 +111,19 @@ NSString *const MWKSectionShareSnippetXPath = @"/html/body/p[not(.//span[@id='co
     return _text;
 }
 
-- (void)save {
-    [self.article.dataStore saveSection:self];
+- (BOOL)save:(NSError **)outError {
+    NSError *internalError = nil;
+    [self.article.dataStore saveSection:self error:&internalError];
+    if (internalError) {
+        if (outError) {
+            *outError = internalError;
+        }
+        return NO;
+    }
     if (_text != nil) {
-        [self.article.dataStore saveSectionText:_text section:self];
+        return [self.article.dataStore saveSectionText:_text section:self error:outError];
+    } else {
+        return YES;
     }
 }
 
@@ -242,48 +251,6 @@ static NSString *const WMFSectionSummaryXPathSelector = @"\
     return [[[textNodes wmf_map:^id(TFHppleElement *node) {
         return node.raw;
     }] componentsJoinedByString:@" "] wmf_summaryFromText];
-}
-
-static NSString *const WMFSectionDisambiguationTitlesXPathSelector = @"//div[contains(@class, 'hatnote')]//a/@href";
-
-- (nullable NSArray<NSURL *> *)disambiguationURLs {
-    NSArray *textNodes = [self elementsInTextMatchingXPath:WMFSectionDisambiguationTitlesXPathSelector];
-    return [textNodes wmf_mapAndRejectNil:^id(TFHppleElement *node) {
-        if (node.text.length == 0 || [node.text containsString:@"redlink=1"] || ![node.text containsString:WMFInternalLinkPathPrefix]) {
-            return nil;
-        }
-        return [NSURL wmf_URLWithSiteURL:self.url escapedDenormalizedInternalLink:node.text];
-    }];
-}
-
-/*
-   TODO: Add tests for issues from:
-    enwiki > biocoenosis
-        - "This article does not cite any references (sources). (July 2015)"
-    enwiki > toleration
-        - "This article possibly contains original research. (May 2011)",
-        - "The examples and perspective in this article or section might have an extensive bias or disproportional coverage towards one or more specific regions. (May 2011)"
- */
-static NSString *const WMFSectionPageIssuesXPathSelector =
-    @"//td[(contains(@class,'mbox-text') or contains(@class,'ambox-text')) and not(count(descendant::td) > 0)]";
-
-static NSString *const WMFSectionPageIssueUnhiddenXPathSelector =
-    @"//*[not(ancestor-or-self::*[@class = 'hide-when-compact' or contains(@class, 'collapsed')])]/text()";
-
-- (nullable NSArray<NSString *> *)pageIssues {
-    NSArray *issueNodes = [self elementsInTextMatchingXPath:WMFSectionPageIssuesXPathSelector];
-    return [issueNodes wmf_mapAndRejectNil:^id(TFHppleElement *node) {
-        if (node.raw.length == 0) {
-            return nil;
-        }
-        NSArray *unhiddenIssueNodes = [[TFHpple hppleWithHTMLData:[node.raw dataUsingEncoding:NSUTF8StringEncoding]] searchWithXPathQuery:WMFSectionPageIssueUnhiddenXPathSelector];
-
-        NSArray *issuesStrings = [unhiddenIssueNodes wmf_mapAndRejectNil:^id(TFHppleElement *node) {
-            return ([[node.content stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]] length] == 0) ? nil : node.content;
-        }];
-
-        return issuesStrings.count > 0 ? [issuesStrings componentsJoinedByString:@""] : nil;
-    }];
 }
 
 @end

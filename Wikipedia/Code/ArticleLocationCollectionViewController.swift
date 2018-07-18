@@ -1,17 +1,21 @@
 import UIKit
 
-@objc(WMFArticleLocationCollectionViewController)
-class ArticleLocationCollectionViewController: ColumnarCollectionViewController {
-    fileprivate static let cellReuseIdentifier = "ArticleLocationCollectionViewControllerCell"
+class ArticleLocationCollectionViewController: ColumnarCollectionViewController, ReadingListHintPresenter {
+    var readingListHintController: ReadingListHintController?
     
-    let articleURLs: [URL]
+    var articleURLs: [URL] {
+        didSet {
+            collectionView.reloadData()
+        }
+    }
     let dataStore: MWKDataStore
     fileprivate let locationManager = WMFLocationManager.fine()
 
-    required init(articleURLs: [URL], dataStore: MWKDataStore) {
+    required init(articleURLs: [URL], dataStore: MWKDataStore, theme: Theme) {
         self.articleURLs = articleURLs
         self.dataStore = dataStore
         super.init()
+        self.theme = theme
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -20,13 +24,16 @@ class ArticleLocationCollectionViewController: ColumnarCollectionViewController 
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        register(WMFNearbyArticleCollectionViewCell.wmf_classNib(), forCellWithReuseIdentifier: ArticleLocationCollectionViewController.cellReuseIdentifier)
+        layoutManager.register(ArticleLocationCollectionViewCell.self, forCellWithReuseIdentifier: ArticleLocationCollectionViewCell.identifier, addPlaceholder: true)
+        readingListHintController = ReadingListHintController(dataStore: dataStore, presenter: self)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         locationManager.delegate = self
-        locationManager.startMonitoringLocation()
+        if WMFLocationManager.isAuthorized() {
+            locationManager.startMonitoringLocation()
+        }
     }
     
     override func viewDidDisappear(_ animated: Bool) {
@@ -36,28 +43,47 @@ class ArticleLocationCollectionViewController: ColumnarCollectionViewController 
     }
     
     func articleURL(at indexPath: IndexPath) -> URL {
-        return articleURLs[indexPath.section]
+        return articleURLs[indexPath.item]
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, estimatedHeightForItemAt indexPath: IndexPath, forColumnWidth columnWidth: CGFloat) -> ColumnarCollectionViewLayoutHeightEstimate {
+        var estimate = ColumnarCollectionViewLayoutHeightEstimate(precalculated: false, height: 100)
+        guard let placeholderCell = layoutManager.placeholder(forCellWithReuseIdentifier: ArticleLocationCollectionViewCell.identifier) as? ArticleLocationCollectionViewCell else {
+            return estimate
+        }
+        configure(cell: placeholderCell, forItemAt: indexPath, layoutOnly: true)
+        estimate.height = placeholderCell.sizeThatFits(CGSize(width: columnWidth, height: UIViewNoIntrinsicMetric), apply: false).height
+        estimate.precalculated = true
+        return estimate
+    }
+    
+    override func metrics(with size: CGSize, readableWidth: CGFloat, layoutMargins: UIEdgeInsets) -> ColumnarCollectionViewLayoutMetrics {
+        return ColumnarCollectionViewLayoutMetrics.tableViewMetrics(with: size, readableWidth: readableWidth, layoutMargins: layoutMargins)
     }
 }
 
 // MARK: - UICollectionViewDataSource
 extension ArticleLocationCollectionViewController {
     override func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 1
+    }
+    
+    var numberOfItems: Int {
         return articleURLs.count
     }
     
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 1
+        return numberOfItems
     }
     
-    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ArticleLocationCollectionViewController.cellReuseIdentifier, for: indexPath)
-        guard let articleCell = cell as? WMFNearbyArticleCollectionViewCell else {
-            return cell
+    private func configure(cell: UICollectionViewCell, forItemAt indexPath: IndexPath, layoutOnly: Bool) {
+        guard let cell = cell as? ArticleLocationCollectionViewCell else {
+            return
         }
+        
         let url = articleURL(at: indexPath)
         guard let article = dataStore.fetchArticle(with: url) else {
-            return articleCell
+            return
         }
         
         var userLocation: CLLocation?
@@ -68,24 +94,24 @@ extension ArticleLocationCollectionViewController {
             userHeading = locationManager.heading
         }
         
-        articleCell.titleText = article.displayTitle
-        articleCell.descriptionText = article.capitalizedWikidataDescriptionOrSnippet
-        articleCell.setImageURL(article.imageURL(forWidth: traitCollection.wmf_nearbyThumbnailWidth))
-        articleCell.articleLocation = article.location
-        articleCell.update(userLocation: userLocation, heading: userHeading)
-        return articleCell
+        cell.articleLocation = article.location
+        cell.update(userLocation: userLocation, heading: userHeading)
+        
+        cell.configure(article: article, displayType: .pageWithLocation, index: indexPath.row, theme: theme, layoutOnly: layoutOnly)
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ArticleLocationCollectionViewCell.identifier, for: indexPath)
+        configure(cell: cell, forItemAt: indexPath, layoutOnly: false)
+        return cell
     }
 }
 
 // MARK: - WMFLocationManagerDelegate
 extension ArticleLocationCollectionViewController: WMFLocationManagerDelegate {
     func updateLocationOnVisibleCells() {
-        guard let visibleCells = collectionView?.visibleCells else {
-            return
-        }
-        
-        for cell in visibleCells {
-            guard let locationCell = cell as? WMFNearbyArticleCollectionViewCell else {
+        for cell in collectionView.visibleCells {
+            guard let locationCell = cell as? ArticleLocationCollectionViewCell else {
                 continue
             }
             locationCell.update(userLocation: locationManager.location, heading: locationManager.heading)
@@ -99,38 +125,50 @@ extension ArticleLocationCollectionViewController: WMFLocationManagerDelegate {
     func locationManager(_ controller: WMFLocationManager, didUpdate heading: CLHeading) {
         updateLocationOnVisibleCells()
     }
+
+    func locationManager(_ controller: WMFLocationManager, didChangeEnabledState enabled: Bool) {
+        if enabled {
+            locationManager.startMonitoringLocation()
+        }
+    }
 }
 
 // MARK: - UICollectionViewDelegate
 extension ArticleLocationCollectionViewController {
-    override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        wmf_pushArticle(with: articleURLs[indexPath.section], dataStore: dataStore, animated: true)
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        wmf_pushArticle(with: articleURLs[indexPath.item], dataStore: dataStore, theme: self.theme, animated: true)
     }
 }
 
 // MARK: - UIViewControllerPreviewingDelegate
 extension ArticleLocationCollectionViewController {
     override func previewingContext(_ previewingContext: UIViewControllerPreviewing, viewControllerForLocation location: CGPoint) -> UIViewController? {
-        guard let collectionView = collectionView,
-            let indexPath = collectionView.indexPathForItem(at: location) else {
+        guard let indexPath = collectionView.indexPathForItem(at: location),
+            let cell = collectionView.cellForItem(at: indexPath) else {
                 return nil
         }
+        previewingContext.sourceRect = cell.convert(cell.bounds, to: collectionView)
         let url = articleURL(at: indexPath)
-        return WMFArticleViewController(articleURL: url, dataStore: dataStore)
+        let articleViewController = WMFArticleViewController(articleURL: url, dataStore: dataStore, theme: self.theme)
+        articleViewController.articlePreviewingActionsDelegate = self
+        articleViewController.wmf_addPeekableChildViewController(for: url, dataStore: dataStore, theme: theme)
+        return articleViewController
     }
     
     override func previewingContext(_ previewingContext: UIViewControllerPreviewing, commit viewControllerToCommit: UIViewController) {
+        viewControllerToCommit.wmf_removePeekableChildViewControllers()
         wmf_push(viewControllerToCommit, animated: true)
     }
 }
 
-// MARK: - WMFColumnarCollectionViewLayoutDelegate
-extension ArticleLocationCollectionViewController {
-    override func collectionView(_ collectionView: UICollectionView, estimatedHeightForItemAt indexPath: IndexPath, forColumnWidth columnWidth: CGFloat) -> WMFLayoutEstimate {
-        return WMFLayoutEstimate(precalculated: false, height: WMFNearbyArticleCollectionViewCell.estimatedRowHeight())
+// MARK: - Reading lists event logging
+
+extension ArticleLocationCollectionViewController: EventLoggingEventValuesProviding {
+    var eventLoggingCategory: EventLoggingCategory {
+        return .places
     }
-    override func metrics(withBoundsSize size: CGSize) -> WMFCVLMetrics {
-        return WMFCVLMetrics.singleColumnMetrics(withBoundsSize: size, collapseSectionSpacing: true)
- 
+    
+    var eventLoggingLabel: EventLoggingLabel? {
+        return nil
     }
 }

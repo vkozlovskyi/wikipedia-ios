@@ -12,6 +12,8 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+static const NSInteger WMFFeedContentFetcherMinimumMaxAge = 18000; // 5 minutes
+
 @interface WMFFeedContentFetcher ()
 @property (nonatomic, strong) AFHTTPSessionManager *operationManager;
 @property (nonatomic, strong) AFHTTPSessionManager *unserializedOperationManager;
@@ -24,7 +26,7 @@ NS_ASSUME_NONNULL_BEGIN
     self = [super init];
     if (self) {
         AFHTTPSessionManager *manager = [AFHTTPSessionManager wmf_createDefaultManager];
-        manager.responseSerializer = [WMFMantleJSONResponseSerializer serializerForInstancesOf:[WMFFeedDayResponse class] fromKeypath:nil];
+        manager.responseSerializer = [WMFMantleJSONResponseSerializer serializerForInstancesOf:[WMFFeedDayResponse class] fromKeypath:nil emptyValueForJSONKeypathAllowed:NO];
 
         self.operationManager = manager;
         [self set304sEnabled:NO];
@@ -35,6 +37,10 @@ NS_ASSUME_NONNULL_BEGIN
         self.serialQueue = dispatch_queue_create([queueID cStringUsingEncoding:NSUTF8StringEncoding], DISPATCH_QUEUE_SERIAL);
     }
     return self;
+}
+
+- (void)dealloc {
+    [self.operationManager invalidateSessionCancelingTasks:YES];
 }
 
 - (void)set304sEnabled:(BOOL)enabled {
@@ -63,6 +69,21 @@ NS_ASSUME_NONNULL_BEGIN
     return [siteURL wmf_URLWithPath:path isMobile:NO];
 }
 
++ (NSRegularExpression *)cacheControlRegex {
+    static NSRegularExpression *cacheControlRegex = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        NSError *error = NULL;
+        cacheControlRegex = [NSRegularExpression regularExpressionWithPattern:@"(?<=max-age=)\\d{2}"
+                                                                      options:NSRegularExpressionCaseInsensitive
+                                                                        error:&error];
+        if (error) {
+            DDLogError(@"Error creating cache control regex: %@", error);
+        }
+    });
+    return cacheControlRegex;
+}
+
 - (void)fetchFeedContentForURL:(NSURL *)siteURL date:(NSDate *)date force:(BOOL)force failure:(WMFErrorHandler)failure success:(void (^)(WMFFeedDayResponse *feedDay))success {
     NSParameterAssert(siteURL);
     NSParameterAssert(date);
@@ -86,6 +107,19 @@ NS_ASSUME_NONNULL_BEGIN
                                           userInfo:nil]);
 
             } else {
+                NSHTTPURLResponse *response = ((NSHTTPURLResponse *)[operation response]);
+                NSDictionary *headers = [response allHeaderFields];
+                NSString *cacheControlHeader = headers[@"Cache-Control"];
+                NSInteger maxAge = WMFFeedContentFetcherMinimumMaxAge;
+                NSRegularExpression *regex = [WMFFeedContentFetcher cacheControlRegex];
+                if (regex && cacheControlHeader.length > 0) {
+                    NSRange rangeOfFirstMatch = [regex rangeOfFirstMatchInString:cacheControlHeader options:0 range:NSMakeRange(0, [cacheControlHeader length])];
+                    if (rangeOfFirstMatch.location != NSNotFound) {
+                        NSString *substringForFirstMatch = [cacheControlHeader substringWithRange:rangeOfFirstMatch];
+                        maxAge = MAX([substringForFirstMatch intValue], WMFFeedContentFetcherMinimumMaxAge);
+                    }
+                }
+                responseObject.maxAge = maxAge;
                 success(responseObject);
             }
         }
@@ -97,7 +131,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)fetchPageviewsForURL:(NSURL *)titleURL startDate:(NSDate *)startDate endDate:(NSDate *)endDate failure:(WMFErrorHandler)failure success:(WMFPageViewsHandler)success {
     NSParameterAssert(titleURL);
 
-    NSString *title = [titleURL.wmf_titleWithUnderScores wmf_UTF8StringWithPercentEscapes];
+    NSString *title = [titleURL.wmf_titleWithUnderscores wmf_UTF8StringWithPercentEscapes];
     NSString *language = titleURL.wmf_language;
     NSString *domain = titleURL.wmf_domain;
 

@@ -34,11 +34,14 @@ NS_ASSUME_NONNULL_BEGIN
         AFHTTPSessionManager *manager = [AFHTTPSessionManager wmf_createDefaultManager];
         manager.requestSerializer = [WMFArticlePreviewRequestSerializer serializer];
         manager.responseSerializer =
-            [WMFMantleJSONResponseSerializer serializerForValuesInDictionaryOfType:[MWKSearchResult class]
-                                                                       fromKeypath:@"query.pages"];
+            [WMFMantleJSONResponseSerializer serializerForValuesInDictionaryOfType:[MWKSearchResult class] fromKeypath:@"query.pages" emptyValueForJSONKeypathAllowed:NO];
         self.operationManager = manager;
     }
     return self;
+}
+
+- (void)dealloc {
+    [self.operationManager invalidateSessionCancelingTasks:YES];
 }
 
 - (BOOL)isFetching {
@@ -129,9 +132,10 @@ NS_ASSUME_NONNULL_BEGIN
     [baseParams setValuesForKeysWithDictionary:@{
         @"titles": [self barSeparatedTitlesStringFromURLs:params.articleURLs],
         @"pilimit": @(params.articleURLs.count),
-        //@"pilicense": @"any",
-        @"prop": @"coordinates"
     }];
+
+    baseParams[@"prop"] = [baseParams[@"prop"] stringByAppendingString:@"|coordinates"];
+
     if (params.extractLength > 0) {
         baseParams[@"exlimit"] = @(params.articleURLs.count);
     }

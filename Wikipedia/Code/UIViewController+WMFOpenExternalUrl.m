@@ -11,7 +11,10 @@
 
 - (void)wmf_openExternalUrl:(NSURL *)url useSafari:(BOOL)useSafari {
     NSParameterAssert(url);
-
+    if (!url) {
+        return;
+    }
+    
     //If zero rated, don't open any external (non-zero rated!) links until user consents!
     if ([SessionSingleton sharedInstance].zeroConfigurationManager.isZeroRated && [[NSUserDefaults wmf_userDefaults] boolForKey:WMFZeroWarnWhenLeaving]) {
         WMFZeroConfiguration *zeroConfiguration = [SessionSingleton sharedInstance].zeroConfigurationManager.zeroConfiguration;
@@ -43,8 +46,10 @@
 }
 
 - (void)wmf_openExternalUrlModallyIfNeeded:(NSURL *)url forceSafari:(BOOL)forceSafari {
+    url = url.wmf_URLByMakingiOSCompatibilityAdjustments;
+    
     if (forceSafari || [url.scheme.lowercaseString isEqualToString:@"mailto"]) {
-        [[UIApplication sharedApplication] openURL:url];
+        [[UIApplication sharedApplication] openURL:url options:@{} completionHandler:NULL];
     } else {
         if (self.presentedViewController) {
             [self dismissViewControllerAnimated:YES

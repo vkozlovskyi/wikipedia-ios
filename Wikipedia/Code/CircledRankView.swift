@@ -5,6 +5,7 @@ class CircledRankView: SizeThatFitsView {
     override func setup() {
         super.setup()
         layer.borderWidth = 1
+        label.isOpaque = true
         addSubview(label)
     }
     
@@ -15,6 +16,12 @@ class CircledRankView: SizeThatFitsView {
         }
     }
     
+    var labelBackgroundColor: UIColor? {
+        didSet {
+            label.backgroundColor = labelBackgroundColor
+        }
+    }
+    
     override func tintColorDidChange() {
         label.textColor = tintColor
         layer.borderColor = tintColor.cgColor
@@ -22,7 +29,7 @@ class CircledRankView: SizeThatFitsView {
     
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
-        label.font = UIFont.wmf_preferredFontForFontFamily(.system, withTextStyle: .footnote, compatibleWithTraitCollection: traitCollection)
+        label.font = UIFont.wmf_font(.footnote, compatibleWithTraitCollection: traitCollection)
     }
     
     override func sizeThatFits(_ size: CGSize, apply: Bool) -> CGSize {

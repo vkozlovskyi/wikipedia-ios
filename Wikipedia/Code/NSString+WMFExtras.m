@@ -1,11 +1,10 @@
 #import <WMF/NSString+WMFExtras.h>
-#import <hpple/TFHpple.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <WMF/SessionSingleton.h>
 #import <WMF/MWLanguageInfo.h>
 @import MobileCoreServices;
-#import <WMF/NSString+WMFHTMLParsing.h>
 #import <WMF/NSDateFormatter+WMFExtensions.h>
+#import <WMF/WMF-Swift.h>
 
 @implementation NSString (WMFExtras)
 
@@ -54,76 +53,6 @@
     return [[NSDateFormatter wmf_iso8601Formatter] dateFromString:self];
 }
 
-// TODO: Fix - returns nil if self contains no HTML.
-- (nonnull NSAttributedString *)wmf_attributedStringByRemovingHTMLWithFont:(nonnull UIFont *)font linkFont:(nonnull UIFont *)linkFont {
-    if (self.length == 0) {
-        return [[NSAttributedString alloc] initWithString:self attributes:nil];
-    }
-
-    static NSRegularExpression *tagRegex;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSString *pattern = @"(<[^>]*>)([^<]*)";
-        tagRegex = [NSRegularExpression regularExpressionWithPattern:pattern
-                                                             options:NSRegularExpressionCaseInsensitive
-                                                               error:nil];
-    });
-
-    NSMutableAttributedString *attributedString = [[NSMutableAttributedString alloc] initWithString:@"" attributes:nil];
-    __block BOOL shouldTrimLeadingWhitespace = YES;
-    [tagRegex enumerateMatchesInString:self
-                               options:0
-                                 range:NSMakeRange(0, self.length)
-                            usingBlock:^(NSTextCheckingResult *_Nullable result, NSMatchingFlags flags, BOOL *_Nonnull stop) {
-                                *stop = false;
-                                NSString *tagContents = [[[[[tagRegex replacementStringForResult:result inString:self offset:0 template:@"$2"] wmf_stringByRemovingBracketedContent] wmf_stringByDecodingHTMLNonBreakingSpaces] wmf_stringByDecodingHTMLAndpersands] wmf_stringByDecodingHTMLLessThanAndGreaterThan];
-                                if (!tagContents) {
-                                    return;
-                                }
-                                if (shouldTrimLeadingWhitespace) {
-                                    shouldTrimLeadingWhitespace = NO;
-                                    NSRange range = [tagContents rangeOfCharacterFromSet:[NSCharacterSet whitespaceCharacterSet] options:NSAnchoredSearch];
-                                    while (range.length > 0) {
-                                        tagContents = [tagContents stringByReplacingCharactersInRange:range withString:@""];
-                                        range = [tagContents rangeOfCharacterFromSet:[NSCharacterSet whitespaceCharacterSet] options:NSAnchoredSearch];
-                                    }
-                                }
-                                NSString *tag = [[tagRegex replacementStringForResult:result inString:self offset:0 template:@"$1"] lowercaseString];
-                                NSDictionary *attributes = nil;
-                                if ([tag hasPrefix:@"<a"] && linkFont) {
-                                    attributes = @{NSFontAttributeName: linkFont};
-                                } else if (font) {
-                                    attributes = @{NSFontAttributeName: font};
-                                }
-                                NSAttributedString *attributedNode = [[NSAttributedString alloc] initWithString:tagContents attributes:attributes];
-                                [attributedString appendAttributedString:attributedNode];
-                            }];
-    return [attributedString copy];
-}
-
-- (NSString *)wmf_stringByRemovingHTML {
-    // Strips html from string with xpath / hpple.
-    if (!self || (self.length == 0)) {
-        return self;
-    }
-    NSData *stringData = [self dataUsingEncoding:NSUTF8StringEncoding];
-    TFHpple *parser = [TFHpple hppleWithHTMLData:stringData];
-    NSArray *textNodes = [parser searchWithXPathQuery:@"//text()"];
-    NSMutableArray *results = @[].mutableCopy;
-    for (TFHppleElement *node in textNodes) {
-        if (node.isTextNode) {
-            [results addObject:node.raw];
-        }
-    }
-
-    NSString *result = [results componentsJoinedByString:@""];
-
-    // Also decode any "&amp;" strings.
-    result = [result wmf_stringByDecodingHTMLAndpersands];
-
-    return result;
-}
-
 - (NSString *)wmf_randomlyRepeatMaxTimes:(NSUInteger)maxTimes;
 {
     float (^rnd)(void) = ^() {
@@ -143,8 +72,19 @@
     return [self stringByReplacingOccurrencesOfString:@" " withString:@"_"];
 }
 
-- (NSString *)wmf_stringByReplacingApostrophesWithBackslashApostrophes {
-    return [self stringByReplacingOccurrencesOfString:@"'" withString:@"\\'"];
+- (NSString *)wmf_stringBySanitizingForJavaScript {
+    NSRegularExpression *regex = [NSRegularExpression wmf_charactersToEscapeForJSRegex];
+    NSMutableString *mutableSelf = [self mutableCopy];
+    __block NSInteger offset = 0;
+    [regex enumerateMatchesInString:self options:0 range:NSMakeRange(0, self.length) usingBlock:^(NSTextCheckingResult * _Nullable result, NSMatchingFlags flags, BOOL * _Nonnull stop) {
+        NSInteger indexForBackslash = result.range.location + offset;
+        if (indexForBackslash >= mutableSelf.length) {
+            return;
+        }
+        [mutableSelf insertString:@"\\" atIndex:indexForBackslash];
+        offset += 1;
+    }];
+    return mutableSelf;
 }
 
 - (NSString *)wmf_stringByCapitalizingFirstCharacterUsingWikipediaLanguage:(nullable NSString *)wikipediaLanguage {
@@ -152,50 +92,11 @@
     if (self.length > 1) {
         NSString *firstChar = [self substringToIndex:1];
         NSString *remainingChars = [self substringFromIndex:1];
-        NSLocale *locale = [self getLocaleForWikipediaLanguage:wikipediaLanguage];
+        NSLocale *locale = [NSLocale wmf_localeForWikipediaLanguage:wikipediaLanguage];
         firstChar = [firstChar capitalizedStringWithLocale:locale];
         return [firstChar stringByAppendingString:remainingChars];
     }
     return self;
-}
-
-- (NSLocale *)getLocaleForWikipediaLanguage:(NSString *)wikipediaLanguage {
-    if (!wikipediaLanguage) {
-        return [NSLocale autoupdatingCurrentLocale];
-    }
-
-    static dispatch_once_t onceToken;
-    static NSMutableDictionary *localeCache;
-    dispatch_once(&onceToken, ^{
-        localeCache = [NSMutableDictionary dictionaryWithCapacity:1];
-    });
-
-    MWLanguageInfo *languageInfo = [MWLanguageInfo languageInfoForCode:wikipediaLanguage];
-
-    NSString *code = languageInfo.code;
-
-    NSLocale *locale = nil;
-
-    if (!code) {
-        return [NSLocale autoupdatingCurrentLocale];
-    }
-
-    locale = [localeCache objectForKey:code];
-    if (locale) {
-        return locale;
-    }
-
-    if ([[NSLocale availableLocaleIdentifiers] containsObject:code]) {
-        locale = [[NSLocale alloc] initWithLocaleIdentifier:code];
-    }
-
-    if (!locale) {
-        locale = [NSLocale autoupdatingCurrentLocale];
-    }
-
-    [localeCache setObject:locale forKey:code];
-
-    return locale;
 }
 
 - (BOOL)wmf_containsString:(NSString *)string {
@@ -215,7 +116,7 @@
 }
 
 - (NSString *)wmf_trim {
-    return [self stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    return [self stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 }
 
 - (NSString *)wmf_substringBeforeString:(NSString *)string {

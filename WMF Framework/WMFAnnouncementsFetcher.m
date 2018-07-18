@@ -14,13 +14,17 @@
     self = [super init];
     if (self) {
         AFHTTPSessionManager *manager = [AFHTTPSessionManager wmf_createIgnoreCacheManager];
-        manager.responseSerializer = [WMFMantleJSONResponseSerializer serializerForArrayOf:[WMFAnnouncement class] fromKeypath:@"announce"];
+        manager.responseSerializer = [WMFMantleJSONResponseSerializer serializerForArrayOf:[WMFAnnouncement class] fromKeypath:@"announce" emptyValueForJSONKeypathAllowed:NO];
         NSMutableIndexSet *set = [manager.responseSerializer.acceptableStatusCodes mutableCopy];
         [set removeIndex:304];
         manager.responseSerializer.acceptableStatusCodes = set;
         self.operationManager = manager;
     }
     return self;
+}
+
+- (void)dealloc {
+    [self.operationManager invalidateSessionCancelingTasks:YES];
 }
 
 - (BOOL)isFetching {
@@ -70,13 +74,17 @@
         if (![obj isKindOfClass:[WMFAnnouncement class]]) {
             return NO;
         }
+        NSArray *countries = [obj countries];
+        if (countries.count == 0) {
+            return YES;
+        }
         __block BOOL valid = NO;
-        [[obj countries] enumerateObjectsUsingBlock:^(NSString *_Nonnull obj, NSUInteger idx, BOOL *_Nonnull stop) {
+        [countries enumerateObjectsUsingBlock:^(NSString *_Nonnull obj, NSUInteger idx, BOOL *_Nonnull stop) {
             if ([header containsString:[NSString stringWithFormat:@"GeoIP=%@", obj]]) {
                 valid = YES;
                 *stop = YES;
             }
-            if ([cookieValue containsString:obj]) {
+            if ([header length] < 1 && [cookieValue hasPrefix:obj]) {
                 valid = YES;
                 *stop = YES;
             }

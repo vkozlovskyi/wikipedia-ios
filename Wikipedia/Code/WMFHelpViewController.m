@@ -3,7 +3,6 @@
 #import "UIBarButtonItem+WMFButtonConvenience.h"
 #import <WMF/WikipediaAppUtils.h>
 #import "Wikipedia-Swift.h"
-#import "WMFLeadingImageTrailingTextButton.h"
 #import "DDLog+WMFLogger.h"
 
 @import MessageUI;
@@ -24,7 +23,7 @@ static NSString *const WMFSettingsEmailSubject = @"Bug:";
 
 - (instancetype)initWithDataStore:(MWKDataStore *)dataStore {
     NSURL *faqURL = [NSURL URLWithString:WMFSettingsURLFAQ];
-    self = [super initWithArticleURL:faqURL dataStore:dataStore];
+    self = [super initWithArticleURL:faqURL dataStore:dataStore theme:self.theme];
     self.savingOpenArticleTitleEnabled = NO;
     self.addingArticleToHistoryListEnabled = NO;
     self.peekingAllowed = NO;
@@ -42,19 +41,13 @@ static NSString *const WMFSettingsEmailSubject = @"Bug:";
 }
 
 - (void)webViewController:(WebViewController *)controller didTapOnLinkForArticleURL:(NSURL *)url {
-    WMFHelpViewController *articleViewController = [[WMFHelpViewController alloc] initWithArticleURL:url dataStore:self.dataStore];
+    WMFHelpViewController *articleViewController = [[WMFHelpViewController alloc] initWithArticleURL:url dataStore:self.dataStore theme:self.theme];
     [self.navigationController pushViewController:articleViewController animated:YES];
 }
 
 - (UIBarButtonItem *)sendEmailToolbarItem {
     if (!_sendEmailToolbarItem) {
-        WMFLeadingImageTrailingTextButton *button = [[WMFLeadingImageTrailingTextButton alloc] init];
-        button.tintColor = [UIColor wmf_blue];
-        [button configureAsReportBugButton];
-        [button sizeToFit];
-        [button addTarget:self action:@selector(sendEmail) forControlEvents:UIControlEventTouchUpInside];
-        _sendEmailToolbarItem = [[UIBarButtonItem alloc] initWithCustomView:button];
-        _sendEmailToolbarItem.accessibilityLabel = WMFLocalizedStringWithDefaultValue(@"button-report-a-bug", nil, nil, @"Report a bug", @"Button text for reporting a bug");
+        _sendEmailToolbarItem = [[UIBarButtonItem alloc] initWithTitle:WMFLocalizedStringWithDefaultValue(@"button-report-a-bug", nil, nil, @"Report a bug", @"Button text for reporting a bug") style:UIBarButtonItemStylePlain target:self action:@selector(sendEmail)];
         return _sendEmailToolbarItem;
     }
     return _sendEmailToolbarItem;

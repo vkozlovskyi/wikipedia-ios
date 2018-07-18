@@ -1,20 +1,11 @@
 import Foundation
 
 public extension ArticleCollectionViewCell {
-    fileprivate func adjustMargins(for index: Int, count: Int) {
-        var newMargins = margins ?? UIEdgeInsets.zero
-        let maxIndex = count - 1
-        if index < maxIndex {
-            newMargins.bottom = round(0.5*margins.bottom)
-        }
-        if index > 0 {
-            newMargins.top = round(0.5*margins.top)
-        }
-        margins = newMargins
-    }
-    
-    public func configure(article: WMFArticle, displayType: WMFFeedDisplayType, index: Int, count: Int, layoutOnly: Bool) {
-        let imageWidthToRequest = imageView.frame.size.width < 300 ? traitCollection.wmf_nearbyThumbnailWidth : traitCollection.wmf_leadImageWidth // 300 is used to distinguish between full-awidth images and thumbnails. Ultimately this (and other thumbnail requests) should be updated with code that checks all the available buckets for the width that best matches the size of the image view.
+    @objc(configureWithArticle:displayType:index:theme:layoutOnly:)
+    public func configure(article: WMFArticle, displayType: WMFFeedDisplayType, index: Int, theme: Theme, layoutOnly: Bool) {
+        apply(theme: theme)
+        
+        let imageWidthToRequest = displayType.imageWidthCompatibleWithTraitCollection(traitCollection)
         if displayType != .mainPage, let imageURL = article.imageURL(forWidth: imageWidthToRequest) {
             isImageViewHidden = false
             if !layoutOnly {
@@ -23,10 +14,11 @@ public extension ArticleCollectionViewCell {
         } else {
             isImageViewHidden = true
         }
-        let articleLanguage = (article.url as NSURL?)?.wmf_language
-        titleLabel.text = article.displayTitle
         
-
+        let articleLanguage = article.url?.wmf_language
+        
+        titleHTML = article.displayTitleHTML
+        
         switch displayType {
         case .random:
             imageViewDimension = 196
@@ -39,31 +31,41 @@ public extension ArticleCollectionViewCell {
             descriptionLabel.text = article.capitalizedWikidataDescription
             extractLabel?.text = article.snippet
         case .continueReading:
-            imageViewDimension = 150
+            imageViewDimension = 130
             extractLabel?.text = nil
             isSaveButtonHidden = true
             descriptionLabel.text = article.capitalizedWikidataDescriptionOrSnippet
             extractLabel?.text = nil
         case .relatedPagesSourceArticle:
-            backgroundColor = .wmf_lightGrayCellBackground
-            imageViewDimension = 150
+            setBackgroundColors(theme.colors.midBackground, selected: theme.colors.baseBackground)
+            updateSelectedOrHighlighted()
+            imageViewDimension = 130
             extractLabel?.text = nil
             isSaveButtonHidden = true
             descriptionLabel.text = article.capitalizedWikidataDescriptionOrSnippet
             extractLabel?.text = nil
-        case .relatedPages:
-            isSaveButtonHidden = false
-            descriptionLabel.text = article.capitalizedWikidataDescriptionOrSnippet
-            extractLabel?.text = nil
-            adjustMargins(for: index - 1, count: count - 1) // related pages start at 1 due to the source article at 0
         case .mainPage:
             isSaveButtonHidden = true
-            titleFontFamily = .georgia
-            titleTextStyle = .title1
-            descriptionFontFamily = .system
+            titleTextStyle = .georgiaTitle3
             descriptionTextStyle = .subheadline
+            updateFonts(with: traitCollection)
             descriptionLabel.text = article.capitalizedWikidataDescription ?? WMFLocalizedString("explore-main-page-description", value: "Main page of Wikimedia projects", comment: "Main page description that shows when the main page lacks a Wikidata description.")
             extractLabel?.text = nil
+        case .pageWithLocationPlaceholder:
+            fallthrough
+        case .pageWithLocation:
+            isSaveButtonHidden = true
+            isImageViewHidden = false
+            descriptionLabel.text = article.capitalizedWikidataDescriptionOrSnippet
+            extractLabel?.text = nil
+            break
+        case .compactList, .relatedPages:
+            configureForCompactList(at: index)
+            if displayType == .relatedPages, let cell = self as? ArticleRightAlignedImageCollectionViewCell {
+                cell.topSeparator.isHidden = true
+                cell.bottomSeparator.isHidden = true
+            }
+            fallthrough
         case .page:
             fallthrough
         default:
@@ -71,7 +73,6 @@ public extension ArticleCollectionViewCell {
             isSaveButtonHidden = true
             descriptionLabel.text = article.capitalizedWikidataDescriptionOrSnippet
             extractLabel?.text = nil
-            adjustMargins(for: index, count: count)
         }
         
         titleLabel.accessibilityLanguage = articleLanguage
@@ -82,11 +83,27 @@ public extension ArticleCollectionViewCell {
     }
 }
 
+public extension ArticleRightAlignedImageCollectionViewCell {
+    @objc public func configure(article: WMFArticle, displayType: WMFFeedDisplayType, index: Int, shouldShowSeparators: Bool = false, theme: Theme, layoutOnly: Bool) {
+        if shouldShowSeparators {
+            self.topSeparator.isHidden = index != 0
+            self.bottomSeparator.isHidden = false
+        } else {
+            self.bottomSeparator.isHidden = true
+        }
+        super.configure(article: article, displayType: displayType, index: index, theme: theme, layoutOnly: layoutOnly)
+    }
+}
+
 public extension RankedArticleCollectionViewCell {
-    override func configure(article: WMFArticle, displayType: WMFFeedDisplayType, index: Int, count: Int, layoutOnly: Bool) {
+    public override func configure(article: WMFArticle, displayType: WMFFeedDisplayType, index: Int, shouldShowSeparators: Bool = false, theme: Theme, layoutOnly: Bool) {
         rankView.rank = index + 1
-        let percent = CGFloat(index + 1) / CGFloat(count)
-        rankView.tintColor = Gradient.wmf_blueToGreenGradient.color(at: percent)
-        super.configure(article: article, displayType: displayType, index: index, count: count, layoutOnly: layoutOnly)
+        let percent = CGFloat(index + 1) / CGFloat(5)
+        rankView.tintColor = theme.colors.linkToAccent.color(at: percent)
+        super.configure(article: article, displayType: displayType, index: index, shouldShowSeparators: shouldShowSeparators, theme: theme, layoutOnly: layoutOnly)
+    }
+    
+    public override func configure(article: WMFArticle, displayType: WMFFeedDisplayType, index: Int, theme: Theme, layoutOnly: Bool) {
+        configure(article: article, displayType: displayType, index: index, shouldShowSeparators: false, theme: theme, layoutOnly: layoutOnly)
     }
 }

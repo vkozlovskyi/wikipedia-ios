@@ -1,55 +1,82 @@
 import UIKit
 
-@objc(WMFSaveButton) public class SaveButton: AlignedImageButton, AnalyticsContextProviding, AnalyticsContentTypeProviding {
-    @objc(WMFSaveButtonState) enum State: Int {
+@objc(WMFSaveButtonDelegate) public protocol SaveButtonDelegate {
+    func saveButtonDidReceiveLongPress(_ saveButton: SaveButton)
+    func saveButtonDidReceiveAddToReadingListAction(_ saveButton: SaveButton) -> Bool
+}
+
+@objc(WMFSaveButton) public class SaveButton: AlignedImageButton, AnalyticsContextProviding, AnalyticsContentTypeProviding, EventLoggingEventValuesProviding {
+    @objc(WMFSaveButtonState)
+    public enum State: Int {
         case shortSaved
         case longSaved
         case shortSave
         case longSave
     }
-    
-    static let shortSavedTitle = WMFLocalizedString("action-saved", value:"Saved", comment:"Title for the save button in the 'Saved' state - Indicates the article is saved\n{{Identical|Saved}}")
-    static let accessibilitySavedTitle = WMFLocalizedString("action-saved-accessibility", value:"Saved. Activate to unsave.", comment:"Accessibility title for the 'Unsave' action\n{{Identical|Saved}}")
-    static let shortUnsaveTitle = WMFLocalizedString("action-unsave", value:"Unsave", comment:"Title for the 'Unsave' action\n{{Identical|Saved}}")
-    
-    static let shortSaveTitle = WMFLocalizedString("action-save", value:"Save", comment:"Title for the 'Save' action\n{{Identical|Save}}")
-    static let savedTitle = WMFLocalizedString("button-saved-for-later", value:"Saved for later", comment:"Longer button text for already saved button used in various places.")
-    static let saveTitle = WMFLocalizedString("button-save-for-later", value:"Save for later", comment:"Longer button text for save button used in various places.")
-    static let saveImage = #imageLiteral(resourceName: "places-save")
-    static let savedImage = #imageLiteral(resourceName: "places-unsave")
+
+    static let saveImage = UIImage(named: "unsaved", in: Bundle.wmf, compatibleWith:nil)
+    static let savedImage = UIImage(named: "saved", in: Bundle.wmf, compatibleWith:nil)
     
     public var analyticsContext = "unknown"
     public var analyticsContentType = "unknown"
     
-    var saveButtonState: SaveButton.State = .shortSave {
+    public var eventLoggingLabel: EventLoggingLabel? = nil
+    public var eventLoggingCategory: EventLoggingCategory = .feed
+    
+    public var saveButtonState: SaveButton.State = .shortSave {
         didSet {
             let saveTitle: String
-            let saveImage: UIImage
+            let saveImage: UIImage?
             switch saveButtonState {
             case .longSaved:
-                saveTitle = SaveButton.savedTitle
+                saveTitle = CommonStrings.savedTitle
                 saveImage = SaveButton.savedImage
-                accessibilityLabel = SaveButton.accessibilitySavedTitle
+                accessibilityLabel = CommonStrings.accessibilitySavedTitle
             case .longSave:
-                saveTitle = SaveButton.saveTitle
+                saveTitle = CommonStrings.saveTitle
                 saveImage = SaveButton.saveImage
-                accessibilityLabel = SaveButton.saveTitle
+                accessibilityLabel = CommonStrings.saveTitle
             case .shortSaved:
-                saveTitle = SaveButton.shortSavedTitle
+                saveTitle = CommonStrings.shortSavedTitle
                 saveImage = SaveButton.savedImage
-                accessibilityLabel = SaveButton.accessibilitySavedTitle
+                horizontalSpacing = 8
+                accessibilityLabel = CommonStrings.accessibilitySavedTitle
             case .shortSave:
                 fallthrough
             default:
-                saveTitle = SaveButton.shortSaveTitle
+                saveTitle = CommonStrings.shortSaveTitle
                 saveImage = SaveButton.saveImage
-                accessibilityLabel = SaveButton.saveTitle
+                horizontalSpacing = 8
+                accessibilityLabel = CommonStrings.saveTitle
             }
-            UIView.performWithoutAnimation {
-                setTitle(saveTitle, for: .normal)
-                setImage(saveImage, for: .normal)
-                layoutIfNeeded()
+            let addToReadingListAction = UIAccessibilityCustomAction(name: CommonStrings.addToReadingListActionTitle, target: self, selector: #selector(addToReadingList(_:)))
+            accessibilityCustomActions = [addToReadingListAction]
+            setTitle(saveTitle, for: .normal)
+            setImage(saveImage, for: .normal)
+        }
+    }
+    
+    @objc func addToReadingList(_ sender: UIControl) -> Bool {
+        return saveButtonDelegate?.saveButtonDidReceiveAddToReadingListAction(self) ?? false
+    }
+    
+    var longPressGestureRecognizer: UILongPressGestureRecognizer?
+    public weak var saveButtonDelegate: SaveButtonDelegate?  {
+        didSet {
+            if let lpgr = longPressGestureRecognizer, saveButtonDelegate == nil {
+                removeGestureRecognizer(lpgr)
+            } else if saveButtonDelegate != nil && longPressGestureRecognizer == nil {
+                let lpgr = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPressGestureRecognizer(_:)))
+                addGestureRecognizer(lpgr)
+                longPressGestureRecognizer = lpgr
             }
         }
+    }
+    
+    @objc public func handleLongPressGestureRecognizer(_ longPressGestureRecognizer: UILongPressGestureRecognizer) {
+        guard longPressGestureRecognizer.state == .began else {
+            return
+        }
+        saveButtonDelegate?.saveButtonDidReceiveLongPress(self)
     }
 }

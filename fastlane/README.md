@@ -8,25 +8,11 @@ Make sure you have the latest version of the Xcode command line tools installed:
 xcode-select --install
 ```
 
-## Choose your installation method:
-
-<table width="100%" >
-<tr>
-<th width="33%"><a href="http://brew.sh">Homebrew</a></td>
-<th width="33%">Installer Script</td>
-<th width="33%">Rubygems</td>
-</tr>
-<tr>
-<td width="33%" align="center">macOS</td>
-<td width="33%" align="center">macOS</td>
-<td width="33%" align="center">macOS or Linux with Ruby 2.0.0 or above</td>
-</tr>
-<tr>
-<td width="33%"><code>brew cask install fastlane</code></td>
-<td width="33%"><a href="https://download.fastlane.tools">Download the zip file</a>. Then double click on the <code>install</code> script (or run it in a terminal window).</td>
-<td width="33%"><code>sudo gem install fastlane -NV</code></td>
-</tr>
-</table>
+Install _fastlane_ using
+```
+[sudo] gem install fastlane -NV
+```
+or alternatively using `brew cask install fastlane`
 
 # Available Actions
 ## iOS
@@ -59,12 +45,27 @@ Runs tests on select platforms for verifying pull requests
 ```
 fastlane ios verify
 ```
-Runs unit tests, generates JUnit report.
+Runs unit tests, generates JUnit reports.
+### ios record_visual_tests
+```
+fastlane ios record_visual_tests
+```
+Records visual tests.
 ### ios bump_build
 ```
 fastlane ios bump_build
 ```
 Increment the build number
+### ios set_build_number
+```
+fastlane ios set_build_number
+```
+Set the build number
+### ios set_version_number
+```
+fastlane ios set_version_number
+```
+Set version number
 ### ios bump_patch
 ```
 fastlane ios bump_patch

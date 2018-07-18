@@ -1,12 +1,13 @@
 import UIKit
+import WMF
 
 protocol ArticlePopoverViewControllerDelegate: NSObjectProtocol {
     func articlePopoverViewController(articlePopoverViewController: ArticlePopoverViewController, didSelectAction: WMFArticleAction)
 }
 
 class ArticlePopoverViewController: UIViewController {
-    fileprivate static let readActionString = WMFLocalizedString("action-read", value:"Read", comment:"Title for the 'Read' action\n{{Identical|Read}}")
-    fileprivate static let shareActionString = WMFLocalizedString("action-share", value:"Share", comment:"Title for the 'Share' action\n{{Identical|Share}}")
+    fileprivate static let readActionString = CommonStrings.shortReadTitle
+    fileprivate static let shareActionString = CommonStrings.shortShareTitle
     
     weak var delegate: ArticlePopoverViewControllerDelegate?
     
@@ -21,7 +22,9 @@ class ArticlePopoverViewController: UIViewController {
     @IBOutlet weak var readButton: UIButton!
     
     @IBOutlet weak var articleSummaryView: UIView!
+    @IBOutlet weak var buttonContainerView: UIView!
     
+    var displayTitleHTML: String = ""
     let article: WMFArticle
     
     var showSaveAndShareTitles = true
@@ -59,9 +62,9 @@ class ArticlePopoverViewController: UIViewController {
             buttonStackView.distribution = .fillProportionally
         }
         
-        titleLabel.text = article.displayTitle
+        displayTitleHTML = article.displayTitleHTML
         subtitleLabel.text = article.capitalizedWikidataDescriptionOrSnippet
-        
+        configureView(withTraitCollection: traitCollection)
         view.wmf_configureSubviewsForDynamicType()
     }
     
@@ -77,14 +80,8 @@ class ArticlePopoverViewController: UIViewController {
     
     func updateMoreButtonImage(with traitCollection: UITraitCollection) {
         var moreImage = #imageLiteral(resourceName: "places-more")
-        if #available(iOS 10.0, *) {
-            if traitCollection.layoutDirection == .rightToLeft {
-                moreImage = moreImage.withHorizontallyFlippedOrientation()
-            }
-        } else {
-            if UIApplication.shared.wmf_isRTL {
-                moreImage = moreImage.imageFlippedForRightToLeftLayoutDirection()
-            }
+        if traitCollection.layoutDirection == .rightToLeft {
+            moreImage = moreImage.withHorizontallyFlippedOrientation()
         }
         readButton.setImage(moreImage, for: .normal)
     }
@@ -93,7 +90,7 @@ class ArticlePopoverViewController: UIViewController {
         if showSaveAndShareTitles {
             saveButton.saveButtonState = article.savedDate == nil ? .shortSave : .shortSaved
         }
-        let saveTitle = article.savedDate == nil ? SaveButton.shortSaveTitle : SaveButton.shortUnsaveTitle
+        let saveTitle = article.savedDate == nil ? CommonStrings.shortSaveTitle : CommonStrings.shortUnsaveTitle
         let saveAction = UIAccessibilityCustomAction(name: saveTitle, target: self, selector: #selector(save))
         let shareAction = UIAccessibilityCustomAction(name: ArticlePopoverViewController.shareActionString, target: self, selector: #selector(share))
         
@@ -124,8 +121,7 @@ class ArticlePopoverViewController: UIViewController {
     }
     
     func configureView(withTraitCollection traitCollection: UITraitCollection) {
-        let titleLabelFont = UIFont.wmf_preferredFontForFontFamily(.georgia, withTextStyle: .title3, compatibleWithTraitCollection: traitCollection)
-        titleLabel.font = titleLabelFont
+        titleLabel.attributedText = displayTitleHTML.byAttributingHTML(with: .georgiaTitle3, matching: traitCollection)
     }
     
     override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
@@ -133,7 +129,7 @@ class ArticlePopoverViewController: UIViewController {
         configureView(withTraitCollection: traitCollection)
     }
     
-    func handleTapGesture(_ tapGR: UITapGestureRecognizer) {
+    @objc func handleTapGesture(_ tapGR: UITapGestureRecognizer) {
         switch tapGR.state {
         case .recognized:
             delegate?.articlePopoverViewController(articlePopoverViewController: self, didSelectAction: .read)
@@ -157,4 +153,18 @@ class ArticlePopoverViewController: UIViewController {
     
 }
 
+
+extension ArticlePopoverViewController: Themeable {
+    func apply(theme: Theme) {
+        view.tintColor = theme.colors.link
+        titleLabel.textColor = theme.colors.primaryText
+        subtitleLabel.textColor = theme.colors.secondaryText
+        descriptionLabel.textColor = theme.colors.tertiaryText
+        articleSummaryView.backgroundColor = theme.colors.popoverBackground
+        buttonContainerView.backgroundColor = theme.colors.border
+        saveButton.backgroundColor = theme.colors.popoverBackground
+        shareButton.backgroundColor = theme.colors.popoverBackground
+        readButton.backgroundColor = theme.colors.popoverBackground
+    }
+}
 

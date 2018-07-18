@@ -1,18 +1,20 @@
 #import "UIViewController+WMFEmptyView.h"
 #import "WMFEmptyView.h"
 #import <objc/runtime.h>
+@import WMF.Swift;
+
 @implementation UIViewController (WMFEmptyView)
 
 static const char *const WMFEmptyViewKey = "WMFEmptyView";
 
-- (UIView *)wmf_emptyView {
+- (nullable WMFEmptyView *)wmf_emptyView {
     return objc_getAssociatedObject(self, WMFEmptyViewKey);
 }
 
-- (void)wmf_showEmptyViewOfType:(WMFEmptyViewType)type {
+- (void)wmf_showEmptyViewOfType:(WMFEmptyViewType)type theme:(WMFTheme *)theme frame:(CGRect)frame {
     [self wmf_hideEmptyView];
 
-    UIView *view = nil;
+    WMFEmptyView *view = nil;
     switch (type) {
         case WMFEmptyViewTypeBlank:
             view = [WMFEmptyView blankEmptyView];
@@ -29,22 +31,38 @@ static const char *const WMFEmptyViewKey = "WMFEmptyView";
         case WMFEmptyViewTypeNoSavedPages:
             view = [WMFEmptyView noSavedPagesEmptyView];
             break;
+        case WMFEmptyViewTypeNoSavedPagesInReadingList:
+            view = [WMFEmptyView noSavedPagesInReadingListEmptyView];
+            break;
         case WMFEmptyViewTypeNoHistory:
             view = [WMFEmptyView noHistoryEmptyView];
+            break;
+        case WMFEmptyViewTypeNoReadingLists:
+            view = [WMFEmptyView noReadingListsEmptyView];
             break;
         default:
             return;
     }
+    [view applyTheme:theme];
 
     view.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    view.frame = self.view.bounds;
+    view.frame = frame;
 
     if ([self.view isKindOfClass:[UIScrollView class]]) {
         [(UIScrollView *)self.view setScrollEnabled:NO];
     }
-    [self.view addSubview:view];
 
     objc_setAssociatedObject(self, WMFEmptyViewKey, view, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
+    if (!view) {
+        return;
+    }
+
+    if ([self conformsToProtocol:@protocol(WMFEmptyViewContainer)]) {
+        [(id)self addEmptyView:view];
+    } else {
+        [self.view addSubview:view];
+    }
 }
 
 - (void)wmf_hideEmptyView {
@@ -59,6 +77,14 @@ static const char *const WMFEmptyViewKey = "WMFEmptyView";
 
 - (BOOL)wmf_isShowingEmptyView {
     return [self wmf_emptyView].superview != nil;
+}
+
+- (void)wmf_applyThemeToEmptyView:(WMFTheme *)theme {
+    [[self wmf_emptyView] applyTheme:theme];
+}
+
+- (void)wmf_setEmptyViewFrame:(CGRect)frame {
+    [[self wmf_emptyView] setFrame:frame];
 }
 
 @end

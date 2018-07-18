@@ -1,12 +1,10 @@
 #import "AboutViewController.h"
 #import <WMF/WikipediaAppUtils.h>
-#import "WKWebView+LoadAssetsHtml.h"
 #import <WMF/NSString+WMFExtras.h>
 #import <WMF/NSBundle+WMFInfoUtils.h>
 #import "UIBarButtonItem+WMFButtonConvenience.h"
 #import "UIViewController+WMFOpenExternalUrl.h"
 #import "Wikipedia-Swift.h"
-@import Masonry;
 
 static NSString *const kWMFAboutHTMLFile = @"about.html";
 static NSString *const kWMFAboutPlistName = @"AboutViewController";
@@ -18,6 +16,7 @@ static NSString *const kWMFURLsWikimediaKey = @"wmf";
 static NSString *const kWMFURLsSpecialistGuildKey = @"tsg";
 static NSString *const kWMFURLsMITKey = @"mit";
 static NSString *const kWMFURLsShareAlikeKey = @"sharealike";
+static NSString *const kWMFURLsAppleMapsKey = @"applemaps";
 
 static NSString *const kWMFRepositoriesKey = @"repositories";
 
@@ -59,6 +58,40 @@ static NSString *const kWMFContributorsKey = @"contributors";
     [self evaluateJavaScript:fontSizeJS completionHandler:nil];
 }
 
+- (void)wmf_setTextFontColor:(WMFTheme *)theme {
+    NSString *fontColorJS = [NSString stringWithFormat:@""
+                                                        "function styleWithSelector (selector, styleSheetID) {"
+                                                        "  function ruleWithSelector(rule) {"
+                                                        "     return (rule.selectorText === selector)"
+                                                        "  }"
+                                                        "  return Array.from(document.getElementById(styleSheetID).sheet.rules)"
+                                                        "  .find(ruleWithSelector)"
+                                                        "  .style"
+                                                        "}"
+                                                        "styleWithSelector('body', 'styles').color = '#%@';"
+                                                        "styleWithSelector('.heading', 'styles').color = '#%@';"
+                                                        "styleWithSelector('.title', 'styles').color = '#%@';"
+                                                        "styleWithSelector('A', 'styles').color = '#%@';",
+                                                       theme.colors.primaryText.wmf_hexString,
+                                                       theme.colors.primaryText.wmf_hexString,
+                                                       theme.colors.secondaryText.wmf_hexString,
+                                                       theme.colors.link.wmf_hexString];
+
+    [self evaluateJavaScript:fontColorJS completionHandler:nil];
+}
+
+- (void)wmf_setLogoStyleWithTheme:(WMFTheme *)theme {
+    // White logo on Dark mode
+    // Black logo on Default and Sepia modes
+    if (theme.isDark) {
+        [self evaluateJavaScript:[NSString stringWithFormat:@"wmf.applyDarkThemeLogo()"]
+               completionHandler:nil];
+    } else {
+        [self evaluateJavaScript:[NSString stringWithFormat:@"wmf.applyLightThemeLogo()"]
+               completionHandler:nil];
+    }
+}
+
 - (void)wmf_preventTextFromExpandingOnRotation {
     [self evaluateJavaScript:@"document.getElementsByTagName('body')[0].style['-webkit-text-size-adjust'] = 'none';" completionHandler:nil];
 }
@@ -70,6 +103,7 @@ static NSString *const kWMFContributorsKey = @"contributors";
 @property (strong, nonatomic) WKWebView *webView;
 @property (nonatomic, strong) UIBarButtonItem *buttonX;
 @property (nonatomic, strong) UIBarButtonItem *buttonCaretLeft;
+@property (nonatomic, strong) WMFTheme *theme;
 
 @end
 
@@ -77,19 +111,23 @@ static NSString *const kWMFContributorsKey = @"contributors";
 
 #pragma mark - UIViewController
 
+- (instancetype)initWithTheme:(WMFTheme *)theme {
+    self.theme = theme;
+    return self;
+}
+
 - (void)viewDidLoad {
     [super viewDidLoad];
 
     WKWebView *wv = [[WKWebView alloc] initWithFrame:CGRectZero];
-    wv.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addSubview:wv];
-    [wv mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.leading.and.trailing.top.and.bottom.equalTo(wv.superview);
-    }];
+    [self.view wmf_addSubviewWithConstraintsToEdges:wv];
 
     wv.navigationDelegate = self;
     [wv loadHTMLFromAssetsFile:kWMFAboutHTMLFile scrolledToFragment:nil];
     self.webView = wv;
+
+    self.webView.opaque = NO;
+    [self applyTheme:self.theme];
 
     self.buttonX = [UIBarButtonItem wmf_buttonType:WMFButtonTypeX target:self action:@selector(closeButtonPressed)];
 
@@ -119,7 +157,7 @@ static NSString *const kWMFContributorsKey = @"contributors";
 
 - (void)updateNavigationBar {
     self.title = self.title;
-    self.navigationItem.leftBarButtonItem = [self isDisplayingLicense] ? self.buttonCaretLeft : self.buttonX;
+    self.navigationItem.leftBarButtonItem = [self isDisplayingLicense] ? self.buttonCaretLeft : nil;
 }
 
 - (NSString *)title {
@@ -191,6 +229,10 @@ static NSString *const kWMFContributorsKey = @"contributors";
     setDivHTML(@"repositories_subtitle", [NSString stringWithFormat:WMFLocalizedStringWithDefaultValue(@"about-repositories-app-source-license", nil, nil, @"Source code available under the %1$@.", @"Text explaining the app source licensing. %1$@ is the message {{msg-wikimedia|about-repositories-app-source-license-mit}}."), [[self class] linkHTMLForURLString:self.urls[kWMFURLsMITKey] title:WMFLocalizedStringWithDefaultValue(@"about-repositories-app-source-license-mit", nil, nil, @"MIT License", @"Name of the \"MIT\" license")]]);
 
     setDivHTML(@"feedback_body", [[self class] linkHTMLForURLString:self.feedbackURL title:WMFLocalizedStringWithDefaultValue(@"about-send-feedback", nil, nil, @"Send app feedback", @"Link text for sending app feedback")]);
+
+    setDivHTML(@"places_maps_license_title", WMFLocalizedStringWithDefaultValue(@"about-places-maps-license", nil, nil, @"Places maps license", @"Header text for maps license section"));
+    setDivHTML(@"places_maps_license_body", [NSString stringWithFormat:WMFLocalizedStringWithDefaultValue(@"about-places-maps-license-details", nil, nil, @"Places uses maps provided by Apple Maps. %1$@.", @"Text explaining license of maps content. %1$@ is the message {{msg-wikimedia|about-places-maps-license-details-link-text}}."), [[self class] linkHTMLForURLString:self.urls[kWMFURLsAppleMapsKey] title:WMFLocalizedStringWithDefaultValue(@"about-places-maps-license-details-link-text", nil, nil, @"Please see here for license details", @"Text used for link to maps license")]]);
+
     setDivHTML(@"license_title", WMFLocalizedStringWithDefaultValue(@"about-content-license", nil, nil, @"Content license", @"Header text for content license section"));
 
     setDivHTML(@"license_body", [NSString stringWithFormat:WMFLocalizedStringWithDefaultValue(@"about-content-license-details", nil, nil, @"Unless otherwise specified, content is available under a %1$@.", @"Text explaining license of app content. %1$@ is the message {{msg-wikimedia|about-content-license-details-share-alike-license}}."), [[self class] linkHTMLForURLString:self.urls[kWMFURLsShareAlikeKey] title:WMFLocalizedStringWithDefaultValue(@"about-content-license-details-share-alike-license", nil, nil, @"Creative Commons Attribution-ShareAlike License", @"Name of the \"Creative Commons Attribution-ShareAlike\" license")]]);
@@ -202,6 +244,8 @@ static NSString *const kWMFContributorsKey = @"contributors";
 
     [webView wmf_setTextDirection];
     [webView wmf_setTextFontSize];
+    [webView wmf_setTextFontColor:self.theme];
+    [webView wmf_setLogoStyleWithTheme:self.theme];
 }
 
 #pragma mark - Introspection
@@ -224,9 +268,10 @@ static NSString *const kWMFContributorsKey = @"contributors";
     if ([[self class] isLicenseURL:requestURL]) {
 
         LibrariesUsedViewController *vc = [LibrariesUsedViewController wmf_viewControllerFromStoryboardNamed:LibrariesUsedViewController.storyboardName];
+        [vc applyTheme:self.theme];
         vc.navigationItem.backBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"" style:self.navigationItem.backBarButtonItem.style target:nil action:nil];
 
-        UINavigationController *nc = [[UINavigationController alloc] initWithRootViewController:vc];
+        WMFThemeableNavigationController *nc = [[WMFThemeableNavigationController alloc] initWithRootViewController:vc theme:self.theme];
         [self presentViewController:nc animated:YES completion:nil];
 
         decisionHandler(WKNavigationActionPolicyCancel);
@@ -285,6 +330,14 @@ static NSString *const kWMFContributorsKey = @"contributors";
     }
 
     return NO;
+}
+
+#pragma mark - WMFThemeable
+
+- (void)applyTheme:(WMFTheme *)theme {
+    self.theme = theme;
+
+    self.view.backgroundColor = theme.colors.paperBackground;
 }
 
 @end

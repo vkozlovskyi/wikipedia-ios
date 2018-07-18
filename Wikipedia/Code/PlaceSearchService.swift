@@ -119,7 +119,7 @@ class PlaceSearchService
                 let searchPredicate = NSPredicate(format: "(displayTitle CONTAINS[cd] '\(searchString)') OR (snippet CONTAINS[cd] '\(searchString)')")
                 request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [basePredicate, searchPredicate])
             }
-            request.sortDescriptors = [NSSortDescriptor(key: "savedDate", ascending: false)]
+            request.sortDescriptors = [NSSortDescriptor(keyPath: \WMFArticle.savedDate, ascending: false)]
             
             completion(request)
         }
@@ -129,18 +129,18 @@ class PlaceSearchService
             guard savedPagesWithLocation.count >= 99 else {
                 let savedPagesWithoutLocationRequest = WMFArticle.fetchRequest()
                 savedPagesWithoutLocationRequest.predicate = NSPredicate(format: "savedDate != NULL && signedQuadKey == NULL")
-                savedPagesWithoutLocationRequest.sortDescriptors = [NSSortDescriptor(key: "savedDate", ascending: false)]
+                savedPagesWithoutLocationRequest.sortDescriptors = [NSSortDescriptor(keyPath: \WMFArticle.savedDate, ascending: false)]
                 let savedPagesWithoutLocation = try moc.fetch(savedPagesWithoutLocationRequest)
                 guard savedPagesWithoutLocation.count > 0 else {
                     done()
                     return
                 }
-                let urls = savedPagesWithoutLocation.flatMap({ (article) -> URL? in
+                let urls = savedPagesWithoutLocation.compactMap({ (article) -> URL? in
                     return article.url
                 })
                 // TODO: ARM: I don't understand this --------------------V
                 //var allArticlesWithLocation = savedPagesWithLocation // this should be re-fetched
-                dataStore.viewContext.updateOrCreateArticleSummariesForArticles(withURLs: urls) { (articles) in
+                dataStore.viewContext.wmf_updateOrCreateArticleSummariesForArticles(withURLs: urls) { (articles) in
                     //allArticlesWithLocation.append(contentsOf: articles)
                     done()
                 }

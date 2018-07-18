@@ -10,9 +10,6 @@
 
 static const CLLocationDistance WMFNearbyUpdateDistanceThresholdInMeters = 25000;
 
-static const NSInteger WMFNearbyDaysBetweenForcedUpdates = 10;
-const CLLocationDistance WMFNearbyForcedUpdateDistanceThresholdInMeters = 1000;
-
 @interface WMFNearbyContentSource () <WMFLocationManagerDelegate>
 
 @property (readwrite, nonatomic, strong) NSURL *siteURL;
@@ -101,10 +98,11 @@ const CLLocationDistance WMFNearbyForcedUpdateDistanceThresholdInMeters = 1000;
                 inManagedObjectContext:moc
                 force:force
                 completion:^(WMFContentGroup *group, CLLocation *location, CLPlacemark *placemark) {
-                    if (group && [group.content isKindOfClass:[NSArray class]] && group.content.count > 0) {
+                    id content = group.fullContent.object;
+                    if (group && [content isKindOfClass:[NSArray class]] && [content count] > 0) {
                         NSDate *now = [NSDate date];
                         NSDate *todayMidnightUTC = [now wmf_midnightUTCDateFromLocalDate];
-                        if (force || (![[NSUserDefaults wmf_userDefaults] wmf_placesHasAppeared] && [[NSCalendar wmf_utcGregorianCalendar] wmf_daysFromDate:group.midnightUTCDate toDate:todayMidnightUTC] >= WMFNearbyDaysBetweenForcedUpdates)) {
+                        if (force) {
                             group.date = now;
                             group.midnightUTCDate = todayMidnightUTC;
                         }
@@ -165,7 +163,14 @@ const CLLocationDistance WMFNearbyForcedUpdateDistanceThresholdInMeters = 1000;
             }
             [moc performBlock:^{
                 [moc fetchOrCreateArticleWithURL:articleURL updatedWithSearchResult:result];
-                [moc fetchOrCreateGroupForURL:placeholderURL ofKind:WMFContentGroupKindLocationPlaceholder forDate:date withSiteURL:self.siteURL associatedContent:@[articleURL] customizationBlock:nil];
+                [moc fetchOrCreateGroupForURL:placeholderURL
+                                       ofKind:WMFContentGroupKindLocationPlaceholder
+                                      forDate:date
+                                  withSiteURL:self.siteURL
+                            associatedContent:nil
+                           customizationBlock:^(WMFContentGroup *_Nonnull group) {
+                               group.contentPreview = articleURL;
+                           }];
                 completion();
             }];
         }
@@ -186,7 +191,8 @@ const CLLocationDistance WMFNearbyForcedUpdateDistanceThresholdInMeters = 1000;
         inManagedObjectContext:moc
         force:NO
         completion:^(WMFContentGroup *group, CLLocation *location, CLPlacemark *placemark) {
-            if (group && [group.content isKindOfClass:[NSArray class]] && group.content.count > 0) {
+            id content = group.fullContent.object;
+            if (group && [content isKindOfClass:[NSArray class]] && [content count] > 0) {
                 if (self.completion) {
                     self.completion();
                 }
@@ -216,16 +222,7 @@ const CLLocationDistance WMFNearbyForcedUpdateDistanceThresholdInMeters = 1000;
 }
 
 - (nullable WMFContentGroup *)contentGroupCloseToLocation:(CLLocation *)location inManagedObjectContext:(NSManagedObjectContext *)moc force:(BOOL)force {
-    NSDate *todayMidnightUTC = [[NSDate date] wmf_midnightUTCDateFromLocalDate];
-    __block CLLocationDistance distanceThreshold = force ? WMFNearbyUpdateDistanceThresholdInMeters : WMFNearbyForcedUpdateDistanceThresholdInMeters;
-    __block NSInteger daysUntilForcedUpdate = [[NSUserDefaults wmf_userDefaults] wmf_placesHasAppeared] ? NSIntegerMax : WMFNearbyDaysBetweenForcedUpdates;
-    if (!force) {
-        WMFContentGroup *newestContentGroup = [moc newestGroupOfKind:WMFContentGroupKindLocation];
-        NSDate *newestMidnightUTCDate = newestContentGroup.midnightUTCDate;
-        if (newestMidnightUTCDate && [[NSCalendar wmf_utcGregorianCalendar] wmf_daysFromDate:newestMidnightUTCDate toDate:todayMidnightUTC] >= daysUntilForcedUpdate) {
-            distanceThreshold = WMFNearbyForcedUpdateDistanceThresholdInMeters;
-        }
-    }
+    CLLocationDistance distanceThreshold = WMFNearbyUpdateDistanceThresholdInMeters;
     return [moc locationContentGroupWithinMeters:distanceThreshold ofLocation:location];
 }
 

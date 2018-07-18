@@ -80,9 +80,9 @@
 "explore-continue-reading-heading" = "Reluare lectură";
 "explore-featured-article-heading" = "Articol de calitate";
 "explore-main-page-heading" = "Astăzi la Wikipedia";
-"explore-most-read-footer-for-date" = "Cele mai citite articole (toate) pe $1";
+// Fuzzy
+"explore-most-read-footer" = "Cele mai citite articole (toate)";
 "explore-most-read-generic-heading" = "Cele mai citite";
-"explore-most-read-heading" = "Cele mai citite la Wikipedia în $1";
 "explore-most-read-more-list-title-for-date" = "Cele mai citite articole pe $1";
 "explore-nearby-heading" = "Locuri din apropiere";
 "explore-potd-heading" = "Imaginea zilei";
@@ -91,8 +91,6 @@
 "history-clear-cancel" = "Revocare";
 "history-clear-confirmation-heading" = "Sigur doriți să ștergeți toate elementele recente?";
 "history-clear-delete-all" = "Da, șterge tot";
-"history-section-today" = "Astăzi";
-"history-section-yesterday" = "Ieri";
 "history-title" = "Istoric";
 "hockeyapp-alert-always-send" = "Trimite întotdeauna";
 "hockeyapp-alert-do-not-send" = "Nu trimite";
@@ -103,9 +101,8 @@
 "hockeyapp-alert-question-with-response-field" = "Ați dori să trimiteți un raport de blocare a aplicației către $1, astfel încât Wikimedia să studieze problema? Vă rugăm să descrieți împrejurarea în care s-a produs blocarea:";
 "hockeyapp-alert-send-report" = "Trimite raportul";
 "hockeyapp-alert-title" = "Ne pare rău, aplicația s-a blocat ultima dată";
-"home-hide-suggestion-cancel" = "Revocare";
-"home-hide-suggestion-prompt" = "Ascunde această sugestie";
 "home-more-like-footer" = "Mai multe precum $1";
+// Fuzzy
 "home-nearby-footer" = "Mai multe articole din apropierea dumneavoastră";
 "home-nearby-location-footer" = "Mai multe locuri de lângă $1";
 "home-title" = "Explorare";
@@ -139,14 +136,12 @@
 "main-menu-title" = "Mai mult";
 "main-menu-zero-faq" = "Într. frecv. Wikipedia Zero";
 "menu-cancel-accessibility-label" = "Revocare";
-"menu-trash-accessibility-label" = "Șterge";
 "navbar-title-mode-edit-wikitext-preview" = "Previzualizare";
 "nearby-distance-label-feet" = "$1 picioare";
 "nearby-distance-label-km" = "$1 km";
 "nearby-distance-label-meters" = "$1 metri";
 "nearby-distance-label-miles" = "$1 mile";
 "no-email-account-alert" = "Vă rugăm să configurați un cont de e-mail pe dispozitivul dumneavoastră și să încercați din nou.";
-"onboarding-wikipedia" = "Wikipedia";
 "open-link-cancel" = "Revocare";
 "page-edit-history" = "Istoric complet al modificărilor";
 "page-history-title" = "Istoric articol";
@@ -168,10 +163,6 @@
 "preference-summary-eventlogging-opt-in" = "Permiteți Wikimediei să adune informații despre modul în care utilizați aplicația pentru a putea îmbunătăți aplicația";
 "preference-title-eventlogging-opt-in" = "Trimite rapoarte de utilizare";
 "request-feedback-on-error" = "Aplicația a întâmpinat o problemă despre care programatorii noștri ar dori să afle mai multe. Apăsați aici pentru a ne trimite un e-mail cu detalii despre eroare.";
-"saved-clear-all" = "Șterge";
-"saved-pages-clear-cancel" = "Revocare";
-"saved-pages-clear-confirmation-heading" = "Sigur doriți să ștergeți toate paginile salvate?";
-"saved-pages-clear-delete-all" = "Da, șterge tot";
 "saved-pages-image-download-error" = "Nu se pot descărca imaginile pentru această pagină salvată.";
 "saved-title" = "Salvat";
 "search-did-you-mean" = "V-ați referit la $1?";
@@ -190,12 +181,9 @@
 "settings-primary-language-details" = "Prima poziție din această listă reprezintă limba principală a aplicației. Modificarea acestei limbi va conduce la modificarea conținutului zilnic (precum Articole de calitate) afișat în secțiunea Explorare.";
 "settings-support" = "Susțineți Wikipedia";
 "settings-title" = "Setări";
+// Fuzzy
 "share-a-fact-share-menu-item" = "Distribuie-o-informație";
 "share-article-name-on-wikipedia" = "„$1” la @Wikipedia:";
-"share-article-name-on-wikipedia-with-selected-text" = "„$1” la @Wikipedia: „$2”";
-"share-as-image" = "Distribuie ca imagine";
-"share-as-text" = "Distribuie ca text";
-"share-cancel" = "Revocare";
 // Fuzzy
 "share-custom-menu-item" = "Distribuie";
 "share-on-twitter-sign-off" = "via @Wikipedia";
@@ -205,14 +193,9 @@
 "table-of-contents-heading" = "Cuprins";
 "table-title-other" = "Mai multe informații";
 "welcome-explore-continue-button" = "Să începem";
-"welcome-explore-tell-me-more" = "Spune-mi mai multe";
 "welcome-explore-tell-me-more-done-button" = "Am înțeles";
 "welcome-languages-add-button" = "Adaugă încă o limbă";
-"welcome-languages-continue-button" = "Continuă";
-"welcome-languages-sub-title" = "Alegeți limbile preferate în care doriți să căutați pe Wikipedia";
-"welcome-languages-title" = "Limbi";
 "welcome-volunteer-send-usage-reports" = "Trimite rapoarte de utilizare";
-"welcome-volunteer-thanks" = "$1 Mulțumim!";
 "wikitext-download-failed" = "Imposibil de obținut ultima versiune.";
 "wikitext-download-success" = "Conținut încărcat.";
 "wikitext-downloading" = "Se încarcă conținutul...";

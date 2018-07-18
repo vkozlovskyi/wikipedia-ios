@@ -2,8 +2,10 @@
 @class MWKDataStore;
 @class WMFShareFunnel;
 @class WMFArticleViewController;
+#import "WMFViewController.h"
 #import "WMFTableOfContentsDisplay.h"
 #import "WebViewController.h"
+#import "WMFImageGalleryViewController.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -21,6 +23,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)readMoreArticlePreviewActionSelectedWithArticleController:(WMFArticleViewController *)articleController;
 
+- (void)saveArticlePreviewActionSelectedWithArticleController:(WMFArticleViewController *)articleController didSave:(BOOL)didSave articleURL:(NSURL *)articleURL;
+
 - (void)shareArticlePreviewActionSelectedWithArticleController:(WMFArticleViewController *)articleController
                                        shareActivityController:(UIActivityViewController *)shareActivityController;
 
@@ -31,10 +35,11 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  *  View controller responsible for displaying article content.
  */
-@interface WMFArticleViewController : UIViewController <WMFAnalyticsContextProviding, WMFAnalyticsContentTypeProviding, WMFAnalyticsViewNameProviding, WMFWebViewControllerDelegate>
+@interface WMFArticleViewController : WMFViewController <WMFAnalyticsContextProviding, WMFAnalyticsContentTypeProviding, WMFAnalyticsViewNameProviding, WMFWebViewControllerDelegate, WMFImagePreviewingActionsDelegate>
 
 - (instancetype)initWithArticleURL:(NSURL *)url
-                         dataStore:(MWKDataStore *)dataStore;
+                         dataStore:(MWKDataStore *)dataStore
+                             theme:(WMFTheme *)theme;
 
 @property (nonatomic, strong, readonly) NSURL *articleURL;
 @property (nonatomic, strong, readonly) MWKDataStore *dataStore;
@@ -85,7 +90,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readonly) UIBarButtonItem *saveToolbarItem;
 @property (nonatomic, strong, readonly) UIBarButtonItem *languagesToolbarItem;
 @property (nonatomic, strong, readonly) UIBarButtonItem *shareToolbarItem;
-@property (nonatomic, strong, readonly) UIBarButtonItem *fontSizeToolbarItem;
+@property (nonatomic, strong, readonly) UIBarButtonItem *readingThemesControlsToolbarItem;
 @property (nonatomic, strong, readonly) UIBarButtonItem *showTableOfContentsToolbarItem;
 @property (nonatomic, strong, readonly) UIBarButtonItem *hideTableOfContentsToolbarItem;
 

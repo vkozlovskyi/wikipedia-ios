@@ -22,11 +22,14 @@ NS_ASSUME_NONNULL_BEGIN
     self = [super init];
     if (self) {
         AFHTTPSessionManager *manager = [AFHTTPSessionManager wmf_createDefaultManager];
-        manager.responseSerializer = [WMFMantleJSONResponseSerializer serializerForValuesInDictionaryOfType:[MWKSearchResult class]
-                                                                                                fromKeypath:@"query.pages"];
+        manager.responseSerializer = [WMFMantleJSONResponseSerializer serializerForValuesInDictionaryOfType:[MWKSearchResult class] fromKeypath:@"query.pages" emptyValueForJSONKeypathAllowed:NO];
         self.operationManager = manager;
     }
     return self;
+}
+
+- (void)dealloc {
+    [self.operationManager invalidateSessionCancelingTasks:YES];
 }
 
 - (BOOL)isFetching {
@@ -67,7 +70,7 @@ NS_ASSUME_NONNULL_BEGIN
     NSNumber *numberOfRandomItemsToFetch = @8;
     return @{
         @"action": @"query",
-        @"prop": @"extracts|pageterms|pageimages|pageprops|revisions",
+        @"prop": @"extracts|description|pageimages|pageprops|revisions",
         //random
         @"generator": @"random",
         @"grnnamespace": @0,
@@ -78,15 +81,15 @@ NS_ASSUME_NONNULL_BEGIN
         @"exlimit": numberOfRandomItemsToFetch,
         @"explaintext": @"",
         @"exchars": @(WMFNumberOfExtractCharacters),
-        // pageterms
-        @"wbptterms": @"description",
+        // pageprops
+        @"ppprop": @"displaytitle|disambiguation",
         // pageimage
         @"piprop": @"thumbnail",
         //@"pilicense": @"any",
         @"pithumbsize": [[UIScreen mainScreen] wmf_leadImageWidthForScale],
         @"pilimit": numberOfRandomItemsToFetch,
         // revision
-        @"rrvlimit": @(1),
+        // @"rrvlimit": @(1),
         @"rvprop": @"ids",
         @"format": @"json",
     };

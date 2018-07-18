@@ -7,15 +7,17 @@
 		<key>sharealike</key>
 		<string>https://creativecommons.org/licenses/by-sa/3.0/</string>
 		<key>mit</key>
-		<string>https://raw.githubusercontent.com/wikimedia/wikipedia-ios/master/LICENSE.txt</string>
+		<string>https://raw.githubusercontent.com/wikimedia/wikipedia-ios/develop/LICENSE.txt</string>
 		<key>tsg</key>
 		<string>http://specialistsguild.org</string>
 		<key>feedback</key>
 		<string>mailto:mobile-ios-wikipedia@wikimedia.org?subject=Feedback:$1</string>
 		<key>twn</key>
-		<string>http://translatewiki.net</string>
+		<string>https://translatewiki.net</string>
 		<key>wmf</key>
-		<string>http://wikimediafoundation.org</string>
+		<string>https://wikimediafoundation.org</string>
+		<key>applemaps</key>
+		<string>https://www.apple.com/legal/internet-services/maps/</string>
 	</dict>
 	<key>repositories</key>
 	<dict>
@@ -146,9 +148,11 @@ THE SOFTWARE.</string>
 	<array>
 		<string>Abbey Ripstra</string>
 		<string>Adam Baso</string>
+		<string>Alexander Claussen</string>
 		<string>Amir E. Aharoni</string>
 		<string>Anirudh S</string>
 		<string>André Costa</string>
+		<string>Anthony Borba</string>
 		<string>Antoine Musso</string>
 		<string>Barbara Martina Rodeker</string>
 		<string>bart-kneepkens</string>
@@ -157,6 +161,7 @@ THE SOFTWARE.</string>
 		<string>Brian Gerstle</string>
 		<string>Brion Vibber</string>
 		<string>Carolyn Li-Madeo</string>
+		<string>Chelsy Xie</string>
 		<string>Corey Floyd</string>
 		<string>cromulentlabs</string>
 		<string>Daisy Chen</string>
@@ -166,11 +171,13 @@ THE SOFTWARE.</string>
 		<string>Dmitry Brant</string>
 		<string>Elena Tonkovidova</string>
 		<string>Gabicoware</string>
+		<string>Gianmarco Salerno</string>
 		<string>Hua Zhenyu</string>
 		<string>Hynek Hanke</string>
 		<string>Ian MacFarlane</string>
 		<string>Jan Berkel</string>
 		<string>Joe Walsh</string>
+		<string>Jon Harald Søby</string>
 		<string>Jonatan Svensson Glad</string>
 		<string>Joshua Minor</string>
 		<string>Julien Bodet</string>
@@ -178,10 +185,12 @@ THE SOFTWARE.</string>
 		<string>Kenan Wang</string>
 		<string>Kotaro Fujita</string>
 		<string>Kunal Mehta</string>
+		<string>Logan Keller</string>
 		<string>MagikCow</string>
 		<string>Maryana Pinchuk</string>
 		<string>Max Semenik</string>
 		<string>Michael Holloway</string>
+		<string>Michal Ciurus</string>
 		<string>Mikhail Popov</string>
 		<string>Moiz Syed</string>
 		<string>Monte Hurd</string>
@@ -202,15 +211,18 @@ THE SOFTWARE.</string>
 		<string>Seshadri Mahalingam</string>
 		<string>Sherah Smith</string>
 		<string>Siebrand Mazeland</string>
+		<string>Spencer Edgecombe</string>
 		<string>Stephen Niedzielski</string>
 		<string>Steve Peak</string>
 		<string>Steven Schobert</string>
 		<string>Sunil Sharma</string>
 		<string>Thomas PT</string>
+		<string>Tiago Martinho</string>
 		<string>Tim Johnsen</string>
 		<string>Timo Tijhof</string>
 		<string>Tomasz Finc</string>
 		<string>Vibha Bamba</string>
+		<string>Victor Peschenkov</string>
 		<string>waffleboot</string>
 		<string>Yuvi Panda</string>
 	</array>

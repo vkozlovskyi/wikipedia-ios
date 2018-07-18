@@ -1,10 +1,9 @@
 #import "WMFRandomDiceButton.h"
 @import WebKit;
-@import WMF.UIColor_WMFHexColor;
-@import WMF.WMFLocalization;
-@import WMF.WMFLogging;
+@import WMF;
 
 @interface WMFRandomDiceButton ()
+@property (nonatomic, strong) WMFTheme *theme;
 @property (nonatomic, strong) WKWebView *webView;
 @property (nonatomic, strong) UILabel *label;
 @end
@@ -20,8 +19,6 @@
 }
 
 - (void)setup {
-    self.backgroundColor = [UIColor wmf_colorWithHex:0x3366cc alpha:1];
-
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
     configuration.suppressesIncrementalRendering = YES;
 
@@ -37,17 +34,13 @@
     self.webView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self addSubview:self.webView];
 
-    NSURL *diceHTMLURL = [[NSBundle mainBundle] URLForResource:@"WMFRandomDiceButton" withExtension:@"html"];
-    NSString *diceHTML = [NSString stringWithContentsOfURL:diceHTMLURL encoding:NSUTF8StringEncoding error:nil];
-    [self.webView loadHTMLString:diceHTML baseURL:nil];
-
     self.label = [[UILabel alloc] initWithFrame:CGRectZero];
     self.label.textColor = [UIColor whiteColor];
     self.label.font = [UIFont systemFontOfSize:16];
     self.label.adjustsFontSizeToFitWidth = YES;
     self.label.minimumScaleFactor = 0.1;
     self.label.textAlignment = NSTextAlignmentCenter;
-    self.label.text = WMFLocalizedStringWithDefaultValue(@"explore-randomizer", nil, nil, @"Randomizer", @"Displayed on a button that loads another random article - it's a 'Randomizer'");
+    self.label.text = [WMFCommonStrings randomizerTitle];
     [self addSubview:self.label];
 }
 
@@ -81,4 +74,16 @@
     self.layer.cornerRadius = 0.5 * bounds.size.height;
 }
 
+- (void)applyTheme:(WMFTheme *)theme {
+    if (theme == self.theme) {
+        return; // early return to prevent cutting off dice animation when re-setting the same theme
+    }
+    self.theme = theme;
+    NSURL *diceHTMLURL = [[NSBundle mainBundle] URLForResource:@"WMFRandomDiceButton" withExtension:@"html"];
+    NSString *diceHTML = [NSString stringWithContentsOfURL:diceHTMLURL encoding:NSUTF8StringEncoding error:nil];
+    // !-- Using stringWithFormat: and localizedStringWithFormat: caused issues with the dice rendering. Using stringByReplacingOccurrencesOfString instead --! //
+    NSString *diceHTMLWithColor = [diceHTML stringByReplacingOccurrencesOfString:@"%1$@" withString:theme.colors.link.wmf_hexString];
+    [self.webView loadHTMLString:diceHTMLWithColor baseURL:nil];
+    self.backgroundColor = theme.colors.link;
+}
 @end

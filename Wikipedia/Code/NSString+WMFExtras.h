@@ -24,17 +24,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSDate *)wmf_iso8601Date;
 
-- (NSString *)wmf_stringByRemovingHTML;
-
-- (nonnull NSAttributedString *)wmf_attributedStringByRemovingHTMLWithFont:(nonnull UIFont *)font linkFont:(nonnull UIFont *)linkFont;
-
 - (NSString *)wmf_randomlyRepeatMaxTimes:(NSUInteger)maxTimes;
 
 - (NSString *)wmf_stringByReplacingUnderscoresWithSpaces;
 
 - (NSString *)wmf_stringByReplacingSpacesWithUnderscores;
 
-- (NSString *)wmf_stringByReplacingApostrophesWithBackslashApostrophes;
+- (NSString *)wmf_stringBySanitizingForJavaScript;
 
 - (NSString *)wmf_stringByCapitalizingFirstCharacterUsingWikipediaLanguage:(nullable NSString *)wikipediaLanguage; //Language is the string `en` in `en.wikipedia.org` or `de` in `de.wikipedia.org`. nil will use the current locale
 

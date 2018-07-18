@@ -48,34 +48,6 @@ NS_ASSUME_NONNULL_BEGIN
     [self loadContentForDate:[NSDate date] inManagedObjectContext:moc force:force completion:completion];
 }
 
-- (void)preloadContentForNumberOfDays:(NSInteger)days inManagedObjectContext:(NSManagedObjectContext *)moc force:(BOOL)force completion:(nullable dispatch_block_t)completion {
-    if (days < 1) {
-        if (completion) {
-            completion();
-        }
-        return;
-    }
-
-    NSDate *now = [NSDate date];
-
-    NSCalendar *calendar = [NSCalendar wmf_gregorianCalendar];
-
-    WMFTaskGroup *group = [WMFTaskGroup new];
-
-    for (NSUInteger i = 0; i < days; i++) {
-        [group enter];
-        NSDate *date = [calendar dateByAddingUnit:NSCalendarUnitDay value:-i toDate:now options:NSCalendarMatchStrictly];
-        [self loadContentForDate:date
-            inManagedObjectContext:moc
-                             force:force
-                        completion:^{
-                            [group leave];
-                        }];
-    }
-
-    [group waitInBackgroundWithCompletion:completion];
-}
-
 - (void)loadContentForDate:(NSDate *)date inManagedObjectContext:(NSManagedObjectContext *)moc force:(BOOL)force completion:(nullable dispatch_block_t)completion {
     [self loadContentForDate:date inManagedObjectContext:moc force:force addNewContent:YES completion:completion];
 }
@@ -117,17 +89,19 @@ NS_ASSUME_NONNULL_BEGIN
                 [articleKeysToExcludeFromSuggestions addObject:articleKey];
 
                 //Exclude the first three articles in any existing section
-                NSArray *subarray = [contentGroup.content wmf_safeSubarrayWithRange:NSMakeRange(0, 3)];
-                for (id object in subarray) {
-                    if (![object isKindOfClass:[NSURL class]]) {
-                        continue;
+                NSArray *subarray = (NSArray *)contentGroup.contentPreview;
+                if ([subarray isKindOfClass:[NSArray class]]) {
+                    for (id object in subarray) {
+                        if (![object isKindOfClass:[NSURL class]]) {
+                            continue;
+                        }
+                        NSURL *URL = (NSURL *)object;
+                        NSString *key = [URL wmf_articleDatabaseKey];
+                        if (!key) {
+                            continue;
+                        }
+                        [articleKeysToExcludeFromSuggestions addObject:key];
                     }
-                    NSURL *URL = (NSURL *)object;
-                    NSString *key = [URL wmf_articleDatabaseKey];
-                    if (!key) {
-                        continue;
-                    }
-                    [articleKeysToExcludeFromSuggestions addObject:key];
                 }
             }
 
@@ -226,7 +200,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)fetchAndSaveRelatedArticlesForArticle:(WMFArticle *)article excludedArticleKeys:(NSSet *)excludedArticleKeys date:(NSDate *)date inManagedObjectContext:(NSManagedObjectContext *)moc completion:(nullable dispatch_block_t)completion {
     NSURL *groupURL = [WMFContentGroup relatedPagesContentGroupURLForArticleURL:article.URL];
     WMFContentGroup *existingGroup = [moc contentGroupForURL:groupURL];
-    NSArray<NSURL *> *related = (NSArray<NSURL *> *)existingGroup.content;
+    NSArray<NSURL *> *related = (NSArray<NSURL *> *)existingGroup.fullContent.object;
     if ([related count] > 0) {
         if (completion) {
             completion();
@@ -271,6 +245,7 @@ NS_ASSUME_NONNULL_BEGIN
                            customizationBlock:^(WMFContentGroup *_Nonnull group) {
                                group.articleURL = article.URL;
                                NSDate *contentDate = article.viewedDate ? article.viewedDate : article.savedDate;
+                               group.contentDate = contentDate;
                                group.contentMidnightUTCDate = contentDate.wmf_midnightUTCDateFromLocalDate;
                            }];
                 if (completion) {

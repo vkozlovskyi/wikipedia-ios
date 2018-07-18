@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "0900"
+   LastUpgradeVersion = "0930"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -213,6 +213,9 @@
                   Identifier = "NSURL_WMFLinkParsingTests">
                </Test>
                <Test
+                  Identifier = "NumberFormatterExtrasTests/testThousands()">
+               </Test>
+               <Test
                   Identifier = "SavedArticlesFetcherTests">
                </Test>
                <Test
@@ -247,6 +250,30 @@
                </Test>
                <Test
                   Identifier = "WMFCollectionViewExtensionTests">
+               </Test>
+               <Test
+                  Identifier = "WMFDateCalculationTests/testRelativeDateStringDifferentDayUnder24Hours">
+               </Test>
+               <Test
+                  Identifier = "WMFDateCalculationTests/testRelativeDateStringSameDayUnder12Hours">
+               </Test>
+               <Test
+                  Identifier = "WMFDateCalculationTests/testRelativeDateStringSameDayUnder12HoursSingular">
+               </Test>
+               <Test
+                  Identifier = "WMFDateCalculationTests/testRelativeDateStringSameDayUnder1Hour">
+               </Test>
+               <Test
+                  Identifier = "WMFDateCalculationTests/testRelativeDateStringSameDayUnder1Minute">
+               </Test>
+               <Test
+                  Identifier = "WMFDateCalculationTests/testRelativeDateStringSameDayUnder24Hours">
+               </Test>
+               <Test
+                  Identifier = "WMFDateCalculationTests/testRelativeDateStringTwoDaysAgo">
+               </Test>
+               <Test
+                  Identifier = "WMFDateCalculationTests/testRelativeDateStringYesterday">
                </Test>
                <Test
                   Identifier = "WMFDateFormatterTests">
@@ -333,14 +360,14 @@
       buildConfiguration = "Debug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      language = "he"
+      region = "IL"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
-      allowLocationSimulation = "YES"
-      language = "he"
-      region = "IL">
+      allowLocationSimulation = "YES">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference
@@ -354,14 +381,10 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "-AppleLocale he_IL"
-            isEnabled = "NO">
+            isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-AppleLanguages (he)"
-            isEnabled = "NO">
-         </CommandLineArgument>
-         <CommandLineArgument
-            argument = "-WMFVisualTestBatchRecordMode NO"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>

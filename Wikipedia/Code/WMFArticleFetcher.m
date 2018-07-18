@@ -1,4 +1,5 @@
 #import "WMFArticleFetcher.h"
+#import <WMF/WMF-Swift.h>
 
 #if WMF_TWEAKS_ENABLED
 #import <Tweaks/FBTweakInline.h>
@@ -79,20 +80,26 @@ NSString *const WMFArticleFetcherErrorCachedFallbackArticleKey = @"WMFArticleFet
     return self;
 }
 
+- (void)dealloc {
+    [self.operationManager invalidateSessionCancelingTasks:YES];
+    [self.pageSummarySessionManager invalidateSessionCancelingTasks:YES];
+}
+
 #pragma mark - Fetching
 
 - (nullable NSURLSessionTask *)fetchArticleForURL:(NSURL *)articleURL
                                     useDesktopURL:(BOOL)useDeskTopURL
                                        saveToDisk:(BOOL)saveToDisk
+                                         priority:(float)priority
                                          progress:(WMFProgressHandler __nullable)progress
                                           failure:(WMFErrorHandler)failure
                                           success:(WMFArticleHandler)success {
-    NSString *title = articleURL.wmf_titleWithUnderScores;
+    NSString *title = articleURL.wmf_titleWithUnderscores;
     if (!title) {
         failure([NSError wmf_errorWithType:WMFErrorTypeStringMissingParameter userInfo:nil]);
         return nil;
     }
-
+    
     // Force desktop domain if not Zero rated.
     if (![SessionSingleton sharedInstance].zeroConfigurationManager.isZeroRated) {
         useDeskTopURL = YES;
@@ -105,18 +112,22 @@ NSString *const WMFArticleFetcherErrorCachedFallbackArticleKey = @"WMFArticleFet
 
     __block id summaryResponse = nil;
     [taskGroup enter];
-    NSURL *pageSummaryURL = [articleURL wmf_summaryEndpointURL];
-    [self.pageSummarySessionManager GET:pageSummaryURL.absoluteString
-        parameters:nil
-        progress:nil
-        success:^(NSURLSessionDataTask *_Nonnull task, id _Nullable responseObject) {
-            summaryResponse = responseObject;
-            [taskGroup leave];
-        }
-        failure:^(NSURLSessionDataTask *_Nullable task, NSError *_Nonnull error) {
-            [taskGroup leave];
-        }];
-
+    [[WMFSession shared] fetchSummaryForArticleURL:articleURL
+                                           priority:priority
+                                                         completionHandler:^(NSDictionary<NSString *, id> *_Nullable summary, NSURLResponse *_Nullable response, NSError *_Nullable error) {
+                                                             summaryResponse = summary;
+                                                             [taskGroup leave];
+                                                         }];
+    
+//    __block id mediaResponse = nil;
+//    [taskGroup enter];
+//    [[WMFSession shared] fetchMediaForArticleURL:articleURL
+//                                          priority:priority
+//                                 completionHandler:^(NSDictionary<NSString *, id> *_Nullable media, NSURLResponse *_Nullable response, NSError *_Nullable error) {
+//                                     mediaResponse = media;
+//                                     [taskGroup leave];
+//                                 }];
+    
     __block id articleResponse = nil;
     __block NSError *articleError = nil;
     [taskGroup enter];
@@ -139,35 +150,41 @@ NSString *const WMFArticleFetcherErrorCachedFallbackArticleKey = @"WMFArticleFet
             [taskGroup leave];
         }];
 
-    operation.priority = NSURLSessionTaskPriorityHigh;
+    operation.priority = priority;
     [self trackOperation:operation forArticleURL:articleURL];
 
     [taskGroup waitInBackgroundAndNotifyOnQueue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0)
                                       withBlock:^{
                                           [[MWNetworkActivityIndicatorManager sharedManager] pop];
                                           if (articleResponse && [articleResponse isKindOfClass:[NSDictionary class]]) {
+                                              NSMutableDictionary *mutableArticleResponse = [articleResponse mutableCopy];
+                                              //[mutableArticleResponse setValue:mediaResponse forKey:@"media"];
                                               if (!articleResponse[@"coordinates"] && summaryResponse[@"coordinates"]) {
-                                                  NSMutableDictionary *mutableArticleResponse = [articleResponse mutableCopy];
                                                   mutableArticleResponse[@"coordinates"] = summaryResponse[@"coordinates"];
-                                                  articleResponse = mutableArticleResponse;
                                               }
-                                              MWKArticle *mwkArticle = [self serializedArticleWithURL:articleURL response:articleResponse];
+                                              articleResponse = mutableArticleResponse;
 
-                                              dispatch_async(dispatch_get_main_queue(), ^{
-                                                  [self.dataStore asynchronouslyCacheArticle:mwkArticle toDisk:saveToDisk];
-                                                  NSManagedObjectContext *moc = self.dataStore.viewContext;
-                                                  WMFArticle *article = [moc fetchOrCreateArticleWithURL:articleURL];
-                                                  article.isExcludedFromFeed = mwkArticle.ns != 0 || articleURL.wmf_isMainPage;
-                                                  article.isDownloaded = NO; //isDownloaded == NO so that any new images added to the article will be downloaded by the SavedArticlesFetcher
-                                                  if (summaryResponse) {
-                                                      [article updateWithSummary:summaryResponse];
-                                                  }
-                                                  NSError *saveError = nil;
-                                                  if ([moc hasChanges] && ![moc save:&saveError]) {
-                                                      DDLogError(@"Error saving after updating article: %@", saveError);
-                                                  }
-                                                  success(mwkArticle);
-                                              });
+                                              MWKArticle *mwkArticle = [self serializedArticleWithURL:articleURL response:articleResponse];
+                                              [self.dataStore asynchronouslyCacheArticle:mwkArticle toDisk:saveToDisk completion:^(NSError * _Nonnull articleCacheError) {
+                                                  dispatch_async(dispatch_get_main_queue(), ^{
+                                                      NSManagedObjectContext *moc = self.dataStore.viewContext;
+                                                      WMFArticle *article = [moc fetchOrCreateArticleWithURL:articleURL];
+                                                      article.isExcludedFromFeed = mwkArticle.ns != 0 || articleURL.wmf_isMainPage;
+                                                      article.isDownloaded = NO; //isDownloaded == NO so that any new images added to the article will be downloaded by the SavedArticlesFetcher
+                                                      if (summaryResponse) {
+                                                          [article updateWithSummary:summaryResponse];
+                                                      }
+                                                      NSError *saveError = nil;
+                                                      if ([moc hasChanges] && ![moc save:&saveError]) {
+                                                          DDLogError(@"Error saving after updating article: %@", saveError);
+                                                      }
+                                                      if (articleCacheError) {
+                                                          failure(articleCacheError);
+                                                      } else {
+                                                          success(mwkArticle);
+                                                      }
+                                                  });
+                                              }];
                                           } else {
                                               if (!articleError) {
                                                   articleError = [NSError wmf_errorWithType:WMFErrorTypeUnexpectedResponseType userInfo:@{}];
@@ -242,6 +259,7 @@ NSString *const WMFArticleFetcherErrorCachedFallbackArticleKey = @"WMFArticleFet
 - (nullable NSURLSessionTask *)fetchLatestVersionOfArticleWithURL:(NSURL *)url
                                                     forceDownload:(BOOL)forceDownload
                                                        saveToDisk:(BOOL)saveToDisk
+                                                         priority:(float)priority
                                                          progress:(WMFProgressHandler __nullable)progress
                                                           failure:(WMFErrorHandler)failure
                                                           success:(WMFArticleHandler)success {
@@ -292,7 +310,7 @@ NSString *const WMFArticleFetcherErrorCachedFallbackArticleKey = @"WMFArticleFet
             //Main pages dont neccesarily have revisions every day. We can't rely on the revision check
             DDLogInfo(@"Cached article for main page: %@, fetching immediately.", url);
         }
-        task = [self fetchArticleForURL:url saveToDisk:saveToDisk progress:progress failure:failure success:success];
+        task = [self fetchArticleForURL:url saveToDisk:saveToDisk priority:priority progress:progress failure:failure success:success];
     } else {
         task = [self.revisionFetcher fetchLatestRevisionsForArticleURL:url
                                                            resultLimit:1
@@ -311,28 +329,29 @@ NSString *const WMFArticleFetcherErrorCachedFallbackArticleKey = @"WMFArticleFet
                                                                        success(cachedArticle);
                                                                        return;
                                                                    } else {
-                                                                       [self fetchArticleForURL:url saveToDisk:saveToDisk progress:progress failure:failure success:success];
+                                                                       [self fetchArticleForURL:url saveToDisk:saveToDisk priority:priority progress:progress failure:failure success:success];
                                                                        return;
                                                                    }
                                                                }];
     }
-    task.priority = NSURLSessionTaskPriorityHigh;
+    task.priority = priority;
     return task;
 }
 
 - (nullable NSURLSessionTask *)fetchLatestVersionOfArticleWithURLIfNeeded:(NSURL *)url
                                                                saveToDisk:(BOOL)saveToDisk
+                                                                 priority:(float)priority
                                                                  progress:(WMFProgressHandler __nullable)progress
                                                                   failure:(WMFErrorHandler)failure
                                                                   success:(WMFArticleHandler)success {
-    return [self fetchLatestVersionOfArticleWithURL:url forceDownload:NO saveToDisk:saveToDisk progress:progress failure:failure success:success];
+    return [self fetchLatestVersionOfArticleWithURL:url forceDownload:NO saveToDisk:saveToDisk priority:priority progress:progress failure:failure success:success];
 }
 
-- (nullable NSURLSessionTask *)fetchArticleForURL:(NSURL *)articleURL saveToDisk:(BOOL)saveToDisk progress:(WMFProgressHandler __nullable)progress failure:(WMFErrorHandler)failure success:(WMFArticleHandler)success {
+- (nullable NSURLSessionTask *)fetchArticleForURL:(NSURL *)articleURL saveToDisk:(BOOL)saveToDisk priority:(float)priority progress:(WMFProgressHandler __nullable)progress failure:(WMFErrorHandler)failure success:(WMFArticleHandler)success {
     NSAssert(articleURL.wmf_title != nil, @"Title text nil");
     NSAssert(self.dataStore != nil, @"Store nil");
     NSAssert(self.operationManager != nil, @"Manager nil");
-    return [self fetchArticleForURL:articleURL useDesktopURL:NO saveToDisk:saveToDisk progress:progress failure:failure success:success];
+    return [self fetchArticleForURL:articleURL useDesktopURL:NO saveToDisk:saveToDisk priority:priority progress:progress failure:failure success:success];
 }
 
 @end

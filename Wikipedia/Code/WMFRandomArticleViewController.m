@@ -20,12 +20,13 @@ static const CGFloat WMFRandomAnimationDurationFade = 0.5;
 @property (nonatomic, strong) WMFRandomArticleFetcher *randomArticleFetcher;
 @property (nonatomic, getter=viewHasAppeared) BOOL viewAppeared;
 @property (nonatomic) CGFloat previousContentOffsetY;
+
 @end
 
 @implementation WMFRandomArticleViewController
 
-- (instancetype)initWithArticleURL:(NSURL *)articleURL dataStore:(MWKDataStore *)dataStore diceButtonItem:(UIBarButtonItem *)diceButtonItem {
-    self = [super initWithArticleURL:articleURL dataStore:dataStore];
+- (instancetype)initWithArticleURL:(NSURL *)articleURL dataStore:(MWKDataStore *)dataStore theme:(WMFTheme *)theme diceButtonItem:(UIBarButtonItem *)diceButtonItem {
+    self = [super initWithArticleURL:articleURL dataStore:dataStore theme:theme];
     self.diceButtonItem = diceButtonItem;
     self.diceButton = (WMFRandomDiceButton *)diceButtonItem.customView;
     return self;
@@ -33,11 +34,10 @@ static const CGFloat WMFRandomAnimationDurationFade = 0.5;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-
     self.randomArticleFetcher = [[WMFRandomArticleFetcher alloc] init];
-
     [self setupSecondToolbar];
     [self setupEmptyFadeView];
+    [self applyTheme:self.theme];
 }
 
 - (void)setupSecondToolbar {
@@ -118,14 +118,24 @@ static const CGFloat WMFRandomAnimationDurationFade = 0.5;
             [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:NO dismissPreviousAlerts:NO tapCallBack:NULL];
         }
         success:^(MWKSearchResult *result) {
-            NSURL *titleURL = [siteURL wmf_URLWithTitle:result.displayTitle];
-            WMFRandomArticleViewController *randomArticleVC = [[WMFRandomArticleViewController alloc] initWithArticleURL:titleURL dataStore:self.dataStore diceButtonItem:self.diceButtonItem];
+            NSURL *articleURL = [result articleURLForSiteURL:siteURL];
+            WMFRandomArticleViewController *randomArticleVC = [[WMFRandomArticleViewController alloc] initWithArticleURL:articleURL dataStore:self.dataStore theme:self.theme diceButtonItem:self.diceButtonItem];
 #if WMF_TWEAKS_ENABLED
-            randomArticleVC.permaRandomMode = YES;
+            randomArticleVC.permaRandomMode = NO;
 #endif
             [self wmf_pushArticleViewController:randomArticleVC
                                        animated:YES];
         }];
+}
+
+- (void)setRandomButtonHidden:(BOOL)randomButtonHidden animated:(BOOL)animated {
+    WMFArticleNavigationController *articleNavgiationController = (WMFArticleNavigationController *)self.navigationController;
+    if (![articleNavgiationController isKindOfClass:[WMFArticleNavigationController class]]) {
+        return;
+    }
+    if (articleNavgiationController.secondToolbarHidden != randomButtonHidden) {
+        [articleNavgiationController setSecondToolbarHidden:randomButtonHidden animated:animated];
+    }
 }
 
 #pragma mark - WebViewControllerDelegate
@@ -154,11 +164,15 @@ static const CGFloat WMFRandomAnimationDurationFade = 0.5;
         shouldHideRandomButton = articleNavgiationController.secondToolbarHidden;
     }
 
-    if (articleNavgiationController.secondToolbarHidden != shouldHideRandomButton) {
-        [articleNavgiationController setSecondToolbarHidden:shouldHideRandomButton animated:YES];
-    }
+    [self setRandomButtonHidden:shouldHideRandomButton animated:YES];
 
     self.previousContentOffsetY = newContentOffsetY;
+}
+
+- (void)applyTheme:(WMFTheme *)theme {
+    [super applyTheme:theme];
+    [self.diceButton applyTheme:theme];
+    self.emptyFadeView.backgroundColor = theme.colors.paperBackground;
 }
 
 #if WMF_TWEAKS_ENABLED

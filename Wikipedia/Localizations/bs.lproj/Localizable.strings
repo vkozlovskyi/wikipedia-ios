@@ -1,6 +1,7 @@
 // Messages for Bosnian (bosanski)
 // Exported from translatewiki.net
 // Author: Edinwiki
+// Author: Macofe
 // Author: Nemo bis
 // Author: Semso98
 // Author: Srdjan m
@@ -53,13 +54,15 @@
 "action-share" = "Podijeli";
 "action-unsave" = "Obriši";
 "alert-no-internet" = "Niste povezani na internet";
-"announcements-dismiss" = "Ne, hvala";
+"announcements-dismiss" = "Odbaci";
 "article-about-title" = "O ovom članku";
+"article-delete" = "Obriši";
 "article-languages-filter-placeholder" = "Pronađi jezik";
 "article-languages-label" = "Izaberite jezik";
 "article-languages-others" = "Drugi jezici";
 "article-languages-yours" = "Vaši jezici";
 "article-read-more-title" = "Također pogledajte";
+"article-share" = "Podijeli";
 "article-unable-to-load-article" = "Ne mogu učitati članak.";
 "article-unable-to-load-section" = "Ne mogu učitati ovaj odlomak. Vidite hoće li se problem riješiti ako osvježite stranicu.";
 "back" = "Nazad";
@@ -73,11 +76,14 @@
 "button-save-for-later" = "Sačuvaj za kasnije";
 "button-saved-for-later" = "Sačuvano za kasnije";
 "button-saved-remove" = "Ukloni iz sačuvanih";
+"button-skip" = "Preskoči";
+"cancel" = "Otkaži";
 "cc-by-sa-3.0" = "CC BY-SA 3.0";
 "close-button-accessibility-label" = "Zatvori";
 "compass-direction" = "u $1 sati";
 "continue-reading-empty-description" = "Istražite Wikipediju – pročitajte još članaka";
 "continue-reading-empty-title" = "Nema nedavno pročitanih članaka";
+"dim-images" = "Zatamni slike";
 "edit-summary-choice-fixed-grammar" = "Popravljena gramatička greška";
 "edit-summary-choice-fixed-typos" = "Popravljen tipfeler";
 "edit-summary-choice-linked-words" = "Dodani linkovi";
@@ -101,13 +107,9 @@
 "explore-featured-article-heading" = "Odabrani članak";
 "explore-main-page-description" = "Početna stranica Wikimedijinih projekata";
 "explore-main-page-heading" = "Danas na Wikipediji";
-"explore-most-read-footer-for-date" = "Svi najčitaniji članci za $1";
 "explore-most-read-generic-heading" = "Najčitanije";
-"explore-most-read-heading" = "Najčitanije na Wikipediji ($1)";
 "explore-most-read-more-list-title-for-date" = "Najčitanije za $1";
 "explore-nearby-heading" = "Mjesta u blizini";
-"explore-nearby-placeholder-cancel" = "Otkaži";
-"explore-nearby-placeholder-dismiss" = "Odbaci";
 "explore-nearby-placeholder-heading" = "Mjesta";
 "explore-nearby-placeholder-sub-heading-on-language-wikipedia" = "Na Wikipediji ($1)";
 "explore-nearby-placeholder-sub-heading-on-wikipedia" = "Na Wikipediji";
@@ -116,6 +118,7 @@
 "explore-random-article-heading" = "Nasumičan članak";
 "explore-randomizer" = "Nasumična stranica";
 "feed-news-notification-button-text" = "Uključi obavještenja";
+// Fuzzy
 "feed-news-notification-text" = "Sad možete primati obavještenja o člancima na Wikipediji koji su aktualni na vijestima.";
 "field-alert-captcha-invalid" = "Neispravna CAPTCHA";
 "field-alert-password-confirm-mismatch" = "Lozinke se ne poklapaju";
@@ -141,19 +144,16 @@
 "field-username-title" = "Korisničko ime";
 "find-in-page-button-label" = "Pronađi na stranici";
 "find-in-page-number-matches" = "$1 / $2";
-"find-in-page-popover-description" = "Pretraži tekst u člancima";
 "forgot-password-button-title" = "Postavi novu";
 "forgot-password-email-sent" = "Na e-poštu su poslana uputstva za ponovno postavljanje lozinke";
 "forgot-password-instructions" = "Popunite jedno od polja ispod da biste e-poštom primili uputstva za ponovno postavljanje lozinke";
 "forgot-password-title" = "Ponovno postavljanje lozinke";
 "forgot-password-username-or-email-title" = "Ili";
-"gdfl" = "GDFL";
+"gfdl" = "GFDL";
 "history-clear-all" = "Očisti";
 "history-clear-cancel" = "Odustani";
 "history-clear-confirmation-heading" = "Jeste li sigurni da želite obrisati sve nedavne stavke?";
 "history-clear-delete-all" = "Da, obriši sve";
-"history-section-today" = "Danas";
-"history-section-yesterday" = "Jučer";
 "history-title" = "Historija";
 "hockeyapp-alert-always-send" = "Uvijek pošalji";
 "hockeyapp-alert-do-not-send" = "Ne šalji";
@@ -164,12 +164,14 @@
 "hockeyapp-alert-title" = "Izvinjavamo se, aplikacija se srušila prethodni put";
 "home-button-explore-accessibility-label" = "Wikipedia, nazad na ekran Istraži";
 "home-button-history-accessibility-label" = "Wikipedia, nazad na ekran Historija";
+"home-button-popover-description" = "Dodirnite 'W' da se vratite na ekran 'Istraži'";
+"home-button-popover-title" = "Dodirnite da se vratite na početak";
 "home-button-saved-accessibility-label" = "Wikipedia, nazad na ekran Sačuvano";
-"home-hide-suggestion-cancel" = "Otkaži";
-"home-hide-suggestion-prompt" = "Sakrij ovaj prijedlog";
 "home-more-like-footer" = "Još članaka kao $1";
+// Fuzzy
 "home-nearby-footer" = "Još iz Vaše blizine";
 "home-nearby-location-footer" = "Još u blizini $1";
+// Fuzzy
 "home-news-footer" = "Više vijesti";
 "home-title" = "Istraži";
 "home-title-accessibility-label" = "Wikipedia, pomjerite se na vrh ekrana Istraži";
@@ -210,7 +212,6 @@
 "main-menu-title" = "Više";
 "main-menu-zero-faq" = "ČPP o Wikipediji Zero";
 "menu-cancel-accessibility-label" = "Otkaži";
-"menu-trash-accessibility-label" = "Obriši";
 "navbar-title-mode-edit-wikitext-preview" = "Pregled";
 "nearby-distance-label-feet" = "$1 stopa";
 "nearby-distance-label-km" = "$1 km";
@@ -222,7 +223,10 @@
 "number-billions" = "$1";
 "number-millions" = "$1";
 "number-thousands" = "$1";
-"onboarding-wikipedia" = "Wikipedia";
+"on-this-day-detail-header-date-range" = "od $1 do $2";
+"on-this-day-detail-header-title" = "{{PLURAL:$1|$1 historijski događaj|$1 historijska događaja|$1 historijskih događaja}}";
+"on-this-day-footer" = "Više historijskih događaja na današnji dan";
+"on-this-day-title" = "Na današnji dan";
 "open-link-cancel" = "Odustani";
 "page-edit-history" = "Cjelokupna historija izmjena";
 "page-history-title" = "Historija članka";
@@ -238,22 +242,18 @@
 "page-similar-titles" = "Slične stranice";
 "pictured" = "na slici";
 "places-accessibility-clear-saved-searches" = "Očisti sačuvane pretrage";
-"places-accessibility-close-search" = "Zatvori pretragu";
 "places-accessibility-group" = "$1 članaka";
 "places-accessibility-recenter-map-on-user-location" = "Ponovo centriraj na mojoj lokaciji";
 "places-accessibility-show-as-list" = "Prikaži kao spisak";
 "places-accessibility-show-as-map" = "Prikaži kao kartu";
 "places-accessibility-show-more" = "Prikaži više članaka";
-"places-dismiss-filter-list-accessibility-label" = "Sakrij filtere za pretragu";
 "places-empty-search-description" = "Istražite gradove, države, kontinente, prirodne znamenitosti, historijske događaje, građevine i drugo.";
 "places-empty-search-title" = "Pretražite Wikipedijine članke s geografskim lokacijama";
 "places-enable-location-action-button-title" = "Uključi lociranje";
 "places-enable-location-description" = "Pristup Vašoj lokaciji dostupan je samo kad je aplikacija ili neka od njenih funkcija vidljiva na ekranu.";
 "places-enable-location-title" = "Istražite članke blizu Vaše lokacije tako što ćete omogućiti pristup lokaciji";
-"places-filter-list-title" = "Filteri za pretragu";
 "places-filter-no-saved-places" = "Nemate sačuvanih mjesta";
 "places-filter-saved-articles" = "Sačuvani članci";
-"places-filter-saved-articles-count" = "{{PLURAL:$1|Pronađeno je $1 mjesto|Pronađena su $1 mjesta|Pronađeno je $1 mjesta}}";
 "places-filter-top-articles" = "Najčitanije";
 "places-filter-top-articles-count" = "{{PLURAL:$1|$1 članak|$1 članka|$1 članaka}}";
 "places-no-saved-articles-have-location" = "Nijedan od Vaših sačuvanih članaka nema informacije o lokaciji";
@@ -267,7 +267,6 @@
 "places-search-top-articles" = "Svi najčitaniji članci";
 "places-search-top-articles-that-match-scope" = "U blizini";
 "places-search-your-current-location" = "Vaša trenutna lokacija";
-"places-show-filter-list-accessibility-label" = "Prikaži filtere za pretragu";
 "places-title" = "Mjesta";
 "places-unknown-distance" = "nepoznata udaljenost";
 "potd-description-prefix" = "Slika dana za $1";
@@ -276,16 +275,17 @@
 "preference-title-eventlogging-opt-in" = "Šalji izvještaje o korištenju";
 "rank-accessibility-label" = "Broj $1";
 "readers-accessibility-label" = "$1 čitalaca";
+"reading-themes-controls-accessibility-brightness-slider" = "Klizač svjetline";
+"reading-themes-controls-accessibility-dark-theme-button" = "Tamna tema";
+"reading-themes-controls-accessibility-light-theme-button" = "Svijetla tema";
+"reading-themes-controls-accessibility-sepia-theme-button" = "Tamnosmeđa tema";
+"reading-themes-controls-accessibility-text-size-slider" = "Klizač veličine teksta";
 "reference-title" = "Referenca $1";
 "relative-date-days-ago" = "{{PLURAL:$1|0=Danas|Jučer|Prije $1 dana}}";
 "relative-date-hours-ago" = "{{PLURAL:$1|0=Nedavno|Prije $1 sat|Prije $1 sata|Prije $1 sati}}";
 "relative-date-minutes-ago" = "{{PLURAL:$1|0=Upravo|Prije $1 minute|Prije $1 minute|Prije $1 minuta}}";
+"relative-date-years-ago" = "{{PLURAL:$1|0=Ove godine|Prošle godine|Prije $1 godine|Prije $1 godina}}";
 "request-feedback-on-error" = "Aplikacija je naišla na problem za koji naši programeri želi doznati više. Dodirnite ovdje da biste nam poslali e-poruku s informacijama o grešci.";
-"save-action" = "Sačuvaj";
-"saved-clear-all" = "Očisti";
-"saved-pages-clear-cancel" = "Odustani";
-"saved-pages-clear-confirmation-heading" = "Jeste li sigurni da želite obrisati sve sačuvane stranice?";
-"saved-pages-clear-delete-all" = "Da, obriši sve";
 "saved-pages-image-download-error" = "Ne mogu preuzeti slike za ovu sačuvanu stranicu.";
 "saved-title" = "Sačuvano";
 "search-did-you-mean" = "Jeste li mislili $1?";
@@ -297,6 +297,8 @@
 "search-recent-title" = "Nedavne pretrage";
 "search-result-redirected-from" = "Preusmjereno sa: $1";
 "search-title" = "Pretraga";
+// Fuzzy
+"settings-appearance" = "Izgled";
 "settings-clear-cache" = "Očisti keširane podatke";
 "settings-clear-cache-are-you-sure-message" = "Čišćenjem keširanih podataka oslobodit ćete oko $1 prostora. Ovim se neće obrisati Vaše sačuvane stranice.";
 "settings-clear-cache-are-you-sure-title" = "Da očistim keširane podatke?";
@@ -315,14 +317,13 @@
 "settings-primary-language-details" = "Prvi jezik na ovom spisku koristit će se kao glavni jezik aplikacije. Ako ga promijenite, promijenit ćete i jezik sadržaja (naprimjer, jezik Odabranih članaka) koji se prikazuje pod \"Istraži\".";
 "settings-support" = "Podržite Wikipediju";
 "settings-title" = "Postavke";
-"share-a-fact-share-menu-item" = "Podijeli činjenicu";
+"share-a-fact-share-menu-item" = "Podijeli činjenicu…";
 "share-article-name-on-wikipedia" = "\"$1\" na @Wikipedia:";
-"share-article-name-on-wikipedia-with-selected-text" = "\"$1\" na @Wikipedia: \"$2\"";
-"share-as-image" = "Podijeli kao sliku";
-"share-as-text" = "Podijeli kao tekst";
-"share-cancel" = "Otkaži";
+"share-building" = "Stvaram karticu za dijeljenje činjenica…";
 "share-custom-menu-item" = "Podijeli...";
 "share-get-directions-in-maps" = "Dobij uputstva";
+"share-menu-item" = "Podijeli…";
+"share-message-format" = "“$1” $2";
 "share-on-twitter-sign-off" = "preko @Wikipedia";
 "share-open-in-maps" = "Otvori u Kartama";
 "status-saved-for-later" = "Sačuvano za kasnije";
@@ -331,7 +332,6 @@
 "table-of-contents-close-accessibility-hint" = "Zatvori";
 "table-of-contents-close-accessibility-label" = "Zatvori sadržaj";
 "table-of-contents-heading" = "Sadržaj";
-"table-of-contents-popover-description" = "Lahko pregledajte članke";
 "table-title-other" = "Više informacija";
 "top-read-header-generic" = "Wikipedia";
 "top-read-header-with-language" = "Wikipedia ($1)";
@@ -341,23 +341,22 @@
 "two-factor-login-title" = "Prijavite se na svoj račun";
 "two-factor-login-with-backup-code" = "Koristi jedan od rezervnih kodova";
 "two-factor-login-with-regular-code" = "Koristi potvrdni kod";
-"unsave-action" = "Poništi čuvanje";
+"welcome-exploration-on-this-day-title" = "Na današnji dan";
 "welcome-explore-continue-button" = "Započni";
-"welcome-explore-new-ways-sub-title" = "Nova obavještenja i dodaci pomoći će Vam da otkrijete zanimljive članke";
 "welcome-explore-new-ways-title" = "Novi načini za istraživanje";
-"welcome-explore-tell-me-more" = "Detaljnije";
 "welcome-explore-tell-me-more-done-button" = "Razumijem";
+"welcome-intro-free-encyclopedia-more" = "Saznajte više o Wikipediji";
+"welcome-intro-free-encyclopedia-more-about" = "O Wikipediji";
+"welcome-intro-free-encyclopedia-title" = "Slobodna enciklopedija";
 "welcome-languages-add-button" = "Dodaj drugi jezik";
-"welcome-languages-continue-button" = "Nastavi";
-"welcome-languages-sub-title" = "Izaberite željene jezike za pretragu Wikipedije";
-"welcome-languages-title" = "Jezici";
+"welcome-languages-add-or-edit-button" = "Dodaj ili izmijeni željene jezike";
+"welcome-languages-description" = "Pronašao sam sljedeće jezike na Vašem uređaju:";
 "welcome-notifications-tell-me-more-creation" = "Obavještenja se stvaraju i dostavljaju Vama na uređaj pomoću aplikacije, a ne naših ili servera trećih lica.";
 "welcome-notifications-tell-me-more-storage" = "Postavke o obavještenjima čuvaju se na uređaj i ne zasnivaju se na ličnim podacima ili aktivnosti.";
 "welcome-notifications-tell-me-more-title" = "Više o obavještenjima";
+// Fuzzy
 "welcome-send-data-sub-title" = "Pomozite Zadužbini Wikimedia da poboljša aplikaciju tako što ćete nam poslati podatke o tom kako je koristite. Prikupljeni podaci su anonimni.";
-"welcome-send-data-title" = "Šalji anonimne podatke";
 "welcome-volunteer-send-usage-reports" = "Šalji izvještaje o korištenju";
-"welcome-volunteer-thanks" = "$1 Hvala!";
 "wikitext-download-failed" = "Ne mogu dobiti najnoviju izmjenu.";
 "wikitext-download-success" = "Sadržaj je učitan.";
 "wikitext-downloading" = "Učitavam sadržaj...";
@@ -371,7 +370,8 @@
 "wikitext-upload-save" = "Objavljujem...";
 "wikitext-upload-save-anonymously-warning" = "Izmjene će biti pripisane IP-adresi Vašeg uređaja. Ako pritisnete $1, imat ćete više privatnosti.";
 "wikitext-upload-save-sign-in" = "Prijava";
-"wikitext-upload-save-terms-cc-by-sa-and-gdfl" = "Objavljivanjem izmjena, prihvatate $1 i slažete se da svoj doprinos objavite pod licencama $2 i $3.";
+// Fuzzy
+"wikitext-upload-save-terms-cc-by-sa-and-gfdl" = "Objavljivanjem izmjena, prihvatate $1 i slažete se da svoj doprinos objavite pod licencama $2 i $3.";
 "wikitext-upload-save-terms-name" = "uslove korištenja";
 "zero-charged-verbiage" = "Wikipedia Zero je isključena";
 "zero-charged-verbiage-extended" = "Učitavanje drugih članaka moglo bi sa sobom povući troškove za podatkovni promet. Sačuvani članci na uređaju ne koriste podatkovni promet i besplatni su.";

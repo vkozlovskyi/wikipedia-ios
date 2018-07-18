@@ -8,7 +8,13 @@ import CocoaLumberjackSwift
     func tableOfContentsAnimatorDidTapBackground(_ controller: WMFTableOfContentsAnimator)
 }
 
-open class WMFTableOfContentsAnimator: UIPercentDrivenInteractiveTransition, UIViewControllerTransitioningDelegate, UIViewControllerAnimatedTransitioning, UIGestureRecognizerDelegate, WMFTableOfContentsPresentationControllerTapDelegate {
+open class WMFTableOfContentsAnimator: UIPercentDrivenInteractiveTransition, UIViewControllerTransitioningDelegate, UIViewControllerAnimatedTransitioning, UIGestureRecognizerDelegate, WMFTableOfContentsPresentationControllerTapDelegate, Themeable {
+    
+    fileprivate var theme = Theme.standard
+    public func apply(theme: Theme) {
+        self.theme = theme
+        self.presentationController?.apply(theme: theme)
+    }
     
     var displaySide = WMFTableOfContentsDisplaySide.left
     var displayMode = WMFTableOfContentsDisplayMode.modal
@@ -19,14 +25,18 @@ open class WMFTableOfContentsAnimator: UIPercentDrivenInteractiveTransition, UIV
         self.presentedViewController = presentedViewController
         self.isPresenting = true
         self.isInteractive = false
+        presentationGesture = UIPanGestureRecognizer()
         super.init()
-        self.presentingViewController!.view.addGestureRecognizer(self.presentationGesture)
+        presentationGesture.addTarget(self, action: #selector(WMFTableOfContentsAnimator.handlePresentationGesture(_:)))
+        presentationGesture.maximumNumberOfTouches = 1
+        presentationGesture.delegate = self
+        self.presentingViewController!.view.addGestureRecognizer(presentationGesture)
     }
     
     deinit {
         removeDismissalGestureRecognizer()
-        self.presentationGesture.removeTarget(self, action: #selector(WMFTableOfContentsAnimator.handlePresentationGesture(_:)))
-        self.presentationGesture.view?.removeGestureRecognizer(self.presentationGesture)
+        presentationGesture.removeTarget(self, action: #selector(WMFTableOfContentsAnimator.handlePresentationGesture(_:)))
+        presentationGesture.view?.removeGestureRecognizer(presentationGesture)
     }
     
     weak var presentingViewController: UIViewController?
@@ -47,13 +57,18 @@ open class WMFTableOfContentsAnimator: UIPercentDrivenInteractiveTransition, UIV
     }
     
     // MARK: - UIViewControllerTransitioningDelegate
+    
+    weak var presentationController: WMFTableOfContentsPresentationController?
+    
     open func presentationController(forPresented presented: UIViewController, presenting: UIViewController?, source: UIViewController) -> UIPresentationController? {
         guard presented == self.presentedViewController else {
             return nil
         }
         let presentationController = WMFTableOfContentsPresentationController(presentedViewController: presented, presentingViewController: self.presentingViewController, tapDelegate: self)
+        presentationController.apply(theme: theme)
         presentationController.displayMode = displayMode
         presentationController.displaySide = displaySide
+        self.presentationController = presentationController
         return presentationController
     }
     
@@ -185,30 +200,25 @@ open class WMFTableOfContentsAnimator: UIPercentDrivenInteractiveTransition, UIV
     
     
     // MARK: - Gestures
-    lazy var presentationGesture: UIPanGestureRecognizer = {
-        let gesture = UIPanGestureRecognizer.init(target: self, action: #selector(WMFTableOfContentsAnimator.handlePresentationGesture(_:)))
-        gesture.maximumNumberOfTouches = 1
-        gesture.delegate = self
-        return gesture
-    }()
+    private let presentationGesture: UIPanGestureRecognizer
     
     var dismissalGesture: UIPanGestureRecognizer?
     
     func addDismissalGestureRecognizer(_ containerView: UIView) {
-        let gesture = UIPanGestureRecognizer.init(target: self, action: #selector(WMFTableOfContentsAnimator.handleDismissalGesture(_:)))
+        let gesture = UIPanGestureRecognizer(target: self, action: #selector(WMFTableOfContentsAnimator.handleDismissalGesture(_:)))
         gesture.delegate = self
         containerView.addGestureRecognizer(gesture)
-        self.dismissalGesture = gesture
+        dismissalGesture = gesture
     }
 
     func removeDismissalGestureRecognizer() {
-        if let dismissalGesture = self.dismissalGesture {
+        if let dismissalGesture = dismissalGesture {
             dismissalGesture.view?.removeGestureRecognizer(dismissalGesture)
             dismissalGesture.removeTarget(self, action: #selector(WMFTableOfContentsAnimator.handleDismissalGesture(_:)))
         }
-        self.dismissalGesture = nil
+        dismissalGesture = nil
     }
-    func handlePresentationGesture(_ gesture: UIScreenEdgePanGestureRecognizer) {
+    @objc func handlePresentationGesture(_ gesture: UIScreenEdgePanGestureRecognizer) {
         
         switch(gesture.state) {
         case (.began):
@@ -252,7 +262,7 @@ open class WMFTableOfContentsAnimator: UIPercentDrivenInteractiveTransition, UIV
         }
     }
     
-    func handleDismissalGesture(_ gesture: UIScreenEdgePanGestureRecognizer) {
+    @objc func handleDismissalGesture(_ gesture: UIScreenEdgePanGestureRecognizer) {
         
         switch(gesture.state) {
         case .began:
@@ -313,19 +323,19 @@ open class WMFTableOfContentsAnimator: UIPercentDrivenInteractiveTransition, UIV
         if gestureRecognizer == self.dismissalGesture {
             
             if let translation = self.dismissalGesture?.translation(in: dismissalGesture?.view) {
-                if(translation.x * tocMultiplier > 0){
+                if (translation.x * tocMultiplier > 0){
                     return true
-                }else{
+                } else {
                     return false
                 }
-            }else{
+            } else {
                 return false
             }
             
-        }else if gestureRecognizer == self.presentationGesture {
+        } else if gestureRecognizer == self.presentationGesture {
             
-            let translation = self.presentationGesture.translation(in: presentationGesture.view)
-            let location = self.presentationGesture.location(in: presentationGesture.view)
+            let translation = presentationGesture.translation(in: presentationGesture.view)
+            let location = presentationGesture.location(in: presentationGesture.view)
             let gestureWidth = presentationGesture.view!.frame.width * gesturePercentage
             let maxLocation: CGFloat
             let isInStartBoundary: Bool
@@ -337,12 +347,12 @@ open class WMFTableOfContentsAnimator: UIPercentDrivenInteractiveTransition, UIV
                 maxLocation =  presentationGesture.view!.frame.maxX - gestureWidth
                 isInStartBoundary = location.x - maxLocation > 0
             }
-            if(translation.x * tocMultiplier < 0) && isInStartBoundary {
+            if (translation.x * tocMultiplier < 0) && isInStartBoundary {
                 return true
-            }else{
+            } else {
                 return false
             }
-        }else{
+        } else {
             return true
         }
     }

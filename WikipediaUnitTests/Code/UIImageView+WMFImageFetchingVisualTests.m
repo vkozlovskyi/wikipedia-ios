@@ -20,11 +20,11 @@
 - (void)setUp {
     [super setUp];
 
-    self.recordMode = [[NSUserDefaults wmf_userDefaults] wmf_visualTestBatchRecordMode];
+    self.recordMode = WMFIsVisualTestRecordModeEnabled;
     self.deviceAgnostic = YES;
 
     [[LSNocilla sharedInstance] start];
-    self.imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 320, 160)];
+    self.imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, UIScreen.mainScreen.bounds.size.width, 160)];
     self.imageView.contentMode = UIViewContentModeScaleAspectFill;
     self.imageView.wmf_imageController = [WMFImageController temporaryController];
 }
@@ -77,7 +77,7 @@
             [expectation fulfill];
         }
         success:^{
-            WMFSnapshotVerifyView(self.imageView);
+            WMFSnapshotVerifyViewForOSAndWritingDirection(self.imageView);
             [expectation fulfill];
         }];
 

@@ -2,7 +2,8 @@
 @import WMF;
 
 static NSString *const kSchemaName = @"MobileWikiAppShareAFact";
-static int const kSchemaVersion = 11331974;
+static int const kSchemaVersion = 18071215;
+static NSString *const kAppInstallIdKey = @"appInstallID";
 static NSString *const kActionKey = @"action";
 static NSString *const kActionHighlight = @"highlight";
 static NSString *const kActionShareTap = @"sharetap";
@@ -16,12 +17,12 @@ static NSString *const kActionSystemShareSheet = @"systemsharesheet";
 static NSString *const kActionShare = @"share";
 static NSString *const kTargetKey = @"target";
 
-static NSString *const kAppInstallIdKey = @"appInstallID"; // uppercase
-static NSString *const kShareSessionTokenKey = @"shareSessionToken";
+static NSString *const kShareSessionTokenKey = @"sessionToken";
 static NSString *const kTextKey = @"text"; // same as kShareModeImage by design
 static NSString *const kArticleKey = @"article";
 static NSString *const kPageIdKey = @"pageID"; // ID uppercase
 static NSString *const kRevIdKey = @"revID";   // ID uppercase
+static NSString *const kTimestampKey = @"ts";
 
 static NSString *const kInitWithArticleAssertVerbiage = @"Article title invalid";
 static NSString *const kEventDataAssertVerbiage = @"Event data not present";
@@ -29,7 +30,6 @@ static NSString *const kSelectionAssertVerbiage = @"No selection provided";
 
 @interface WMFShareFunnel ()
 @property NSString *sessionToken;
-@property NSString *appInstallId;
 @property NSString *articleTitle;
 @property int articleId;
 @property NSString *selection;
@@ -53,7 +53,6 @@ static NSString *const kSelectionAssertVerbiage = @"No selection provided";
     self = [super initWithSchema:kSchemaName version:kSchemaVersion];
     if (self) {
         _sessionToken = [self singleUseUUID];
-        _appInstallId = [self persistentUUID:kSchemaName];
         _articleTitle = [title wmf_safeSubstringToIndex:WMFEventLoggingMaxStringLength_General];
         _articleId = [article articleId];
     }
@@ -68,13 +67,14 @@ static NSString *const kSelectionAssertVerbiage = @"No selection provided";
         return nil;
     }
     NSMutableDictionary *dict = [eventData mutableCopy];
+    dict[kAppInstallIdKey] = self.appInstallID;
     dict[kShareSessionTokenKey] = self.sessionToken;
-    dict[kAppInstallIdKey] = self.appInstallId;
     dict[kPageIdKey] = @(self.articleId);
     dict[kArticleKey] = self.articleTitle;
     [dict wmf_maybeSetObject:self.selection forKey:kTextKey];
     [dict wmf_maybeSetObject:self.shareMode forKey:kShareModeKey];
-
+    dict[kTimestampKey] = [self timestamp];
+    
     // TODO: refactor MWKArticle (and ArticleFetcher - the prop would be 'revision')
     dict[kRevIdKey] = @(-1);
     return [dict copy];

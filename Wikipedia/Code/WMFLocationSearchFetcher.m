@@ -3,6 +3,7 @@
 #import <WMF/AFHTTPSessionManager+WMFDesktopRetry.h>
 #import <WMF/WMFLocalization.h>
 #import <WMF/UIScreen+WMFImageWidth.h>
+#import <WMF/WMFNumberOfExtractCharacters.h>
 
 //Networking
 #import <WMF/MWNetworkActivityIndicatorManager.h>
@@ -52,6 +53,10 @@ NSString *const WMFLocationSearchErrorDomain = @"org.wikimedia.location.search";
         self.operationManager = manager;
     }
     return self;
+}
+
+- (void)dealloc {
+    [self.operationManager invalidateSessionCancelingTasks:YES];
 }
 
 - (BOOL)isFetching {
@@ -133,7 +138,7 @@ NSString *const WMFLocationSearchErrorDomain = @"org.wikimedia.location.search";
             [[MWNetworkActivityIndicatorManager sharedManager] pop];
             if (failure) {
                 if (![[error domain] isEqualToString:NSURLErrorDomain]) {
-                    error = [NSError errorWithDomain:WMFLocationSearchErrorDomain code:WMFLocationSearchErrorCodeNoResults userInfo:@{ NSLocalizedDescriptionKey: WMFLocalizedStringWithDefaultValue(@"empty-no-search-results-message", nil, nil, @"No results found", @"Shown when there are no search results") }];
+                    error = [NSError errorWithDomain:WMFLocationSearchErrorDomain code:WMFLocationSearchErrorCodeNoResults userInfo:@{NSLocalizedDescriptionKey: WMFLocalizedStringWithDefaultValue(@"empty-no-search-results-message", nil, nil, @"No results found", @"Shown when there are no search results")}];
                 }
                 failure(error);
             }
@@ -168,7 +173,7 @@ NSString *const WMFLocationSearchErrorDomain = @"org.wikimedia.location.search";
         NSString *gsrsearch = [gsrSearchArray componentsJoinedByString:@" "];
         NSMutableDictionary<NSString *, NSObject *> *serializedParams = [NSMutableDictionary dictionaryWithDictionary:@{
             @"action": @"query",
-            @"prop": @"coordinates|pageimages|pageterms",
+            @"prop": @"coordinates|pageimages|description|pageprops",
             @"coprop": @"type|dim",
             @"colimit": @(params.numberOfResults),
             @"generator": @"search",
@@ -178,6 +183,7 @@ NSString *const WMFLocationSearchErrorDomain = @"org.wikimedia.location.search";
             //@"pilicense": @"any",
             @"pithumbsize": [[UIScreen mainScreen] wmf_nearbyThumbnailWidthForScale],
             @"pilimit": @(params.numberOfResults),
+            @"ppprop": @"displaytitle|disambiguation",
             @"format": @"json",
         }];
         switch (params.sortStyle) {
@@ -200,18 +206,22 @@ NSString *const WMFLocationSearchErrorDomain = @"org.wikimedia.location.search";
             [NSString stringWithFormat:@"%f|%f", params.region.center.latitude, params.region.center.longitude];
         return @{
             @"action": @"query",
-            @"prop": @"coordinates|pageimages|pageterms",
+            @"prop": @"coordinates|pageimages|description|pageprops|extracts",
             @"coprop": @"type|dim",
             @"colimit": @(params.numberOfResults),
             @"pithumbsize": [[UIScreen mainScreen] wmf_nearbyThumbnailWidthForScale],
             @"pilimit": @(params.numberOfResults),
             //@"pilicense": @"any",
-            @"wbptterms": @"description",
+            @"ppprop": @"displaytitle|disambiguation",
             @"generator": @"geosearch",
             @"ggscoord": coords,
             @"codistancefrompoint": coords,
             @"ggsradius": @(params.region.radius),
             @"ggslimit": @(params.numberOfResults),
+            @"exintro": @YES,
+            @"exlimit": @(params.numberOfResults),
+            @"explaintext": @"",
+            @"exchars": @(WMFNumberOfExtractCharacters),
             @"format": @"json"
         };
     }

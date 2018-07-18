@@ -1,11 +1,19 @@
 import UIKit
 
-@objc(WMFSaveButtonsController) class SaveButtonsController: NSObject {
+public protocol SaveButtonsControllerDelegate: class {
+    func didSaveArticle(_ saveButton: SaveButton?, didSave: Bool, article: WMFArticle)
+    func willUnsaveArticle(_ article: WMFArticle)
+    func showAddArticlesToReadingListViewController(for article: WMFArticle)
+}
+
+class SaveButtonsController: NSObject, SaveButtonDelegate {
     
     var visibleSaveButtons = [Int: Set<SaveButton>]()
     var visibleArticleKeys = [Int: String]()
     let dataStore: MWKDataStore
     let savedPagesFunnel = SavedPagesFunnel()
+    var activeSender: SaveButton?
+    var activeKey: String?
     
     required init(dataStore: MWKDataStore) {
         self.dataStore = dataStore
@@ -17,7 +25,6 @@ import UIKit
         NotificationCenter.default.removeObserver(self)
     }
     
-    @objc(willDisplaySaveButton:forArticle:)
     public func willDisplay(saveButton: SaveButton, for article: WMFArticle) {
         guard let key = article.key else {
             return
@@ -26,13 +33,13 @@ import UIKit
         saveButton.saveButtonState = article.savedDate == nil ? .longSave : .longSaved
         saveButton.tag = tag
         saveButton.addTarget(self, action: #selector(saveButtonPressed(sender:)), for: .touchUpInside)
+        saveButton.saveButtonDelegate = self
         var saveButtons = visibleSaveButtons[tag] ?? []
         saveButtons.insert(saveButton)
         visibleSaveButtons[tag] = saveButtons
         visibleArticleKeys[tag] = key
     }
     
-    @objc(didEndDisplayingSaveButton:forArticle:)
     public func didEndDisplaying(saveButton: SaveButton, for article: WMFArticle) {
         guard let key = article.key else {
             return
@@ -49,27 +56,73 @@ import UIKit
         }
     }
     
-    func articleUpdated(notification: Notification) {
+    func saveButtonDidReceiveLongPress(_ saveButton: SaveButton) {
+        _ = saveButtonDidReceiveAddToReadingListAction(saveButton)
+    }
+    
+    func saveButtonDidReceiveAddToReadingListAction(_ saveButton: SaveButton) -> Bool {
+        guard let key = visibleArticleKeys[saveButton.tag], let article = dataStore.fetchArticle(withKey: key) else {
+            return false
+        }
+        delegate?.showAddArticlesToReadingListViewController(for: article)
+        return true
+    }
+
+    fileprivate var updatedArticle: WMFArticle?
+    
+    @objc func articleUpdated(notification: Notification) {
         guard let article = notification.object as? WMFArticle, let key = article.key, let saveButtons = visibleSaveButtons[key.hash] else {
             return
         }
         for saveButton in saveButtons {
             saveButton.saveButtonState = article.savedDate == nil ? .longSave : .longSaved
         }
+        updatedArticle = article
+        notifyDelegateArticleSavedStateChanged()
     }
     
-    func saveButtonPressed(sender: SaveButton) {
+    public weak var delegate: SaveButtonsControllerDelegate?
+    
+    @objc func saveButtonPressed(sender: SaveButton) {
         guard let key = visibleArticleKeys[sender.tag] else {
             return
         }
+        
+        activeKey = key
+        activeSender = sender
+        
+        if let articleToUnsave = dataStore.savedPageList.entry(forKey: key) {
+            delegate?.willUnsaveArticle(articleToUnsave)
+            return // don't unsave immediately, wait for a callback from WMFReadingListActionSheetControllerDelegate
+        }
+        
+        updateSavedState()
+    }
+    
+    func updateSavedState() {
+        guard let key = activeKey else {
+            return
+        }
+
         let isSaved = dataStore.savedPageList.toggleSavedPage(forKey: key)
         
         if isSaved {
-            PiwikTracker.sharedInstance()?.wmf_logActionSave(inContext: sender, contentType: sender)
-            savedPagesFunnel.logSaveNew()
+            savedPagesFunnel.logSaveNew(withArticleURL: updatedArticle?.url)
         } else {
-            PiwikTracker.sharedInstance()?.wmf_logActionUnsave(inContext: sender, contentType: sender)
-            savedPagesFunnel.logDelete()
+            savedPagesFunnel.logDelete(withArticleURL: updatedArticle?.url)
         }
+        notifyDelegateArticleSavedStateChanged()
+    }
+    
+    private func notifyDelegateArticleSavedStateChanged() {
+        guard let article = updatedArticle else {
+            return
+        }
+        guard activeKey == article.key else {
+            return
+        }
+        let isSaved = article.savedDate != nil
+        delegate?.didSaveArticle(activeSender, didSave: isSaved, article: article)
+        activeKey = nil
     }
 }

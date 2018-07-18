@@ -6,46 +6,36 @@
 // Author: Red Winged Duck
 // Author: Renessaince
 
-// Fuzzy
-"about-contributors" = "аўтары";
-// Fuzzy
-"about-libraries" = "выкарыстаныя бібліятэкі";
+"about-contributors" = "Аўтары";
+"about-libraries" = "Выкарыстаныя бібліятэкі";
 "about-libraries-license" = "Ліцэнзія";
-// Fuzzy
-"about-product-of" = "Прадукт $1";
-// Fuzzy
-"about-repositories" = "рэпазыторыі";
+"about-product-of" = "$1 стварыла гэты прадукт з дапамогай такіх валянтэраў, як вы";
+"about-repositories" = "Рэпазыторыі";
 "about-send-feedback" = "Даслаць водгук пра дастасаваньне";
-// Fuzzy
-"about-testers" = "тэстары";
+"about-testers" = "Тэстэры";
 "about-testers-details" = "QA-тэставаньне ад $1";
 "about-title" = "Пра";
-// Fuzzy
-"about-translators" = "перакладчыкі";
+"about-translators" = "Перакладчыкі";
 "about-translators-details" = "Перакладзенае дабраахвотнікамі на $1";
 "about-wikimedia-foundation" = "Фундацыя Вікімэдыя";
 "about-wikipedia" = "Вікіпэдыя";
-// Fuzzy
-"abuse-filter-disallow-heading" = "Вы ня можаце захаваць гэтае рэдагаваньне. Калі ласка, вярніцеся і зьмяніце яго.";
+"abuse-filter-disallow-heading" = "Вы ня можаце апублікаваць гэтае рэдагаваньне. Калі ласка, вярніцеся і зьмяніце яго.";
 "abuse-filter-disallow-notable" = "Вікіпэдыя гэта вольная энцыкляпэдыя і тут дазволены толькі нэўтральны і значны зьмест.";
 "abuse-filter-disallow-unconstructive" = "Аўтаматычны фільтар распазнаў гэтае рэдагаваньне як патэнцыйна дэструктыўнае ці як спробу вандалізму.";
 "abuse-filter-warning-blanking" = "Пусты артыкул ці спам";
 "abuse-filter-warning-caps" = "Друк ВЯЛІКІМІ ЛІТАРАМІ";
-// Fuzzy
-"abuse-filter-warning-heading" = "Гэтае рэдагаваньне можа быць неканструктыўным, Вы ўпэўнены, што жадаеце яго захаваць?";
+"abuse-filter-warning-heading" = "Гэтае рэдагаваньне можа быць неканструктыўным, вы ўпэўненыя, што жадаеце яго апублікаваць?";
 "abuse-filter-warning-irrelevant" = "Неадпаведныя вонкавыя спасылкі ці выявы";
 "abuse-filter-warning-repeat" = "Паўтааааараючыеся сымбалі";
 "abuse-filter-warning-subheading" = "Вашае рэдагаваньне можа ўтрымліваць адно ці болей з наступных дзеяньняў:";
-// Fuzzy
-"account-creation-captcha-obtaining" = "Абнавіць выяву CAPTCHA.";
+"account-creation-captcha-obtaining" = "Атрымліваем новую CAPTCHA…";
 "account-creation-logging-in" = "Уваход у сыстэму...";
 "account-creation-missing-fields" = "Вам неабходна ўвесьці імя ўдзельніка, пароль і пацьвердзіць пароль, каб стварыць рахунак.";
 "account-creation-passwords-mismatched" = "Паролі не супадаюць.";
 "account-creation-saving" = "Захаваньне...";
 "alert-no-internet" = "Няма інтэрнэт-злучэньня";
 "article-about-title" = "Пра гэты артыкул";
-// Fuzzy
-"article-languages-filter-placeholder" = "Моўны фільтар";
+"article-languages-filter-placeholder" = "Знайсьці мову";
 "article-languages-label" = "Выберыце мову";
 "article-read-more-title" = "Даведацца болей";
 "article-unable-to-load-article" = "Немагчыма загрузіць артыкул.";
@@ -66,66 +56,48 @@
 "edit-summary-field-placeholder-text" = "Іншыя шляхі, якімі Вы палепшылі артыкул";
 "edit-summary-title" = "Як Вы палепшылі артыкул?";
 "empty-no-article-message" = "Прабачце, немагчыма загрузіць артыкул";
-// Fuzzy
-"empty-no-feed-action-message" = "Пакуль Вы можаце пачытаць захаваныя старонкі";
+"empty-no-feed-action-message" = "Вы ўсё яшчэ можаце пачытаць захаваныя старонкі";
 "empty-no-feed-message" = "Вы зможаце ўбачыць Вашыя рэкамэндааныя артыкулы, калі зьявіцца інтэрнэт-злучэньне";
 "empty-no-feed-title" = "Няма інтэрнэт-злучэньня";
 "empty-no-history-message" = "Сачыце за тым, што вы чытаеце тут";
 "empty-no-history-title" = "Няма гісторыі для паказу";
 "empty-no-saved-pages-message" = "Захаваць старонкі для прагляду іх пазьней, нават оф-лайн";
 "empty-no-saved-pages-title" = "Няма захаваных старонак";
-// Fuzzy
-"empty-no-search-results-message" = "Прабачце, немагчыма загрузіць вынікі";
+"empty-no-search-results-message" = "Вынікі ня знойдзеныя";
 "explore-continue-reading-heading" = "Працягваць чытаньне";
 "explore-featured-article-heading" = "Абраны артыкул";
 "explore-main-page-heading" = "Сёньня ў Вікіпэдыі";
-// Fuzzy
-"explore-nearby-heading" = "Навакольныя мясьціны";
+"explore-nearby-heading" = "Месцы побач";
 "explore-potd-heading" = "Выява дня";
 "explore-random-article-heading" = "Выпадковы артыкул";
 "history-clear-cancel" = "Скасаваць";
-// Fuzzy
-"history-clear-confirmation-heading" = "Выдаліць усе нядаўнія элемэнты?";
-// Fuzzy
-"history-clear-delete-all" = "Выдаліць усе";
-"history-section-today" = "Сёньня";
-"history-section-yesterday" = "Учора";
+"history-clear-confirmation-heading" = "Вы ўпэўненыя, што хочаце выдаліць усе вашыя нядаўнія элемэнты?";
+"history-clear-delete-all" = "Так, выдаліць усё";
 "history-title" = "Гісторыя";
 "hockeyapp-alert-always-send" = "Заўсёды дасылаць";
 "hockeyapp-alert-do-not-send" = "Не дасылаць";
 "hockeyapp-alert-privacy" = "Умовы прыватнасьці $1";
-// Fuzzy
-"hockeyapp-alert-question" = "Вы жадаеце даслаць справаздачу пра памылку ў $1, каб Вікімэдыя вывучыла прычыну Вашай памылкі?";
-// Fuzzy
-"hockeyapp-alert-question-with-response-field" = "Ці жадаеце вы даслаць справаздачу ў $1, каб Вікімэдыя магла вывучыць памылку? Калі ласка, апішыце, што адбывалася, калі ўзьнікла памылка:";
+"hockeyapp-alert-question" = "Ці жадаеце вы даслаць справаздачу пра памылку ў $1, каб фундацыя «Вікімэдыя» вывучыла прычыну гэтай памылкі?";
+"hockeyapp-alert-question-with-response-field" = "Ці жадаеце вы даслаць справаздачу ў $1, каб фундацыя «Вікімэдыя» магла вывучыць памылку? Калі ласка, апішыце, што адбывалася, калі ўзьнікла памылка:";
 "hockeyapp-alert-send-report" = "Даслаць справаздачу";
 "hockeyapp-alert-title" = "Выбачаемся, праграма спынілася мінулым разам";
-"home-hide-suggestion-cancel" = "Скасаваць";
-"home-hide-suggestion-prompt" = "Схаваць гэтую прапанову";
 "home-more-like-footer" = "Болей падобна на $1";
-"home-nearby-footer" = "Болей пра тое, што знаходзіцца побач з вамі";
+"home-nearby-footer" = "Болей месцаў побач з вамі";
 "home-title" = "Дасьледаваньне";
 "icon-shortcut-continue-reading-title" = "Працягваць чытаньне";
 "icon-shortcut-nearby-title" = "Артыклы пра тое што ёсьць навокал";
 "icon-shortcut-random-title" = "Выпадковы артыкул";
 "icon-shortcut-search-title" = "Пошук па Вікіпэдыі";
-// Fuzzy
-"image-gallery-unknown-owner" = "Загрузіў невядомы.";
+"image-gallery-unknown-owner" = "Аўтар невядомы.";
 "info-box-close-text" = "Закрыць";
-// Fuzzy
 "info-box-title" = "Хуткія факты";
-// Fuzzy
-"languages-title" = "Мовы";
+"languages-title" = "Зьмяніць мову";
 "license-footer-name" = "CC BY-SA 3.0";
-// Fuzzy
-"license-footer-text" = "Зьмест даступны на ўмовах $1";
-// Fuzzy
-"main-menu-about" = "Пра дастасаваньне Вікіпэдыя";
-// Fuzzy
-"main-menu-account-login" = "Увайсьці ў Вікіпэдыю";
+"license-footer-text" = "Зьмест даступны на ўмовах $1, калі не пазначанае іншае.";
+"main-menu-about" = "Пра праграму";
+"main-menu-account-login" = "Увайсьці";
 "main-menu-account-logout" = "Выйсьці";
-// Fuzzy
-"main-menu-account-title-logged-in" = "Увайшлі як: $1";
+"main-menu-account-title-logged-in" = "Увайшлі як $1";
 "main-menu-debug-crash" = "Збой";
 "main-menu-debug-tweaks" = "Налады для распрацоўнікаў";
 "main-menu-heading-debug" = "Наладка";
@@ -133,20 +105,16 @@
 "main-menu-heading-zero" = "Вікіпэдыя Zero";
 "main-menu-nearby" = "Паблізу";
 "main-menu-privacy-policy" = "Правілы адносна прыватнасьці";
-// Fuzzy
-"main-menu-rate-app" = "Ацаніць дастасаваньне";
-// Fuzzy
+"main-menu-rate-app" = "Ацаніць праграму";
 "main-menu-terms-of-use" = "Умовы выкарыстаньня";
 "main-menu-title" = "Болей";
 "main-menu-zero-faq" = "Частыя пытаньні па Вікіпэдыя Zero";
 "menu-cancel-accessibility-label" = "Скасаваць";
-"menu-trash-accessibility-label" = "Выдаліць";
 "navbar-title-mode-edit-wikitext-preview" = "Папярэдні прагляд";
 "nearby-distance-label-feet" = "$1 фт";
 "nearby-distance-label-km" = "$1 км";
 "nearby-distance-label-meters" = "$1 м";
 "nearby-distance-label-miles" = "$1 міл";
-"onboarding-wikipedia" = "Вікіпэдыя";
 "open-link-cancel" = "Скасаваць";
 "page-edit-history" = "Уся гісторыя рэдагаваньняў";
 "page-history-title" = "Гісторыя артыкула";
@@ -161,14 +129,8 @@
 "page-similar-titles" = "Падобныя старонкі";
 "potd-description-prefix" = "Выява дня за $1";
 "potd-empty-error-description" = "Выява дня за $1 не была атрыманая";
-// Fuzzy
-"preference-summary-eventlogging-opt-in" = "Дазволіць Вікімэдыя зьбіраць інфармацыю пра тое, як Вы выкарыстоўваеце праграму, каб палепшыць яе";
+"preference-summary-eventlogging-opt-in" = "Дазволіць фундацыі «Вікімэдыя» зьбіраць інфармацыю пра тое, як вы выкарыстоўваеце праграму, каб палепшыць яе";
 "preference-title-eventlogging-opt-in" = "Адпраўляць справаздачы пра карыстаньне";
-"saved-pages-clear-cancel" = "Скасаваць";
-// Fuzzy
-"saved-pages-clear-confirmation-heading" = "Выдаліць усе захаваныя элемэнты?";
-// Fuzzy
-"saved-pages-clear-delete-all" = "Выдаліць усе";
 "saved-pages-image-download-error" = "Памылка загрузкі выявы для гэтай захаванай старонкі.";
 "saved-title" = "Захаваны";
 "search-did-you-mean" = "Магчыма, вы мелі на ўвазе $1?";
@@ -182,18 +144,10 @@
 "search-title" = "Пошук";
 "settings-title" = "Налады";
 "share-article-name-on-wikipedia" = "«$1» у @Wikipedia:";
-"share-article-name-on-wikipedia-with-selected-text" = "«$1» у @Wikipedia: «$2»";
-"share-as-image" = "Падзяліцца выявай";
-"share-as-text" = "Падзяліцца як тэкстам";
-"share-cancel" = "Адмяніць";
-// Fuzzy
-"share-custom-menu-item" = "Падзяліцца";
-// Fuzzy
+"share-custom-menu-item" = "Падзяліцца…";
 "table-of-contents-button-label" = "Зьмест";
 "table-of-contents-heading" = "Зьмест";
 "table-title-other" = "Болей зьвестак";
-// Fuzzy
-"welcome-languages-title" = "Мовы пошуку";
 "wikitext-download-failed" = "Не атрымліваецца атрымаць апошнюю вэрсію.";
 "wikitext-download-success" = "Зьмест загружаны.";
 "wikitext-downloading" = "Загрузка зьместу...";
@@ -202,8 +156,7 @@
 "wikitext-upload-captcha-error" = "Памылка праверкі CAPTCHA.";
 "wikitext-upload-captcha-needed" = "Неаходная праверка CAPTCHA.";
 "wikitext-upload-result-unknown" = "Не атрымліваецца вызначыць вынік загрузкі вікі-тэксту.";
-// Fuzzy
-"wikitext-upload-save" = "Захаваньне...";
+"wikitext-upload-save" = "Публікацыя…";
 "wikitext-upload-save-anonymously-warning" = "Рэдагаваньні будуць зьвязаны з IP-адрасам Вашага прыстасаваньня. Калі Вы $1, Вы атрымаеце больш высокі ўзровень прыватнасьці.";
 "wikitext-upload-save-sign-in" = "Увайсьці";
 "wikitext-upload-save-terms-name" = "Умовы выкарыстаньня";

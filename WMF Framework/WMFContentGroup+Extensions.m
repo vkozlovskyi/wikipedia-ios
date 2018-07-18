@@ -1,10 +1,12 @@
 #import <WMF/WMFContentGroup+Extensions.h>
+#import <WMF/WMFContent+CoreDataProperties.h>
 #import "WMFAnnouncement.h"
 @import UIKit;
 #import <WMF/NSURL+WMFLinkParsing.h>
 #import <WMF/NSCalendar+WMFCommonCalendars.h>
 #import <WMF/NSDateFormatter+WMFExtensions.h>
 #import <WMF/WMFLogging.h>
+#import <WMF/NSCharacterSet+WMFLinkParsing.h>
 
 @implementation WMFContentGroup (Extensions)
 
@@ -67,8 +69,14 @@
         case WMFContentGroupKindNotification:
             URL = [WMFContentGroup notificationContentGroupURL];
             break;
+        case WMFContentGroupKindTheme:
+            URL = [WMFContentGroup themeContentGroupURL];
+            break;
+        case WMFContentGroupKindReadingList:
+            URL = [WMFContentGroup readingListContentGroupURL];
+            break;
         case WMFContentGroupKindAnnouncement:
-            URL = [WMFContentGroup announcementURLForSiteURL:self.siteURL identifier:[(WMFAnnouncement *)self.content.firstObject identifier]];
+            URL = [WMFContentGroup announcementURLForSiteURL:self.siteURL identifier:[(WMFAnnouncement *)self.contentPreview identifier]];
         default:
             break;
     }
@@ -100,6 +108,12 @@
         case WMFContentGroupKindNotification:
             self.contentType = WMFContentTypeNotification;
             break;
+        case WMFContentGroupKindTheme:
+            self.contentType = WMFContentTypeTheme;
+            break;
+        case WMFContentGroupKindReadingList:
+            self.contentType = WMFContentTypeReadingList;
+            break;
         case WMFContentGroupKindContinueReading:
         case WMFContentGroupKindMainPage:
         case WMFContentGroupKindRelatedPages:
@@ -117,45 +131,50 @@
     switch (self.contentGroupKind) {
         case WMFContentGroupKindUnknown:
             break;
+        case WMFContentGroupKindAnnouncement:
+            self.dailySortPriority = -1;
+            break;
         case WMFContentGroupKindContinueReading:
             self.dailySortPriority = 0;
-            break;
-        case WMFContentGroupKindMainPage:
-            self.dailySortPriority = 6;
             break;
         case WMFContentGroupKindRelatedPages:
             self.dailySortPriority = 1;
             break;
-        case WMFContentGroupKindLocation:
-            self.dailySortPriority = 8;
-            break;
-        case WMFContentGroupKindLocationPlaceholder:
-            self.dailySortPriority = 8;
-            break;
-        case WMFContentGroupKindPictureOfTheDay:
-            self.dailySortPriority = 5;
-            break;
-        case WMFContentGroupKindRandom:
-            self.dailySortPriority = 7;
-            break;
-        case WMFContentGroupKindFeaturedArticle:
+        case WMFContentGroupKindReadingList:
             self.dailySortPriority = 2;
             break;
-        case WMFContentGroupKindTopRead:
+        case WMFContentGroupKindTheme:
             self.dailySortPriority = 3;
             break;
-        case WMFContentGroupKindNews:
+        case WMFContentGroupKindFeaturedArticle:
             self.dailySortPriority = 4;
             break;
-        case WMFContentGroupKindOnThisDay:
-//TODO: figure out the right value(s) for this...
-            self.dailySortPriority = 9;
+        case WMFContentGroupKindTopRead:
+            self.dailySortPriority = 5;
+            break;
+        case WMFContentGroupKindNews:
+            self.dailySortPriority = 6;
             break;
         case WMFContentGroupKindNotification:
-            self.dailySortPriority = -1;
+            self.dailySortPriority = 7;
             break;
-        case WMFContentGroupKindAnnouncement:
-            self.dailySortPriority = -2;
+        case WMFContentGroupKindPictureOfTheDay:
+            self.dailySortPriority = 8;
+            break;
+        case WMFContentGroupKindOnThisDay:
+            self.dailySortPriority = 9;
+            break;
+        case WMFContentGroupKindLocationPlaceholder:
+            self.dailySortPriority = 10;
+            break;
+        case WMFContentGroupKindLocation:
+            self.dailySortPriority = 11;
+            break;
+        case WMFContentGroupKindRandom:
+            self.dailySortPriority = 12;
+            break;
+        case WMFContentGroupKindMainPage:
+            self.dailySortPriority = 13;
             break;
         default:
             break;
@@ -194,6 +213,98 @@
     self.siteURLString = siteURL.absoluteString;
 }
 
+- (void)setFullContentObject:(NSObject<NSCoding> *)fullContentObject {
+    NSManagedObjectContext *moc = self.managedObjectContext;
+    NSAssert(moc != nil, @"nil moc");
+    if (!moc) {
+        return;
+    }
+    if ([fullContentObject isKindOfClass:[NSArray class]] || [fullContentObject isKindOfClass:[NSSet class]]) {
+        self.countOfFullContent = @([(id)fullContentObject count]);
+    }
+    WMFContent *fullContent = self.fullContent;
+    if (!fullContentObject) {
+        if (fullContent) {
+            [moc deleteObject:fullContent];
+            self.fullContent = nil;
+            return;
+        }
+        return;
+    }
+
+    if (!fullContent) {
+        fullContent = (WMFContent *)[NSEntityDescription insertNewObjectForEntityForName:@"WMFContent" inManagedObjectContext:moc];
+        self.fullContent = fullContent;
+    }
+    fullContent.object = fullContentObject;
+}
+
+- (NSInteger)featuredContentIndex {
+    if (self.featuredContentIdentifier == nil) {
+        return NSNotFound;
+    }
+    return self.featuredContentIdentifier.integerValue;
+}
+
+- (void)setFeaturedContentIndex:(NSInteger)index {
+    if (index == NSNotFound) {
+        self.featuredContentIdentifier = nil;
+    } else {
+        self.featuredContentIdentifier = [NSString stringWithFormat:@"%lli", (long long)index];
+    }
+}
+
+- (void)updateContentPreviewWithContent:(id)content {
+    if (!content) {
+        return;
+    }
+    NSInteger contentLimit = 3;
+    NSArray *contentArray = nil;
+    if ([content isKindOfClass:[NSArray class]]) {
+        contentArray = (NSArray *)content;
+    }
+    switch (self.contentGroupKind) {
+        case WMFContentGroupKindOnThisDay: {
+            NSInteger featuredEventIndex = self.featuredContentIndex;
+            if (featuredEventIndex >= 0 && featuredEventIndex < contentArray.count) {
+                NSInteger startIndex = featuredEventIndex;
+                NSInteger length = startIndex + 1 < contentArray.count ? 2 : 1;
+                NSRange range = NSMakeRange(startIndex, length);
+                self.contentPreview = [contentArray subarrayWithRange:range];
+            }
+        } break;
+        case WMFContentGroupKindTopRead:
+            contentLimit = 5;
+        case WMFContentGroupKindRelatedPages:
+        case WMFContentGroupKindLocation: {
+            if (contentArray.count > contentLimit) {
+                self.contentPreview = [contentArray subarrayWithRange:NSMakeRange(0, contentLimit)];
+            } else if (contentArray.count > 0) {
+                self.contentPreview = contentArray;
+            }
+
+        } break;
+        case WMFContentGroupKindMainPage:
+        case WMFContentGroupKindNotification:
+        case WMFContentGroupKindLocationPlaceholder:
+        case WMFContentGroupKindPictureOfTheDay:
+        case WMFContentGroupKindRandom:
+        case WMFContentGroupKindFeaturedArticle:
+        case WMFContentGroupKindTheme:
+        case WMFContentGroupKindReadingList:
+        case WMFContentGroupKindAnnouncement:
+        case WMFContentGroupKindContinueReading:
+        case WMFContentGroupKindNews:
+        case WMFContentGroupKindUnknown:
+        default: {
+            id<NSCoding> firstObject = contentArray.firstObject ?: content;
+            if (firstObject) {
+                self.contentPreview = firstObject;
+            }
+        } break;
+    }
+}
+
 + (NSURL *)baseURL {
     NSURL *URL = [NSURL URLWithString:@"wikipedia://content/"];
     return URL;
@@ -229,21 +340,25 @@
     if (!title || !domain || !language) {
         return nil;
     }
-    NSURL *theURL = [[self baseURL] URLByAppendingPathComponent:@"related-pages"];
-    theURL = [theURL URLByAppendingPathComponent:domain];
-    theURL = [theURL URLByAppendingPathComponent:language];
-    theURL = [theURL URLByAppendingPathComponent:title];
-    return theURL;
+    NSURLComponents *components = [NSURLComponents componentsWithURL:[self baseURL] resolvingAgainstBaseURL:NO];
+    NSString *encodedTitle = [title stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet wmf_URLPathComponentAllowedCharacterSet]];
+    NSString *path = [NSString pathWithComponents:@[@"/related-pages", domain, language, encodedTitle]];
+    components.percentEncodedPath = path;
+    return components.URL;
 }
 
 + (nullable NSURL *)articleURLForRelatedPagesContentGroupURL:(nullable NSURL *)url {
-    NSArray *components = url.path.pathComponents;
-    if (components.count < 5) {
+    if (!url) {
         return nil;
     }
-    NSString *domain = components[2];
-    NSString *language = components[3];
-    NSString *title = components[4];
+    NSURLComponents *components = [NSURLComponents componentsWithURL:url resolvingAgainstBaseURL:NO];
+    NSArray *pathComponents = components.percentEncodedPath.pathComponents;
+    if (pathComponents.count < 5) {
+        return nil;
+    }
+    NSString *domain = pathComponents[2];
+    NSString *language = pathComponents[3];
+    NSString *title = [pathComponents[4] stringByRemovingPercentEncoding];
     return [NSURL wmf_URLWithDomain:domain language:language title:title fragment:nil];
 }
 
@@ -307,6 +422,14 @@
     return [[self baseURL] URLByAppendingPathComponent:@"notification"];
 }
 
++ (nullable NSURL *)themeContentGroupURL {
+    return [[self baseURL] URLByAppendingPathComponent:@"theme"];
+}
+
++ (nullable NSURL *)readingListContentGroupURL {
+    return [[self baseURL] URLByAppendingPathComponent:@"reading-list"];
+}
+
 + (nullable NSURL *)announcementURLForSiteURL:(NSURL *)siteURL identifier:(NSString *)identifier {
     return [[self contentGroupURLForSiteURL:siteURL groupKindString:@"announcement"] URLByAppendingPathComponent:identifier];
 }
@@ -335,16 +458,7 @@
         return;
     }
 
-    NSArray *content = self.content;
-
-    if (![content isKindOfClass:[NSArray class]]) {
-        if (self.isVisible) {
-            self.isVisible = NO;
-        }
-        return;
-    }
-
-    WMFAnnouncement *announcement = (WMFAnnouncement *)content.firstObject;
+    WMFAnnouncement *announcement = (WMFAnnouncement *)self.contentPreview;
     if (![announcement isKindOfClass:[WMFAnnouncement class]]) {
         if (self.isVisible) {
             self.isVisible = NO;
@@ -506,13 +620,14 @@
     return contentGroups;
 }
 
-- (nullable WMFContentGroup *)createGroupForURL:(nullable NSURL *)URL ofKind:(WMFContentGroupKind)kind forDate:(NSDate *)date withSiteURL:(nullable NSURL *)siteURL associatedContent:(nullable NSArray<NSCoding> *)associatedContent customizationBlock:(nullable void (^)(WMFContentGroup *group))customizationBlock {
+- (nullable WMFContentGroup *)createGroupForURL:(nullable NSURL *)URL ofKind:(WMFContentGroupKind)kind forDate:(NSDate *)date withSiteURL:(nullable NSURL *)siteURL associatedContent:(nullable id<NSCoding>)associatedContent customizationBlock:(nullable void (^)(WMFContentGroup *group))customizationBlock {
     WMFContentGroup *group = [NSEntityDescription insertNewObjectForEntityForName:@"WMFContentGroup" inManagedObjectContext:self];
     group.date = date;
     group.midnightUTCDate = date.wmf_midnightUTCDateFromLocalDate;
     group.contentGroupKind = kind;
     group.siteURLString = siteURL.absoluteString;
-    group.content = associatedContent;
+    group.fullContentObject = associatedContent;
+    [group updateContentPreviewWithContent:associatedContent];
 
     if (customizationBlock) {
         customizationBlock(group);
@@ -529,23 +644,24 @@
     return group;
 }
 
-- (nullable WMFContentGroup *)createGroupOfKind:(WMFContentGroupKind)kind forDate:(NSDate *)date withSiteURL:(nullable NSURL *)siteURL associatedContent:(nullable NSArray<NSCoding> *)associatedContent {
+- (nullable WMFContentGroup *)createGroupOfKind:(WMFContentGroupKind)kind forDate:(NSDate *)date withSiteURL:(nullable NSURL *)siteURL associatedContent:(nullable id<NSCoding>)associatedContent {
     return [self createGroupForURL:nil ofKind:kind forDate:date withSiteURL:siteURL associatedContent:associatedContent customizationBlock:nil];
 }
 
-- (nullable WMFContentGroup *)createGroupOfKind:(WMFContentGroupKind)kind forDate:(NSDate *)date withSiteURL:(nullable NSURL *)siteURL associatedContent:(nullable NSArray<NSCoding> *)associatedContent customizationBlock:(nullable void (^)(WMFContentGroup *group))customizationBlock {
+- (nullable WMFContentGroup *)createGroupOfKind:(WMFContentGroupKind)kind forDate:(NSDate *)date withSiteURL:(nullable NSURL *)siteURL associatedContent:(nullable id<NSCoding>)associatedContent customizationBlock:(nullable void (^)(WMFContentGroup *group))customizationBlock {
     return [self createGroupForURL:nil ofKind:kind forDate:date withSiteURL:siteURL associatedContent:associatedContent customizationBlock:customizationBlock];
 }
 
-- (nullable WMFContentGroup *)fetchOrCreateGroupForURL:(NSURL *)URL ofKind:(WMFContentGroupKind)kind forDate:(NSDate *)date withSiteURL:(nullable NSURL *)siteURL associatedContent:(nullable NSArray<NSCoding> *)associatedContent customizationBlock:(nullable void (^)(WMFContentGroup *group))customizationBlock {
+- (nullable WMFContentGroup *)fetchOrCreateGroupForURL:(NSURL *)URL ofKind:(WMFContentGroupKind)kind forDate:(NSDate *)date withSiteURL:(nullable NSURL *)siteURL associatedContent:(nullable id<NSCoding>)associatedContent customizationBlock:(nullable void (^)(WMFContentGroup *group))customizationBlock {
 
     WMFContentGroup *group = [self contentGroupForURL:URL];
     if (group) {
         group.date = date;
         group.midnightUTCDate = date.wmf_midnightUTCDateFromLocalDate;
         group.contentGroupKind = kind;
-        group.content = associatedContent;
+        group.fullContentObject = associatedContent;
         group.siteURLString = siteURL.absoluteString;
+        [group updateContentPreviewWithContent:associatedContent];
         if (customizationBlock) {
             customizationBlock(group);
         }
@@ -556,7 +672,7 @@
     return group;
 }
 
-- (nullable WMFContentGroup *)createGroupOfKind:(WMFContentGroupKind)kind forDate:(NSDate *)date withSiteURL:(nullable NSURL *)siteURL associatedContent:(nullable NSArray<NSCoding> *)associatedContent inManagedObjectContext:(nonnull NSManagedObjectContext *)moc {
+- (nullable WMFContentGroup *)createGroupOfKind:(WMFContentGroupKind)kind forDate:(NSDate *)date withSiteURL:(nullable NSURL *)siteURL associatedContent:(nullable id<NSCoding>)associatedContent inManagedObjectContext:(nonnull NSManagedObjectContext *)moc {
     return [self createGroupOfKind:kind forDate:date withSiteURL:siteURL associatedContent:associatedContent customizationBlock:NULL];
 }
 

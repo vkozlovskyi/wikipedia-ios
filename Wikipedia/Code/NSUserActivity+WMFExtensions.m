@@ -4,6 +4,8 @@
 @import CoreSpotlight;
 @import MobileCoreServices;
 
+NSString *const WMFNavigateToActivityNotification = @"WMFNavigateToActivityNotification";
+
 @implementation NSUserActivity (WMFExtensions)
 
 + (void)wmf_makeActivityActive:(NSUserActivity *)activity {
@@ -32,7 +34,7 @@
 + (instancetype)wmf_pageActivityWithName:(NSString *)pageName {
     NSUserActivity *activity = [self wmf_activityWithType:[pageName lowercaseString]];
     activity.title = pageName;
-    activity.userInfo = @{ @"WMFPage": pageName };
+    activity.userInfo = @{@"WMFPage": pageName};
 
     if ([[NSProcessInfo processInfo] wmf_isOperatingSystemMajorVersionAtLeast:9]) {
         NSMutableSet *set = [activity.keywords mutableCopy];
@@ -45,7 +47,16 @@
 
 + (instancetype)wmf_contentActivityWithURL:(NSURL *)url {
     NSUserActivity *activity = [self wmf_activityWithType:@"Content"];
-    activity.userInfo = @{ @"WMFURL": url };
+    activity.userInfo = @{@"WMFURL": url};
+    return activity;
+}
+
++ (instancetype)wmf_specialPageActivityWithURL:(NSURL *)url {
+    if (!url) {
+        return nil;
+    }
+    NSUserActivity *activity = [self wmf_activityWithType:@"SpecialPage"];
+    activity.userInfo = @{@"WMFURL": url};
     return activity;
 }
 
@@ -86,6 +97,11 @@
 
 + (instancetype)wmf_settingsViewActivity {
     NSUserActivity *activity = [self wmf_pageActivityWithName:@"Settings"];
+    return activity;
+}
+
++ (instancetype)wmf_appearanceSettingsActivity {
+    NSUserActivity *activity = [self wmf_pageActivityWithName:@"AppearanceSettings"];
     return activity;
 }
 
@@ -151,7 +167,25 @@
 + (instancetype)wmf_searchResultsActivitySearchSiteURL:(NSURL *)url searchTerm:(NSString *)searchTerm {
     NSURLComponents *components = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
     components.path = @"/w/index.php";
-    components.query = [NSString stringWithFormat:@"search=%@&title=Special:Search&fulltext=1", searchTerm];
+    NSMutableArray *queryItems = [NSMutableArray arrayWithCapacity:3];
+    NSURLQueryItem *queryItem = nil;
+    if (searchTerm) {
+        queryItem = [NSURLQueryItem queryItemWithName:@"search" value:searchTerm];
+        if (queryItem) {
+            [queryItems addObject:queryItem];
+        }
+    }
+    queryItem = [NSURLQueryItem queryItemWithName:@"title" value:@"Special:Search"];
+    if (queryItem) {
+        [queryItems addObject:queryItem];
+    }
+
+    queryItem = [NSURLQueryItem queryItemWithName:@"fulltext" value:@"1"];
+    if (queryItem) {
+        [queryItems addObject:queryItem];
+    }
+
+    components.queryItems = queryItems;
     url = [components URL];
 
     NSUserActivity *activity = [self wmf_activityWithType:@"Searchresults"];
@@ -178,10 +212,15 @@
             return WMFUserActivityTypeHistory;
         } else if ([page isEqualToString:@"Search"]) {
             return WMFUserActivityTypeSearch;
+        } else if ([page isEqualToString:@"AppearanceSettings"]) {
+            return WMFUserActivityTypeAppearanceSettings;
         } else {
             return WMFUserActivityTypeSettings;
         }
     } else if ([self wmf_contentURL]) {
+        if ([self.activityType isEqualToString:@"org.wikimedia.wikipedia.specialpage"]) {
+            return WMFUserActivityTypeSpecialPage;
+        }
         return WMFUserActivityTypeContent;
     } else if ([self.webpageURL.absoluteString containsString:@"/w/index.php?search="]) {
         return WMFUserActivityTypeSearchResults;
@@ -244,6 +283,9 @@
             break;
         case WMFUserActivityTypeSettings:
             host = @"settings";
+            break;
+        case WMFUserActivityTypeAppearanceSettings:
+            host = @"appearancesettings";
             break;
         case WMFUserActivityTypeContent:
             host = @"content";

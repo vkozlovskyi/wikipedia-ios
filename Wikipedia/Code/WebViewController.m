@@ -1,17 +1,14 @@
 #import "WebViewController_Private.h"
+#import "WMFWebView.h"
 #import "Wikipedia-Swift.h"
 @import WebKit;
-@import Masonry;
 @import WMF;
 #import "UIBarButtonItem+WMFButtonConvenience.h"
 #import "UIViewController+WMFStoryboardUtilities.h"
-#import "WMFShareCardViewController.h"
-#import "WKWebView+WMFSuppressSelection.h"
 #import "PageHistoryViewController.h"
 #import "WKWebView+ElementLocation.h"
 #import "UIViewController+WMFOpenExternalUrl.h"
 #import "UIScrollView+WMFContentOffsetUtils.h"
-#import "WKWebView+LoadAssetsHtml.h"
 #import "WKWebView+WMFWebViewControllerJavascript.h"
 #import "WMFFindInPageKeyboardBar.h"
 #import "WebViewController+WMFReferencePopover.h"
@@ -28,9 +25,9 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
     WMFFindInPageScrollDirectionPrevious
 };
 
-@interface WebViewController () <WKScriptMessageHandler, UIScrollViewDelegate, WMFFindInPageKeyboardBarDelegate, UIPageViewControllerDelegate, WMFReferencePageViewAppearanceDelegate, WMFAnalyticsContextProviding, WMFAnalyticsContentTypeProviding>
+@interface WebViewController () <WKScriptMessageHandler, UIScrollViewDelegate, WMFFindInPageKeyboardBarDelegate, UIPageViewControllerDelegate, WMFReferencePageViewAppearanceDelegate, WMFAnalyticsContextProviding, WMFAnalyticsContentTypeProviding, WMFThemeable>
 
-@property (nonatomic, strong) MASConstraint *headerHeight;
+@property (nonatomic, strong) NSLayoutConstraint *headerHeightConstraint;
 @property (nonatomic, strong) NSMutableDictionary *footerViewHeadersByIndex;
 @property (nonatomic, strong) IBOutlet UIView *containerView;
 @property (nonatomic, strong) NSNumber *fontSizeMultiplier;
@@ -41,8 +38,11 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 @property (nonatomic) NSInteger findInPageSelectedMatchIndex;
 @property (nonatomic) BOOL disableMinimizeFindInPage;
 @property (nonatomic, readwrite, retain) WMFFindInPageKeyboardBar *inputAccessoryView;
+@property (weak, nonatomic) IBOutlet UIView *statusBarUnderlayView;
 
 @property (nonatomic, strong) NSArray<WMFReference *> *lastClickedReferencesGroup;
+
+@property (nonatomic, strong) WMFTheme *theme;
 
 @end
 
@@ -98,9 +98,6 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
         case WMFWKScriptMessageEditClicked:
             [self handleEditClickedScriptMessage:safeMessageBody];
             break;
-        case WMFWKScriptMessageLateJavascriptTransform:
-            [self handleLateJavascriptTransformScriptMessage:safeMessageBody];
-            break;
         case WMFWKScriptMessageArticleState:
             [self handleArticleStateScriptMessage:safeMessageBody];
             break;
@@ -118,6 +115,12 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
             break;
         case WMFWKScriptMessageFooterLegalLicenseLinkClicked:
             [self handleFooterLegalLicenseLinkClickedScriptMessage:safeMessageBody];
+            break;
+        case WMFWKScriptMessageFooterBrowserLinkClicked:
+            [self handleFooterBrowserLinkClickedScriptMessage:safeMessageBody];
+            break;
+        case WMFWKScriptMessageFooterContainerAdded:
+            [self handleFooterContainerAddedScriptMessage:safeMessageBody];
             break;
         case WMFWKScriptMessageUnknown:
             NSAssert(NO, @"Unhandled script message type!");
@@ -141,7 +144,10 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
     }
 }
 
-- (void)handleFooterMenuItemClickedScriptMessage:(NSString *)messageString {
+- (void)handleFooterMenuItemClickedScriptMessage:(NSDictionary *)messageDict {
+    NSString *messageString = messageDict[@"selection"];
+    NSArray *payload = messageDict[@"payload"];
+
     WMFArticleFooterMenuItem item;
     if ([messageString isEqualToString:@"languages"]) {
         item = WMFArticleFooterMenuItemLanguages;
@@ -153,29 +159,39 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
         item = WMFArticleFooterMenuItemDisambiguation;
     } else if ([messageString isEqualToString:@"coordinate"]) {
         item = WMFArticleFooterMenuItemCoordinate;
+    } else if ([messageString isEqualToString:@"talkPage"]) {
+        item = WMFArticleFooterMenuItemTalkPage;
     } else {
         NSAssert(false, @"Unhandled footer item type encountered");
         return;
     }
-    [self.delegate webViewController:self didTapFooterMenuItem:item];
+    [self.delegate webViewController:self didTapFooterMenuItem:item payload:payload];
 }
 
 - (void)handleFooterLegalLicenseLinkClickedScriptMessage:(NSString *)messageString {
     [self showLicenseButtonPressed];
 }
 
+- (void)handleFooterBrowserLinkClickedScriptMessage:(NSString *)messageString {
+    [self wmf_openExternalUrl:self.articleURL];
+}
+
 - (void)updateReadMoreSaveButtonIsSavedStateForURL:(NSURL *)url {
     BOOL isSaved = [self.article.dataStore.savedPageList isSaved:url];
-    NSString *title = [url.absoluteString.lastPathComponent wmf_stringByReplacingApostrophesWithBackslashApostrophes];
+    NSString *title = [[url.absoluteString.lastPathComponent stringByRemovingPercentEncoding] wmf_stringBySanitizingForJavaScript];
     if (title) {
-        [self.webView evaluateJavaScript:[NSString stringWithFormat:@"window.wmf.footerReadMore.setTitleIsSaved('%@', %@)", title, (isSaved ? @"true" : @"false")] completionHandler:nil];
+        NSString *saveTitle = [WMFCommonStrings saveTitleWithLanguage:url.wmf_language];
+        NSString *savedTitle = [WMFCommonStrings savedTitleWithLanguage:url.wmf_language];
+        NSString *saveButtonText = [(isSaved ? savedTitle : saveTitle)wmf_stringBySanitizingForJavaScript];
+        [self.webView evaluateJavaScript:[NSString stringWithFormat:@"window.wmf.footerReadMore.updateSaveButtonForTitle('%@', '%@', %@, document)", title, saveButtonText, (isSaved ? @"true" : @"false")] completionHandler:nil];
     }
 }
 
 - (void)toggleReadMoreSaveButtonIsSavedStateForURL:(NSURL *)url {
     BOOL isSaved = [self.article.dataStore.savedPageList toggleSavedPageForURL:url];
-    [self logReadMoreSaveButtonToggle:isSaved];
+    [self logReadMoreSaveButtonToggle:isSaved url:url];
     [self updateReadMoreSaveButtonIsSavedStateForURL:url];
+    [self.delegate webViewController:self didTapFooterReadMoreSaveForLaterForArticleURL:url didSave:isSaved];
 }
 
 - (void)handleJavascriptConsoleLogScriptMessage:(NSDictionary *)messageDict {
@@ -199,7 +215,6 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
                                            }
 
                                            if ([url wmf_isWikiResource]) {
-                                               NSURL *url = [NSURL URLWithString:href];
                                                if (!url.wmf_domain) {
                                                    url = [NSURL wmf_URLWithSiteURL:self.article.url escapedDenormalizedInternalLink:href];
                                                }
@@ -214,7 +229,6 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
                                                        // Expand protocol-relative link to https -- secure by default!
                                                        href = [@"https:" stringByAppendingString:href];
                                                    }
-                                                   NSURL *url = [NSURL URLWithString:href];
                                                    NSCAssert(url, @"Failed to from URL from link %@", href);
                                                    if (url) {
                                                        [self wmf_openExternalUrl:url];
@@ -264,7 +278,7 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 - (void)handleReferenceClickedScriptMessage:(NSDictionary *)messageDict {
     NSAssert(messageDict[@"referencesGroup"], @"Expected key 'referencesGroup' not found in script message dictionary");
     self.lastClickedReferencesGroup = [messageDict[@"referencesGroup"] wmf_map:^id(NSDictionary *referenceDict) {
-        return [[WMFReference alloc] initWithScriptMessageDict:referenceDict];
+        return [[WMFReference alloc] initWithScriptMessageDict:referenceDict yOffset:self.webView.scrollView.contentInset.top];
     }];
 
     NSAssert(messageDict[@"selectedIndex"], @"Expected key 'selectedIndex' not found in script message dictionary");
@@ -284,30 +298,19 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
                                    }];
 }
 
-- (void)handleLateJavascriptTransformScriptMessage:(NSString *)messageString {
-    if ([messageString isEqualToString:@"collapseTables"]) {
-        [self.webView wmf_collapseTablesForArticle:self.article];
-    } else if ([messageString isEqualToString:@"setLanguage"]) {
-        [self.webView wmf_setLanguage:[MWLanguageInfo languageInfoForCode:self.article.url.wmf_language]];
-    } else if ([messageString isEqualToString:@"setPageProtected"]) {
-        [self.webView wmf_setPageProtected:!self.article.editable];
-    } else if ([messageString isEqualToString:@"addFooterReadMore"]) {
-        [self.webView wmf_addFooterReadMoreForArticle:self.article];
-    } else if ([messageString isEqualToString:@"addFooterMenu"]) {
-        [self.webView wmf_addFooterMenuForArticle:self.article];
-    } else if ([messageString isEqualToString:@"addFooterLegal"]) {
-        [self.webView wmf_addFooterLegalForArticle:self.article];
-    }
-}
-
 - (void)handleArticleStateScriptMessage:(NSString *)messageString {
-    if ([messageString isEqualToString:@"articleLoaded"]) {
-        [self updateWebContentMarginForSize:self.view.bounds.size];
-        NSAssert(self.article, @"Article not set - may need to use the old 0.1 second delay...");
+    if ([messageString isEqualToString:@"indexHTMLDocumentLoaded"]) {
+
+        NSString *decodedFragment = [[self.articleURL fragment] stringByRemovingPercentEncoding];
+        BOOL collapseTables = ![[NSUserDefaults wmf_userDefaults] wmf_isAutomaticTableOpeningEnabled];
+        [self.webView wmf_fetchTransformAndAppendSectionsToDocument:self.article collapseTables:collapseTables scrolledTo:decodedFragment];
+
+        [self updateWebContentMarginForSize:self.view.bounds.size force:YES];
+        NSAssert(self.article, @"Article not set");
         [self.delegate webViewController:self didLoadArticle:self.article];
 
         [UIView animateWithDuration:0.3
-                              delay:0.5f
+                              delay:0.0f
                             options:UIViewAnimationOptionBeginFromCurrentState
                          animations:^{
                              self.headerView.alpha = 1.f;
@@ -324,13 +327,11 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 
 #pragma mark - Read more save button event logging
 
-- (void)logReadMoreSaveButtonToggle:(BOOL)isSaved {
+- (void)logReadMoreSaveButtonToggle:(BOOL)isSaved url:(NSURL *)url {
     if (isSaved) {
-        [self.savedPagesFunnel logSaveNew];
-        [[PiwikTracker sharedInstance] wmf_logActionSaveInContext:[self analyticsContext] contentType:[self analyticsContentType]];
+        [self.savedPagesFunnel logSaveNewWithArticleURL:url];
     } else {
-        [self.savedPagesFunnel logDelete];
-        [[PiwikTracker sharedInstance] wmf_logActionUnsaveInContext:[self analyticsContext] contentType:[self analyticsContentType]];
+        [self.savedPagesFunnel logDeleteWithArticleURL:url];
     }
 }
 
@@ -359,6 +360,7 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
     if (!_inputAccessoryView) {
         _inputAccessoryView = [WMFFindInPageKeyboardBar wmf_viewFromClassNib];
         _inputAccessoryView.delegate = self;
+        [_inputAccessoryView applyTheme:self.theme];
     }
     return _inputAccessoryView;
 }
@@ -406,25 +408,44 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
     }
 }
 
-- (CGFloat)marginWidthForSize:(CGSize)size {
-    return floor(0.5 * size.width * (1 - self.contentWidthPercentage));
+- (void)viewLayoutMarginsDidChange {
+    [super viewLayoutMarginsDidChange];
+    [self updateWebContentMarginForSize:self.view.bounds.size force:NO];
 }
 
-- (void)updateWebContentMarginForSize:(CGSize)size {
+- (CGFloat)marginWidthForSize:(CGSize)size {
+    UIEdgeInsets layoutMargins = UIEdgeInsetsZero;
+    if (@available(iOS 11.0, *)) {
+        layoutMargins = self.view.layoutMargins;
+    }
+    return MAX(MAX(layoutMargins.left, layoutMargins.right), floor(0.5 * size.width * (1 - self.contentWidthPercentage)));
+}
+
+- (void)handleFooterContainerAddedScriptMessage:(id)message {
+    //TODO: only need to do the "window.wmf.footerContainer.updateLeftAndRightMargin" part here... may be ok though as it's not changing the other values so shouldn't cause extra reflow...
+    [self updateWebContentMarginForSize:self.view.bounds.size force:YES];
+}
+
+- (void)updateWebContentMarginForSize:(CGSize)size force:(BOOL)force {
     CGFloat newMarginWidth = [self marginWidthForSize:self.view.bounds.size];
-    if (ABS(self.marginWidth - newMarginWidth) >= 0.5) {
+    if (force || ABS(self.marginWidth - newMarginWidth) >= 0.5) {
         self.marginWidth = newMarginWidth;
-        NSString *jsFormat = @"document.body.style.paddingLeft='%ipx';document.body.style.paddingRight='%ipx';";
+        NSString *jsFormat = @""
+                              "var contentDiv = document.getElementById('content');"
+                              "contentDiv.style.marginLeft='%ipx';"
+                              "contentDiv.style.marginRight='%ipx';"
+                              "window.wmf.footerContainer.updateLeftAndRightMargin(%i, document);";
+
         CGFloat marginWidth = [self marginWidthForSize:size];
         int padding = (int)MAX(0, marginWidth);
-        NSString *js = [NSString stringWithFormat:jsFormat, padding, padding];
+        NSString *js = [NSString stringWithFormat:jsFormat, padding, padding, padding];
         [self.webView evaluateJavaScript:js completionHandler:NULL];
     }
 }
 
 - (void)viewDidLayoutSubviews {
     [super viewDidLayoutSubviews];
-    [self updateWebContentMarginForSize:self.view.bounds.size];
+    [self updateWebContentMarginForSize:self.view.bounds.size force:NO];
 }
 
 - (void)willTransitionToTraitCollection:(UITraitCollection *)newCollection withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
@@ -493,16 +514,16 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
                                              completion:^(CGRect rect) {
                                                  @strongify(self);
                                                  self.disableMinimizeFindInPage = YES;
-
-                                                 CGFloat halfSpaceAboveKeyboardBar = [self.findInPageKeyboardBar convertPoint:CGPointZero toView:self.webView].y / 2.f;
-                                                 CGFloat halfMatchHeight = rect.size.height / 2.f;
-                                                 CGFloat yCenteringMatchAboveKeyboardBar = halfSpaceAboveKeyboardBar - halfMatchHeight;
-                                                 CGPoint offsetCenteringMatchAboveKeyboardBar =
-                                                     CGPointMake(
-                                                         self.webView.scrollView.contentOffset.x,
-                                                         fmaxf(rect.origin.y - yCenteringMatchAboveKeyboardBar, 0.f));
-
-                                                 [self.webView.scrollView wmf_safeSetContentOffset:offsetCenteringMatchAboveKeyboardBar
+                                                 CGFloat matchScrollOffsetY = CGRectGetMinY(rect);
+                                                 CGFloat keyboardBarOriginY = [self.findInPageKeyboardBar.window convertPoint:CGPointZero fromView:self.findInPageKeyboardBar].y;
+                                                 CGFloat contentInsetTop = self.webView.scrollView.contentInset.top;
+                                                 CGFloat newOffsetY = matchScrollOffsetY + contentInsetTop - 0.5 * self.delegate.navigationBar.visibleHeight - 0.5 * keyboardBarOriginY + 0.5 * CGRectGetHeight(rect);
+                                                 if (newOffsetY <= 0 - contentInsetTop) {
+                                                     newOffsetY = 0 - contentInsetTop;
+                                                     [self.delegate.navigationBar setNavigationBarPercentHidden:0 underBarViewPercentHidden:0 extendedViewPercentHidden:0 shadowAlpha:1 animated:YES];
+                                                 }
+                                                 CGPoint centeredOffset = CGPointMake(self.webView.scrollView.contentOffset.x, newOffsetY);
+                                                 [self.webView.scrollView wmf_safeSetContentOffset:centeredOffset
                                                                                           animated:YES
                                                                                         completion:^(BOOL done) {
                                                                                             self.disableMinimizeFindInPage = NO;
@@ -520,7 +541,7 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 #pragma FindInPageKeyboardBarDelegate
 
 - (void)keyboardBar:(WMFFindInPageKeyboardBar *)keyboardBar searchTermChanged:(NSString *)term {
-    term = [term wmf_stringByReplacingApostrophesWithBackslashApostrophes];
+    term = [term wmf_stringBySanitizingForJavaScript];
     [self.webView evaluateJavaScript:[NSString stringWithFormat:@"window.wmf.findInPage.findAndHighlightAllMatchesForSearchTerm('%@')", term]
                    completionHandler:^(id _Nullable obj, NSError *_Nullable error) {
                        [self scrollToAndFocusOnFirstMatch];
@@ -552,22 +573,7 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 - (WKWebViewConfiguration *)configuration {
     WKUserContentController *userContentController = [[WKUserContentController alloc] init];
 
-    NSArray *lateTransformNames = @[
-        @"collapseTables",
-        @"setPageProtected",
-        @"setLanguage",
-        @"addFooterReadMore",
-        @"addFooterMenu",
-        @"addFooterLegal"
-    ];
-    for (NSString *transformName in lateTransformNames) {
-        NSString *transformJS = [NSString stringWithFormat:@"window.webkit.messageHandlers.lateJavascriptTransform.postMessage('%@');", transformName];
-        [userContentController addUserScript:[[WKUserScript alloc] initWithSource:transformJS injectionTime:WKUserScriptInjectionTimeAtDocumentEnd forMainFrameOnly:YES]];
-    }
-
     NSArray *handlerNames = @[
-        @"lateJavascriptTransform",
-        @"peek",
         @"linkClicked",
         @"imageClicked",
         @"referenceClicked",
@@ -577,19 +583,17 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
         @"findInPageMatchesFound",
         @"footerReadMoreSaveClicked",
         @"footerReadMoreTitlesShown",
+        @"footerContainerAdded",
         @"footerMenuItemClicked",
-        @"footerLegalLicenseLinkClicked"
+        @"footerLegalLicenseLinkClicked",
+        @"footerBrowserLinkClicked"
     ];
     for (NSString *handlerName in handlerNames) {
         [userContentController addScriptMessageHandler:[[WeakScriptMessageDelegate alloc] initWithDelegate:self] name:handlerName];
     }
 
     NSString *earlyJavascriptTransforms = @""
-                                           "window.wmf.redLinks.hideRedLinks( document );"
-                                           "window.wmf.filePages.disableFilePageEdit( document );"
-                                           "window.wmf.images.widenImages( document );"
-                                           "window.wmf.paragraphs.moveFirstGoodParagraphUp( document );"
-                                           "window.webkit.messageHandlers.articleState.postMessage('articleLoaded');"
+                                           "window.webkit.messageHandlers.articleState.postMessage('indexHTMLDocumentLoaded');"
                                            "console.log = function(message){window.webkit.messageHandlers.javascriptConsoleLog.postMessage({'message': message});};";
 
     [userContentController addUserScript:
@@ -598,6 +602,13 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
                                                    forMainFrameOnly:YES]];
 
     WKWebViewConfiguration *configuration = [[WKWebViewConfiguration alloc] init];
+
+#if DEBUG || TEST
+    if (self.wkUserContentControllerTestingConfigurationBlock) {
+        self.wkUserContentControllerTestingConfigurationBlock(userContentController);
+    }
+#endif
+
     configuration.userContentController = userContentController;
     configuration.applicationNameForUserAgent = @"WikipediaApp";
     return configuration;
@@ -619,35 +630,26 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 
     self.contentWidthPercentage = 1;
 
-    self.webView = [[WKWebView alloc] initWithFrame:CGRectZero configuration:[self configuration]];
+    self.webView = [[WMFWebView alloc] initWithFrame:CGRectZero configuration:[self configuration]];
     self.webView.allowsLinkPreview = NO;
     self.webView.scrollView.delegate = self;
     self.webView.translatesAutoresizingMaskIntoConstraints = NO;
+    if (@available(iOS 11.0, *)) {
+        self.webView.scrollView.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentNever;
+    }
 
     [self addHeaderView];
 
-    [self.containerView insertSubview:self.webView atIndex:0];
-    [self.webView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.equalTo(self.mas_topLayoutGuide);
-        make.bottom.equalTo(self.mas_bottomLayoutGuide);
-        make.leading.and.trailing.equalTo(self.containerView);
-    }];
+    [self.containerView wmf_addSubviewWithConstraintsToEdges:self.webView];
+    [self.containerView sendSubviewToBack:self.webView];
 
     self.webView.scrollView.decelerationRate = UIScrollViewDecelerationRateNormal;
-
-    self.webView.scrollView.backgroundColor = [UIColor wmf_articleBackground];
-    self.webView.backgroundColor = [UIColor wmf_articleBackground];
-    self.view.backgroundColor = [UIColor wmf_articleBackground];
 
     self.zeroStatusLabel.font = [UIFont systemFontOfSize:12];
     self.zeroStatusLabel.text = @"";
 
     [self displayArticle];
-}
-
-- (void)viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
-    [self.webView.scrollView wmf_shouldScrollToTopOnStatusBarTap:YES];
+    self.view.autoresizingMask = UIViewAutoresizingFlexibleTopMargin;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -669,6 +671,11 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
                                              selector:@selector(articleUpdatedWithNotification:)
                                                  name:WMFArticleUpdatedNotification
                                                object:nil];
+
+    UIGestureRecognizer *interactivePopGR = self.navigationController.interactivePopGestureRecognizer;
+    if (interactivePopGR) {
+        [self.webView.scrollView.panGestureRecognizer requireGestureRecognizerToFail:interactivePopGR];
+    }
 }
 
 - (void)viewWillDisappear:(BOOL)animated {
@@ -694,18 +701,6 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 
 - (BOOL)prefersStatusBarHidden {
     return NO;
-}
-
-#pragma mark - UIScrollViewDelegate
-
-/**
- *  This must be done to work around a bug in WKWebview that
- *  resets the deceleration rate each time dragging begins
- *  http://stackoverflow.com/questions/31369538/cannot-change-wkwebviews-scroll-rate-on-ios-9-beta
- */
-- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
-    self.webView.scrollView.decelerationRate = UIScrollViewDecelerationRateNormal;
-    [self wmf_dismissReferencePopoverAnimated:NO completion:nil];
 }
 
 #pragma mark - Zero
@@ -736,12 +731,16 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
     }
     self.headerView.translatesAutoresizingMaskIntoConstraints = NO;
     [self.webView.scrollView addSubview:self.headerView];
-    [self.headerView mas_makeConstraints:^(MASConstraintMaker *make) {
-        // lead/trail must be constained to webview, the scrollview doesn't define a width
-        make.leading.and.trailing.equalTo(self.webView);
-        make.top.equalTo(self.webView.scrollView);
-        self.headerHeight = make.height.equalTo(@(0));
-    }];
+
+    NSLayoutConstraint *leadingConstraint = [self.webView.leadingAnchor constraintEqualToAnchor:self.headerView.leadingAnchor];
+    NSLayoutConstraint *trailingConstraint = [self.webView.trailingAnchor constraintEqualToAnchor:self.headerView.trailingAnchor];
+    [self.webView addConstraints:@[leadingConstraint, trailingConstraint]];
+
+    NSLayoutConstraint *topConstraint = [self.webView.scrollView.topAnchor constraintEqualToAnchor:self.headerView.topAnchor];
+    [self.webView.scrollView addConstraint:topConstraint];
+
+    self.headerHeightConstraint = [self.headerView.heightAnchor constraintEqualToConstant:0];
+    [self.headerView addConstraint:self.headerHeightConstraint];
 }
 
 - (void)showLicenseButtonPressed {
@@ -758,7 +757,7 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
     if (self.article.isMain || !self.article.imageURL || [self.article.url wmf_isNonStandardURL]) {
         return 0;
     } else {
-        return 210;
+        return WebViewControllerHeaderImageHeight;
     }
 }
 
@@ -769,6 +768,7 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 }
 
 - (void)scrollToFragment:(NSString *)fragment animated:(BOOL)animated {
+    [self.delegate.navigationBar setPercentHidden:0 shadowAlpha:1 animated:animated];
     if (fragment.length == 0) {
         // No section so scroll to top. (Used when "Introduction" is selected.)
         [self.webView.scrollView scrollRectToVisible:CGRectMake(0, 1, 1, 1) animated:animated];
@@ -782,7 +782,8 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
                                                      if (!CGRectIsNull(rect)) {
                                                          [self.webView.scrollView wmf_safeSetContentOffset:CGPointMake(self.webView.scrollView.contentOffset.x, rect.origin.y)
                                                                                                   animated:animated
-                                                                                                completion:nil];
+                                                                                                completion:^(BOOL finished){
+                                                                                                }];
                                                      }
                                                  }];
     }
@@ -812,7 +813,7 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 }
 
 - (void)getCurrentVisibleFooterIndexCompletion:(void (^)(NSNumber *_Nullable, NSError *__nullable error))completion {
-    [self.webView getIndexOfTopOnScreenElementWithPrefix:@"footer_container_section_"
+    [self.webView getIndexOfTopOnScreenElementWithPrefix:@"pagelib_footer_container_section_"
                                                    count:2
                                               completion:^(id obj, NSError *error) {
                                                   if (error) {
@@ -831,10 +832,6 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 #pragma mark UIContainerViewControllerCallbacks
 
 - (BOOL)shouldAutomaticallyForwardAppearanceMethods {
-    return YES;
-}
-
-- (BOOL)shouldAutomaticallyForwardRotationMethods {
     return YES;
 }
 
@@ -863,11 +860,21 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 
     self.headerView.alpha = 0.f;
     CGFloat headerHeight = [self headerHeightForCurrentArticle];
-    [self.headerHeight setOffset:headerHeight];
+    self.headerHeightConstraint.constant = headerHeight;
     CGFloat marginWidth = [self marginWidthForSize:self.view.bounds.size];
-    [self.webView loadHTML:[self.article articleHTML] baseURL:self.article.url withAssetsFile:@"index.html" scrolledToFragment:self.articleURL.fragment padding:UIEdgeInsetsMake(headerHeight, marginWidth, 0, marginWidth)];
 
-    UIMenuItem *shareSnippet = [[UIMenuItem alloc] initWithTitle:WMFLocalizedStringWithDefaultValue(@"share-a-fact-share-menu-item", nil, nil, @"Share-a-fact", @"Button label for creating a Share-a-fact card from the current text selection")
+    WMFProxyServer *proxy = [WMFProxyServer sharedProxyServer];
+    [proxy cacheSectionDataForArticle:self.article];
+
+    [self.webView loadHTML:@"" baseURL:self.article.url withAssetsFile:@"index.html" scrolledToFragment:self.articleURL.fragment padding:UIEdgeInsetsMake(headerHeight, marginWidth, 0, marginWidth) theme:self.theme];
+
+    NSString *shareMenuItemTitle = nil;
+    if (@available(iOS 11, *)) {
+        shareMenuItemTitle = WMFLocalizedStringWithDefaultValue(@"share-menu-item", nil, nil, @"Share…", @"Button label for 'Share…' menu");
+    } else {
+        shareMenuItemTitle = WMFLocalizedStringWithDefaultValue(@"share-a-fact-share-menu-item", nil, nil, @"Share-a-fact…", @"Button label for creating a Share-a-fact card from the current text selection");
+    }
+    UIMenuItem *shareSnippet = [[UIMenuItem alloc] initWithTitle:shareMenuItemTitle
                                                           action:@selector(shareMenuItemTapped:)];
     [UIMenuController sharedMenuController].menuItems = @[shareSnippet];
 }
@@ -916,8 +923,9 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 
 - (void)showReferencePageViewControllerWithGroup:(NSArray<WMFReference *> *)referenceGroup selectedIndex:(NSInteger)selectedIndex {
     WMFReferencePageViewController *vc = [WMFReferencePageViewController wmf_viewControllerFromReferencePanelsStoryboard];
-    vc.delegate = self;
+    vc.pageViewController.delegate = self;
     vc.appearanceDelegate = self;
+    [vc applyTheme:self.theme];
     vc.modalPresentationStyle = UIModalPresentationOverFullScreen;
     vc.modalTransitionStyle = UIModalTransitionStyleCrossDissolve;
     vc.lastClickedReferencesIndex = selectedIndex;
@@ -933,20 +941,22 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
     CGRect windowCoordsRefGroupRect = [self windowCoordsReferenceGroupRect];
     UIView *firstPanel = [controller firstPanelView];
     if (!CGRectIsEmpty(windowCoordsRefGroupRect) && firstPanel && controller.backgroundView) {
-
         CGRect panelRectInWindowCoords = [firstPanel convertRect:firstPanel.bounds toView:nil];
-        CGRect panelRectInWebViewCoords = [firstPanel convertRect:firstPanel.bounds toView:self.webView];
-        CGRect refGroupRectInWebViewCoords = [controller.backgroundView convertRect:windowCoordsRefGroupRect toView:self.webView];
-
+        CGRect refGroupRectInWindowCoords = [controller.backgroundView convertRect:windowCoordsRefGroupRect toView:nil];
         if (CGRectIntersectsRect(windowCoordsRefGroupRect, panelRectInWindowCoords)) {
-            CGFloat distanceFromVerticalCenterAbovePanel = (panelRectInWebViewCoords.origin.y / 2.0) - refGroupRectInWebViewCoords.origin.y - (windowCoordsRefGroupRect.size.height / 2.0);
-            CGPoint centeredOffset = CGPointMake(
-                self.webView.scrollView.contentOffset.x,
-                self.webView.scrollView.contentOffset.y - distanceFromVerticalCenterAbovePanel);
+            CGFloat refGroupScrollOffsetY = self.webView.scrollView.contentOffset.y + CGRectGetMinY(refGroupRectInWindowCoords);
+            CGFloat newOffsetY = refGroupScrollOffsetY - 0.5 * CGRectGetMinY(panelRectInWindowCoords) + 0.5 * CGRectGetHeight(refGroupRectInWindowCoords) - 0.5 * self.delegate.navigationBar.visibleHeight;
+            CGFloat contentInsetTop = self.webView.scrollView.contentInset.top;
+            if (newOffsetY <= 0 - contentInsetTop) {
+                newOffsetY = 0 - contentInsetTop;
+                [self.delegate.navigationBar setNavigationBarPercentHidden:0 underBarViewPercentHidden:0 extendedViewPercentHidden:0 shadowAlpha:1 animated:YES];
+            }
+            CGFloat delta = self.webView.scrollView.contentOffset.y - newOffsetY;
+            CGPoint centeredOffset = CGPointMake(self.webView.scrollView.contentOffset.x, newOffsetY);
             [self.webView.scrollView wmf_safeSetContentOffset:centeredOffset
                                                      animated:YES
                                                    completion:^(BOOL finished) {
-                                                       controller.backgroundView.clearRect = CGRectOffset(windowCoordsRefGroupRect, 0, distanceFromVerticalCenterAbovePanel);
+                                                       controller.backgroundView.clearRect = CGRectOffset(windowCoordsRefGroupRect, 0, delta);
                                                    }];
         } else {
             controller.backgroundView.clearRect = windowCoordsRefGroupRect;
@@ -995,12 +1005,12 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 }
 
 - (void)referencePageViewControllerWillAppear:(WMFReferencePageViewController *)referencePageViewController {
-    WMFReferencePanelViewController *firstRefVC = referencePageViewController.viewControllers.firstObject;
+    WMFReferencePanelViewController *firstRefVC = referencePageViewController.pageViewController.viewControllers.firstObject;
     [self.webView wmf_highlightLinkID:firstRefVC.reference.refId];
 }
 
 - (void)referencePageViewControllerWillDisappear:(WMFReferencePageViewController *)referencePageViewController {
-    for (WMFReferencePanelViewController *panel in referencePageViewController.viewControllers) {
+    for (WMFReferencePanelViewController *panel in referencePageViewController.pageViewController.viewControllers) {
         [self.webView wmf_unHighlightLinkID:panel.reference.refId];
     }
 }
@@ -1030,7 +1040,6 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 }
 
 - (void)shareSnippet:(NSString *)snippet {
-    [self.webView wmf_suppressSelection];
     [self.delegate webViewController:self didTapShareWithSelectedText:snippet];
 }
 
@@ -1059,9 +1068,41 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
     [self minimizeFindInPage];
 }
 
+- (BOOL)scrollViewShouldScrollToTop:(UIScrollView *)scrollView {
+    if ([self.delegate respondsToSelector:@selector(webViewController:scrollViewShouldScrollToTop:)]) {
+        return [self.delegate webViewController:self scrollViewShouldScrollToTop:scrollView];
+    }
+    return YES;
+}
+
 - (void)scrollViewDidScrollToTop:(UIScrollView *)scrollView {
     if ([self.delegate respondsToSelector:@selector(webViewController:scrollViewDidScrollToTop:)]) {
         [self.delegate webViewController:self scrollViewDidScrollToTop:scrollView];
+    }
+}
+
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+    if ([self.delegate respondsToSelector:@selector(webViewController:scrollViewWillBeginDragging:)]) {
+        [self.delegate webViewController:self scrollViewWillBeginDragging:scrollView];
+    }
+    [self wmf_dismissReferencePopoverAnimated:NO completion:nil];
+}
+
+- (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocityPoint targetContentOffset:(inout CGPoint *)targetContentOffset {
+    if ([self.delegate respondsToSelector:@selector(webViewController:scrollViewWillEndDragging:withVelocity:targetContentOffset:)]) {
+        [self.delegate webViewController:self scrollViewWillEndDragging:scrollView withVelocity:velocityPoint targetContentOffset:targetContentOffset];
+    }
+}
+
+- (void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
+    if ([self.delegate respondsToSelector:@selector(webViewController:scrollViewDidEndDecelerating:)]) {
+        [self.delegate webViewController:self scrollViewDidEndDecelerating:scrollView];
+    }
+}
+
+- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView {
+    if ([self.delegate respondsToSelector:@selector(webViewController:scrollViewDidEndScrollingAnimation:)]) {
+        [self.delegate webViewController:self scrollViewDidEndScrollingAnimation:scrollView];
     }
 }
 
@@ -1070,24 +1111,28 @@ typedef NS_ENUM(NSUInteger, WMFFindInPageScrollDirection) {
 - (void)setContentWidthPercentage:(CGFloat)contentWidthPercentage {
     if (_contentWidthPercentage != contentWidthPercentage) {
         _contentWidthPercentage = contentWidthPercentage;
-        [self updateWebContentMarginForSize:self.view.bounds.size];
+        [self updateWebContentMarginForSize:self.view.bounds.size force:NO];
     }
 }
 
-@end
+#pragma mark - WMFThemeable
 
-@interface WMFWebView : WKWebView
-
-@end
-
-@implementation WMFWebView
-
-//Disable OS share menu when selecting text
-- (BOOL)canPerformAction:(SEL)action withSender:(id)sender {
-    if (action == NSSelectorFromString(@"_share:")) {
-        return NO;
+- (void)applyTheme:(WMFTheme *)theme {
+    self.theme = theme;
+    if (self.viewIfLoaded == nil) {
+        return;
     }
-    return [super canPerformAction:action withSender:sender];
+
+    self.webView.opaque = NO;
+    self.webView.backgroundColor = [UIColor clearColor];
+    self.webView.scrollView.backgroundColor = [UIColor clearColor];
+    self.webView.scrollView.indicatorStyle = theme.scrollIndicatorStyle;
+    self.containerView.backgroundColor = theme.colors.paperBackground;
+    self.view.backgroundColor = theme.colors.paperBackground;
+    self.statusBarUnderlayView.backgroundColor = theme.colors.chromeBackground;
+    [self.statusBarUnderlayView wmf_addBottomShadowWith:theme];
+    [self.webView wmf_applyTheme:theme];
+    [_inputAccessoryView applyTheme:theme];
 }
 
 @end

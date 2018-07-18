@@ -40,7 +40,7 @@
 "action-save" = "შენახვა";
 "action-saved" = "შენახულია";
 "alert-no-internet" = "ინტერნეტ-კავშირი არ არის";
-"announcements-dismiss" = "არა, გმადლობთ";
+"announcements-dismiss" = "უარყოფა";
 "article-about-title" = "ამ სტატიის შესახებ";
 "article-languages-filter-placeholder" = "მოძებნე ენა";
 "article-languages-label" = "აირჩიეთ ენა";
@@ -82,12 +82,11 @@
 "explore-continue-reading-heading" = "განაგრძეთ კითხვა";
 "explore-featured-article-heading" = "რჩეული სტატია";
 "explore-main-page-heading" = "დღეს ვიკიპედიაზე";
-"explore-most-read-footer-for-date" = "ყველა ყველაზე კითხვადი სტატია $1-ზე";
+// Fuzzy
+"explore-most-read-footer" = "ყველა ყველაზე კითხვადი სტატია";
 "explore-most-read-generic-heading" = "ყველაზე კითხვადი";
 "explore-most-read-more-list-title-for-date" = "საუკეთესო $1-ზე";
 "explore-nearby-heading" = "ადგილები სიახლოვეში";
-"explore-nearby-placeholder-cancel" = "გაუქმება";
-"explore-nearby-placeholder-dismiss" = "უარყოფა";
 "explore-nearby-placeholder-heading" = "ადგილები";
 "explore-nearby-placeholder-sub-heading-on-wikipedia" = "ვიკიპედიაში";
 "explore-nearby-sub-heading-your-location" = "თქვენი მდებარეობა";
@@ -110,13 +109,10 @@
 "field-username-placeholder" = "შეიყვანეთ მომხმარებლის სახელი";
 "field-username-title" = "მომხმარებლის სახელი";
 "find-in-page-button-label" = "გვერდში ძიება";
-"find-in-page-popover-description" = "ტექსტის ძიება სტატიებში";
 "history-clear-all" = "გასუფთავება";
 "history-clear-cancel" = "გაუქმება";
 "history-clear-confirmation-heading" = "დარწმუნებული ხართ, რომ გსურთ წაშალოთ ყველა თქვენი ბოლო ელემენტი?";
 "history-clear-delete-all" = "დიახ, ყველას წაშლა";
-"history-section-today" = "დღეს";
-"history-section-yesterday" = "გუშინ";
 "history-title" = "ისტორია";
 "hockeyapp-alert-always-send" = "ყოველთვის გაგზავნა";
 "hockeyapp-alert-do-not-send" = "არ გააგზავნო";
@@ -127,9 +123,8 @@
 "hockeyapp-alert-question-with-response-field" = "გსურთ $1-სთვის პრობლემის ანგარიშის გაგზავნა, რათა ვიკიმედიამ შეძლოს მისი განხილვა? გთხოვთ აღწერეთ თუ რა მოხდა, როდესაც პრობლემა შეიქმნა:";
 "hockeyapp-alert-send-report" = "რეპორტის გაგზავნა";
 "hockeyapp-alert-title" = "უკაცრავად, უკანასკნელად აპლიკაციამ არ უმუშავა";
-"home-hide-suggestion-cancel" = "გაუქმება";
-"home-hide-suggestion-prompt" = "შეთავაზებების დამალვა";
 "home-more-like-footer" = "$1-ის მსგავსად";
+// Fuzzy
 "home-nearby-footer" = "თქვენი მდებარეობის გადატანა";
 "home-title" = "გამოიკვლიე";
 "icon-shortcut-continue-reading-title" = "განაგრძეთ კითხვა";
@@ -166,7 +161,6 @@
 "main-menu-title" = "მეტი";
 "main-menu-zero-faq" = "ვიკიპედია ზეროს ხშირი შეკითხვები";
 "menu-cancel-accessibility-label" = "გაუქმება";
-"menu-trash-accessibility-label" = "წაშლა";
 "navbar-title-mode-edit-wikitext-preview" = "წინასწარ გადახედვა";
 "nearby-distance-label-feet" = "$1 ფუტი";
 "nearby-distance-label-km" = "$1 კმ";
@@ -176,7 +170,6 @@
 "number-billions" = "$1 მლრდ.";
 "number-millions" = "$1 მლნ.";
 "number-thousands" = "$1 ათ.";
-"onboarding-wikipedia" = "ვიკიპედია";
 "open-link-cancel" = "გაუქმება";
 "page-edit-history" = "მთლიანი რედაქტირების ისტორია";
 "page-history-title" = "სტატიის ისტორია";
@@ -200,11 +193,6 @@
 "preference-summary-eventlogging-opt-in" = "ნება მიეცი ვიკიმედიას მოაგროვოს ინფორმაცია თუ როგორ იყენებ ამ აპლიკაციას, რათა ის უკეთესი გახადოს";
 "preference-title-eventlogging-opt-in" = "გამოყენების ანგარიშის გაგზავნა";
 "reference-title" = "სქოლიო $1";
-"save-action" = "დამახსოვრება";
-"saved-clear-all" = "გასუფთავება";
-"saved-pages-clear-cancel" = "გაუქმება";
-"saved-pages-clear-confirmation-heading" = "დარწმუნებული ხართ, რომ გსურთ ყველა დამასხოვრებული გვერდის წაშლა?";
-"saved-pages-clear-delete-all" = "დიახ, ყველაფრის წაშლა";
 "saved-pages-image-download-error" = "შეუძლებელია სურათების ჩაწერა ამ შენახული გვერდისთვის.";
 "saved-title" = "შენახულია";
 "search-did-you-mean" = "ხომ არ იგულისხმეთ $1?";
@@ -216,6 +204,7 @@
 "search-recent-title" = "ბოლოს მოძიებული";
 "search-result-redirected-from" = "გადამისამართებულია $1-დან";
 "search-title" = "ძიება";
+"settings-appearance" = "წაკითხვის დაყენება";
 "settings-help-and-feedback" = "დახმარება და უკუკავშირი";
 "settings-language-bar" = "ენების ჩვენება ძიებისას";
 "settings-my-languages" = "ჩემი ენები";
@@ -225,17 +214,12 @@
 "settings-support" = "მხარი დაუჭირე ვიკიპედიას";
 "settings-title" = "კონფიგურაცია";
 "share-article-name-on-wikipedia" = "„$1“ @ვიკიპედიაზე";
-"share-article-name-on-wikipedia-with-selected-text" = "„$1“ ვიკიპედიაზე: „$2“";
-"share-as-image" = "სურათად გაზიარება";
-"share-as-text" = "ტექსტად გაზიარება";
-"share-cancel" = "გაუქმება";
 "share-custom-menu-item" = "გაზიარება...";
 "status-saved-for-later" = "შემდგომისთვის შენახვა";
 "table-of-contents-button-label" = "სარჩევი";
 "table-of-contents-close-accessibility-hint" = "დახურვა";
 "table-of-contents-close-accessibility-label" = "სარჩევის დახურვა";
 "table-of-contents-heading" = "შინაარსი";
-"table-of-contents-popover-description" = "სტატიების მიმოხილვის მიღება";
 "table-title-other" = "მეტი ინფორმაცია";
 "top-read-header-generic" = "ვიკიპედია";
 "top-read-header-with-language" = "$1 ვიკიპედია";
@@ -243,13 +227,8 @@
 "two-factor-login-instructions" = "გთხოვთ, შეიყვანოთ ორფაქტორიანი დადასტურების კოდი";
 "two-factor-login-title" = "თქვენ ანგარიშში შესვლა";
 "two-factor-login-with-regular-code" = "გამოიყენეთ დადასტურების კოდი";
-"unsave-action" = "შენახულის გაუქმება";
 "welcome-explore-continue-button" = "დაწყება";
-"welcome-explore-tell-me-more" = "მითხარით მეტი";
 "welcome-explore-tell-me-more-done-button" = "მიღება";
-"welcome-languages-continue-button" = "გაგრძელება";
-"welcome-languages-title" = "ენები";
-"welcome-volunteer-thanks" = "$1 მადლობა!";
 "wikitext-download-failed" = "უახლესი ვერსიის ხილვა შეუძლებელია.";
 "wikitext-download-success" = "შიგთავსი ჩაიტვირთა.";
 "wikitext-downloading" = "შიგთავსი იტვირთება…";

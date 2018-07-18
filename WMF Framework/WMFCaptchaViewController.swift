@@ -30,44 +30,23 @@ extension UIStackView {
     func captchaHideSubtitle() -> Bool
 }
 
-public class WMFCaptcha: NSObject {
-    let captchaID: String
-    let captchaURL: URL
-    init(captchaID:String, captchaURL:URL) {
-        self.captchaID = captchaID
-        self.captchaURL = captchaURL
-    }
-    static func captcha(from requests: [[String : AnyObject]]) -> WMFCaptcha? {
-        guard
-            let captchaAuthenticationRequest = requests.first(where:{$0["id"]! as! String == "CaptchaAuthenticationRequest"}),
-            let fields = captchaAuthenticationRequest["fields"] as? [String : AnyObject],
-            let captchaId = fields["captchaId"] as? [String : AnyObject],
-            let captchaInfo = fields["captchaInfo"] as? [String : AnyObject],
-            let captchaIdValue = captchaId["value"] as? String,
-            let captchaInfoValue = captchaInfo["value"] as? String,
-            let captchaURL = URL(string: captchaInfoValue)
-            else {
-                return nil
-        }
-        return WMFCaptcha(captchaID: captchaIdValue, captchaURL: captchaURL)
-    }
-}
-
-class WMFCaptchaViewController: UIViewController, UITextFieldDelegate {
+class WMFCaptchaViewController: UIViewController, UITextFieldDelegate, Themeable {
 
     @IBOutlet fileprivate var captchaImageView: UIImageView!
     @IBOutlet fileprivate var captchaTextFieldTitleLabel: UILabel!
-    @IBOutlet fileprivate var captchaTextField: UITextField!
+    @IBOutlet fileprivate var captchaTextField: ThemeableTextField!
     @IBOutlet fileprivate var stackView: UIStackView!
     @IBOutlet fileprivate var titleLabel: UILabel!
     @IBOutlet fileprivate var subTitleLabel: WMFAuthLinkLabel!
     @IBOutlet fileprivate var infoButton: UIButton!
     @IBOutlet fileprivate var refreshButton: UIButton!
 
-    public var captchaDelegate: WMFCaptchaViewControllerDelegate?
+    @objc public weak var captchaDelegate: WMFCaptchaViewControllerDelegate?
     fileprivate let captchaResetter = WMFCaptchaResetter()
+    
+    fileprivate var theme = Theme.standard
 
-    var captcha: WMFCaptcha? {
+    @objc var captcha: WMFCaptcha? {
         didSet {
             guard let captcha = captcha else {
                 captchaTextField.text = nil
@@ -83,11 +62,11 @@ class WMFCaptchaViewController: UIViewController, UITextFieldDelegate {
         }
     }
     
-    var solution:String? {
+    @objc var solution:String? {
         get{
             guard
                 let captchaSolution = captchaTextField.text,
-                captchaSolution.characters.count > 0
+                captchaSolution.count > 0
                 else {
                     return nil
             }
@@ -157,23 +136,6 @@ class WMFCaptchaViewController: UIViewController, UITextFieldDelegate {
         return true
     }
     
-    fileprivate func firstArrangedSubviewWithRequiredNonZeroHeightConstraint() -> UIView? {
-        return stackView.arrangedSubviews.first(where: {arrangedSubview in
-            let requiredHeightConstraint = arrangedSubview.constraints.first(where: {constraint in
-                guard
-                    type(of: constraint) == NSLayoutConstraint.self,
-                    constraint.firstAttribute == .height,
-                    constraint.priority == UILayoutPriorityRequired,
-                    constraint.constant != 0
-                    else{
-                        return false
-                }
-                return true
-            })
-            return (requiredHeightConstraint != nil)
-        })
-    }
-
     override func viewDidLoad() {
         super.viewDidLoad()
         guard let captchaDelegate = captchaDelegate else{
@@ -181,14 +143,13 @@ class WMFCaptchaViewController: UIViewController, UITextFieldDelegate {
             return
         }
         
-        assert(firstArrangedSubviewWithRequiredNonZeroHeightConstraint() == nil, "\n\nAll stackview arrangedSubview height constraints need to have a priority of < 1000 so the stackview can collapse the 'cell' if the arrangedSubview's isHidden property is set to true. This arrangedSubview was determined to have a required height: \(String(describing: firstArrangedSubviewWithRequiredNonZeroHeightConstraint())). To fix reduce the priority of its height constraint to < 1000.\n\n")
+        assert(stackView.wmf_firstArrangedSubviewWithRequiredNonZeroHeightConstraint() == nil, stackView.wmf_anArrangedSubviewHasRequiredNonZeroHeightConstraintAssertString())
         
-        [titleLabel, captchaTextFieldTitleLabel].forEach{$0.textColor = .wmf_authTitle}
+        
 
         captcha = nil
         captchaTextFieldTitleLabel.text = WMFLocalizedString("field-captcha-title", value:"Enter the text you see above", comment: "Title for captcha field")
         captchaTextField.placeholder = WMFLocalizedString("field-captcha-placeholder", value:"CAPTCHA text", comment: "Placeholder text shown inside captcha field until user taps on it")
-        captchaTextField.wmf_addThinBottomBorder()
         titleLabel.text = WMFLocalizedString("account-creation-captcha-title", value:"CAPTCHA security check", comment: "Title for account creation CAPTCHA interface")
         
         // Reminder: used a label instead of a button for subtitle because of multi-line string issues with UIButton.
@@ -196,14 +157,13 @@ class WMFCaptchaViewController: UIViewController, UITextFieldDelegate {
         subTitleLabel.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(requestAnAccountTapped(_:))))
     
         subTitleLabel.isHidden = (captcha == nil) || captchaDelegate.captchaHideSubtitle()
-        
-        infoButton.tintColor = .wmf_blue
-        refreshButton.tintColor = .wmf_blue
 
         view.wmf_configureSubviewsForDynamicType()
+        
+        apply(theme: theme)
     }
     
-    func requestAnAccountTapped(_ recognizer: UITapGestureRecognizer) {
+    @objc func requestAnAccountTapped(_ recognizer: UITapGestureRecognizer) {
         wmf_openExternalUrl(URL.init(string: "https://en.wikipedia.org/wiki/Wikipedia:Request_an_account"))
     }
     
@@ -235,5 +195,19 @@ class WMFCaptchaViewController: UIViewController, UITextFieldDelegate {
             self.captcha = newCaptcha
             
         }, failure:failure)
+    }
+    
+    func apply(theme: Theme) {
+        self.theme = theme
+        guard viewIfLoaded != nil else {
+            return
+        }
+        
+        titleLabel.textColor = theme.colors.primaryText
+        captchaTextFieldTitleLabel.textColor = theme.colors.secondaryText
+        subTitleLabel.apply(theme: theme)
+        view.backgroundColor = theme.colors.paperBackground
+        captchaTextField.apply(theme: theme)
+        view.tintColor = theme.colors.link
     }
 }

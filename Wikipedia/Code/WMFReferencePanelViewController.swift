@@ -1,19 +1,29 @@
+import WMF
 
-import Foundation
-
-class WMFReferencePanelViewController: UIViewController {
+class WMFReferencePanelViewController: UIViewController, Themeable {
+    var theme = Theme.standard
+    
+    @objc(applyTheme:)
+    func apply(theme: Theme) {
+        self.theme = theme
+        guard viewIfLoaded != nil else {
+            return
+        }
+        
+    }
     
     @IBOutlet fileprivate var containerViewHeightConstraint:NSLayoutConstraint!
     @IBOutlet var containerView:UIView!
-    var reference:WMFReference?
+    @objc var reference:WMFReference?
     
     override func viewDidLoad() {
         super.viewDidLoad()
         view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.handleTapGestureRecognizer(_:))))
         embedContainerControllerView()
+        apply(theme: self.theme)
     }
 
-    func handleTapGestureRecognizer(_ recognizer: UITapGestureRecognizer) {
+    @objc func handleTapGestureRecognizer(_ recognizer: UITapGestureRecognizer) {
         switch recognizer.state {
         case .ended:
             self.presentingViewController?.dismiss(animated: true, completion: nil)
@@ -37,19 +47,20 @@ class WMFReferencePanelViewController: UIViewController {
     
     fileprivate lazy var containerController: WMFReferencePopoverMessageViewController = {
         let referenceVC = WMFReferencePopoverMessageViewController.wmf_initialViewControllerFromClassStoryboard()
+        if let trc = referenceVC as Themeable? {
+            trc.apply(theme: self.theme)
+        }
         referenceVC?.reference = self.reference
         return referenceVC!
     }()
 
     fileprivate func embedContainerControllerView() {
-        containerController.willMove(toParentViewController: self)
-        containerController.view.translatesAutoresizingMaskIntoConstraints = false
-        containerView.addSubview(containerController.view!)
-        containerView.bringSubview(toFront: containerController.view!)
-        containerController.view.mas_makeConstraints { make in
-            _ = make?.top.bottom().leading().and().trailing().equalTo()(self.containerView)
+        guard let view = containerController.view else {
+            return
         }
-        self.addChildViewController(containerController)
+        addChildViewController(containerController)
+        containerView.wmf_addSubviewWithConstraintsToEdges(view)
+        containerView.bringSubview(toFront: view)
         containerController.didMove(toParentViewController: self)
     }
 }

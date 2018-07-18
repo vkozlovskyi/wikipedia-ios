@@ -1,17 +1,12 @@
 #import "AppDelegate.h"
 @import UserNotifications;
 @import WMF.NSUserActivity_WMFExtensions;
-@import WMF.PiwikTracker_WMFExtensions;
 @import WMF.NSFileManager_WMFGroup;
 #import "BITHockeyManager+WMFExtensions.h"
 #import "WMFAppViewController.h"
 #import "UIApplicationShortcutItem+WMFShortcutItem.h"
 #import "Wikipedia-Swift.h"
-
-#if WMF_UX_STUDY_ENABLED
-#import <Appsee/Appsee.h>
-static NSString *const WMFAppSeeAPIKey = @QUOTE(WMF_APP_SEE_API_KEY);
-#endif
+#import "WMFQuoteMacros.h"
 
 static NSTimeInterval const WMFBackgroundFetchInterval = 10800; // 3 Hours
 
@@ -38,7 +33,6 @@ static NSTimeInterval const WMFBackgroundFetchInterval = 10800; // 3 Hours
         WMFZeroWarnWhenLeaving: @YES,
         WMFZeroOnDialogShownOnce: @NO,
         @"LastHousekeepingDate": [NSDate date],
-        @"SendUsageReports": @NO,
         @"AccessSavedPagesMessageShown": @NO
     }];
 }
@@ -74,7 +68,9 @@ static NSTimeInterval const WMFBackgroundFetchInterval = 10800; // 3 Hours
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
 
+#if WMF_IS_NEW_EVENT_LOGGING_ENABLED
     [[WMFEventLoggingService sharedInstance] start];
+#endif
 
     [application setMinimumBackgroundFetchInterval:WMFBackgroundFetchInterval];
 #if DEBUG
@@ -83,23 +79,12 @@ static NSTimeInterval const WMFBackgroundFetchInterval = 10800; // 3 Hours
     NSLog(@"\n\nSimulator container directory:\n\t%@\n\n",
           [[NSFileManager defaultManager] wmf_containerPath]);
 #endif
-
-#if WMF_UX_STUDY_ENABLED
-    if (WMFAppSeeAPIKey.length > 0) {
-        [Appsee start:WMFAppSeeAPIKey];
-    }
-#endif
-
     [NSUserDefaults wmf_migrateToWMFGroupUserDefaultsIfNecessary];
     [[NSUserDefaults wmf_userDefaults] wmf_migrateFontSizeMultiplier];
     [[BITHockeyManager sharedHockeyManager] wmf_setupAndStart];
-    [PiwikTracker wmf_start];
-
-    [[NSUserDefaults wmf_userDefaults] wmf_setAppLaunchDate:[NSDate date]];
-    [[NSUserDefaults wmf_userDefaults] wmf_setAppInstallDateIfNil:[NSDate date]];
 
     self.appNeedsResume = YES;
-    WMFAppViewController *vc = [WMFAppViewController initialAppViewControllerFromDefaultStoryBoard];
+    WMFAppViewController *vc = [[WMFAppViewController alloc] init];
     [UNUserNotificationCenter currentNotificationCenter].delegate = vc; // this needs to be set before the end of didFinishLaunchingWithOptions:
     [vc launchAppInWindow:self.window waitToResumeApp:self.appNeedsResume];
     self.appViewController = vc;
@@ -127,7 +112,9 @@ static NSTimeInterval const WMFBackgroundFetchInterval = 10800; // 3 Hours
 
 - (void)resumeAppIfNecessary {
     if (self.appNeedsResume) {
+#if WMF_IS_NEW_EVENT_LOGGING_ENABLED
         [[WMFEventLoggingService sharedInstance] start];
+#endif
         [self.appViewController hideSplashScreenAndResumeApp];
         self.appNeedsResume = false;
     }
@@ -141,6 +128,7 @@ static NSTimeInterval const WMFBackgroundFetchInterval = 10800; // 3 Hours
 
 - (BOOL)application:(UIApplication *)application continueUserActivity:(NSUserActivity *)userActivity restorationHandler:(void (^)(NSArray *restorableObjects))restorationHandler {
     BOOL result = [self.appViewController processUserActivity:userActivity
+                                                     animated:NO
                                                    completion:^{
                                                        [self resumeAppIfNecessary];
                                                    }];
@@ -157,19 +145,13 @@ static NSTimeInterval const WMFBackgroundFetchInterval = 10800; // 3 Hours
 
 #pragma mark - NSURL Handling
 
-- (BOOL)application:(UIApplication *)application
-              openURL:(NSURL *)url
-    sourceApplication:(NSString *)sourceApplication
-           annotation:(id)annotation {
-    return [self application:application openURL:url options:@{}];
-}
-
 - (BOOL)application:(UIApplication *)app
             openURL:(NSURL *)url
             options:(NSDictionary<NSString *, id> *)options {
     NSUserActivity *activity = [NSUserActivity wmf_activityForWikipediaScheme:url];
     if (activity) {
         BOOL result = [self.appViewController processUserActivity:activity
+                                                         animated:NO
                                                        completion:^{
                                                            [self resumeAppIfNecessary];
                                                        }];
@@ -190,7 +172,9 @@ static NSTimeInterval const WMFBackgroundFetchInterval = 10800; // 3 Hours
     // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
     // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
     [self updateDynamicIconShortcutItems];
+#if WMF_IS_NEW_EVENT_LOGGING_ENABLED
     [[WMFEventLoggingService sharedInstance] stop];
+#endif
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application {

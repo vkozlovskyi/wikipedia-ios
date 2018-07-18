@@ -2,6 +2,7 @@
 #import "WMFImageInfoController.h"
 
 @class MWKArticle;
+@import WMF.Swift;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -21,11 +22,18 @@ NS_ASSUME_NONNULL_BEGIN
 
 @end
 
+@protocol WMFImagePreviewingActionsDelegate <NSObject>
+
+- (void)shareImagePreviewActionSelectedWithImageController:(WMFImageGalleryViewController *)imageController
+                                   shareActivityController:(UIActivityViewController *)shareActivityController;
+
+@end
+
 /**
  *  This is an abstract base class do not use it directly.
  *  Instead use either the concrete article or POTD version below.
  */
-@interface WMFImageGalleryViewController : NYTPhotosViewController
+@interface WMFImageGalleryViewController : NYTPhotosViewController <WMFThemeable>
 
 @property (nonatomic, weak) id<WMFImageGalleryViewControllerReferenceViewDelegate> referenceViewDelegate;
 
@@ -41,13 +49,17 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)showImageAtIndex:(NSUInteger)index animated:(BOOL)animated;
 
+- (void)setOverlayViewTopBarHidden:(BOOL)hidden;
+
+@property (weak, nonatomic, nullable) id<WMFImagePreviewingActionsDelegate> imagePreviewingActionsDelegate;
+
 @end
 
 @interface WMFArticleImageGalleryViewController : WMFImageGalleryViewController <WMFImageInfoControllerDelegate>
 
-- (nullable instancetype)initWithArticle:(MWKArticle *)article;
+- (nullable instancetype)initWithArticle:(MWKArticle *)article theme:(WMFTheme *)theme overlayViewTopBarHidden:(BOOL)overlayViewTopBarHidden;
 
-- (nullable instancetype)initWithArticle:(MWKArticle *)article selectedImage:(nullable MWKImage *)image NS_DESIGNATED_INITIALIZER;
+- (nullable instancetype)initWithArticle:(MWKArticle *)article selectedImage:(nullable MWKImage *)image theme:(WMFTheme *)theme overlayViewTopBarHidden:(BOOL)overlayViewTopBarHidden NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)initWithPhotos:(nullable NSArray<id<NYTPhoto>> *)photos initialPhoto:(nullable id<NYTPhoto>)initialPhoto delegate:(nullable id<NYTPhotosViewControllerDelegate>)delegate NS_UNAVAILABLE;
 
@@ -59,7 +71,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface WMFPOTDImageGalleryViewController : WMFImageGalleryViewController
 
-- (instancetype)initWithDates:(NSArray<NSDate *> *)imageDates NS_DESIGNATED_INITIALIZER;
+- (instancetype)initWithDates:(NSArray<NSDate *> *)imageDates theme:(WMFTheme *)theme overlayViewTopBarHidden:(BOOL)overlayViewTopBarHidden NS_DESIGNATED_INITIALIZER;
 
 - (instancetype)initWithPhotos:(nullable NSArray<id<NYTPhoto>> *)photos initialPhoto:(nullable id<NYTPhoto>)initialPhoto delegate:(nullable id<NYTPhotosViewControllerDelegate>)delegate NS_UNAVAILABLE;
 

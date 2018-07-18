@@ -38,7 +38,6 @@ static NSString *const WMFHockeyAppIdentifier = @QUOTE(WMF_HOCKEYAPP_IDENTIFIER)
 #else
     [BITHockeyManager sharedHockeyManager].logLevel = BITLogLevelError;
 #endif
-    [BITHockeyManager sharedHockeyManager].metricsManager.disabled = NO;
     //We always wnat usrs to have the chance to send a crash report.
     if ([[BITHockeyManager sharedHockeyManager] crashManager].crashManagerStatus == BITCrashManagerStatusDisabled) {
         [[BITHockeyManager sharedHockeyManager] crashManager].crashManagerStatus = BITCrashManagerStatusAlwaysAsk;
@@ -82,7 +81,7 @@ NSString *const kHockeyAppPrivacyUrl = @"http://hockeyapp.net/privacy/";
         [customAlertView addAction:[UIAlertAction actionWithTitle:[NSString localizedStringWithFormat:WMFLocalizedStringWithDefaultValue(@"hockeyapp-alert-privacy", nil, nil, @"%1$@ privacy", @"Alert dialog button text for HockeyApp privacy policy. %1$@ will be replaced programmatically with the constant string 'HockeyApp'"), WMFHockeyAppServiceName]
                                                             style:UIAlertActionStyleDefault
                                                           handler:^(UIAlertAction *_Nonnull action) {
-                                                              [[UIApplication sharedApplication] openURL:[NSURL URLWithString:kHockeyAppPrivacyUrl]];
+                                                              [[UIApplication sharedApplication] openURL:[NSURL URLWithString:kHockeyAppPrivacyUrl] options:@{} completionHandler:NULL];
 
                                                           }]];
 

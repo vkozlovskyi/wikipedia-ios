@@ -35,11 +35,19 @@ import Foundation
                 continue
             }
             
-            if let articleURLDatabaseKey = (group.articleURL as NSURL?)?.wmf_articleDatabaseKey {
+            if let articleURLDatabaseKey = group.articleURL?.wmf_articleDatabaseKey {
                 referencedArticleKeys.insert(articleURLDatabaseKey)
             }
-            
-            guard let content = group.content else {
+
+            if let previewURL = group.contentPreview as? NSURL, let key = previewURL.wmf_articleDatabaseKey {
+                referencedArticleKeys.insert(key)
+            }
+
+            guard let fullContent = group.fullContent else {
+                continue
+            }
+
+            guard let content = fullContent.object as? [Any] else {
                 assertionFailure("Unknown Content Type")
                 continue
             }
@@ -76,7 +84,9 @@ import Foundation
                      (.story, _),
                      (.image, _),
                      (.notification, _),
-                     (.announcement, _):
+                     (.announcement, _),
+                     (.onThisDayEvent, _),
+                     (.theme, _):
                     break
                     
                 default:

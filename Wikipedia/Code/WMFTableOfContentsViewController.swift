@@ -1,5 +1,4 @@
 import UIKit
-import Masonry
 import WMF
 
 public protocol WMFTableOfContentsViewControllerDelegate : AnyObject {
@@ -26,54 +25,27 @@ public protocol WMFTableOfContentsViewControllerDelegate : AnyObject {
     func tableOfContentsDisplayModeIsModal() -> Bool;
 }
 
-open class WMFTableOfContentsViewController: UIViewController,
-                                               UITableViewDelegate,
-                                               UITableViewDataSource,
-                                               WMFTableOfContentsAnimatorDelegate {
+open class WMFTableOfContentsViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, WMFTableOfContentsAnimatorDelegate, Themeable {
+    
+    fileprivate var theme = Theme.standard
     
     let tableOfContentsFunnel: ToCInteractionFunnel
 
     let semanticContentAttributeOverride: UISemanticContentAttribute
     
-    var displaySide = WMFTableOfContentsDisplaySide.left {
+    @objc var displaySide = WMFTableOfContentsDisplaySide.left {
         didSet {
             animator?.displaySide = displaySide
         }
     }
     
-    var displayMode = WMFTableOfContentsDisplayMode.modal {
+    @objc var displayMode = WMFTableOfContentsDisplayMode.modal {
         didSet {
             animator?.displayMode = displayMode
         }
     }
 
-    lazy var tableView: UITableView = {
-        
-        let tv = UITableView(frame: CGRect.zero, style: .grouped)
-        
-        assert(tv.style == .grouped, "Use grouped UITableView layout so our WMFTableOfContentsHeader's autolayout works properly. Formerly we used a .Plain table style and set self.tableView.tableHeaderView to our WMFTableOfContentsHeader, but doing so caused autolayout issues for unknown reasons. Instead, we now use a grouped layout and use WMFTableOfContentsHeader with viewForHeaderInSection, which plays nicely with autolayout. (grouped layouts also used because they allow the header to scroll *with* the section cells rather than floating)")
-        
-        tv.separatorStyle = .none
-        tv.delegate = self
-        tv.dataSource = self
-        tv.backgroundView = nil
-
-        tv.register(WMFTableOfContentsCell.wmf_classNib(),
-                              forCellReuseIdentifier: WMFTableOfContentsCell.reuseIdentifier())
-        tv.estimatedRowHeight = 41
-        tv.rowHeight = UITableViewAutomaticDimension
-        
-        tv.sectionHeaderHeight = UITableViewAutomaticDimension
-        tv.estimatedSectionHeaderHeight = 32
-        
-        tv.contentInset = UIEdgeInsetsMake(UIApplication.shared.statusBarFrame.size.height, 0, 0, 0)
-        tv.separatorStyle = .none
-
-        //add to the view now to ensure view did load is kicked off
-        self.view.addSubview(tv)
-
-        return tv
-    }()
+    @objc let tableView: UITableView = UITableView(frame: .zero, style: .grouped)
 
     var items: [TableOfContentsItem] {
         didSet{
@@ -96,7 +68,9 @@ open class WMFTableOfContentsViewController: UIViewController,
     public required init(presentingViewController: UIViewController?,
                          items: [TableOfContentsItem],
                          delegate: WMFTableOfContentsViewControllerDelegate,
-                         semanticContentAttribute: UISemanticContentAttribute) {
+                         semanticContentAttribute: UISemanticContentAttribute,
+                         theme: Theme) {
+        self.theme = theme
         self.semanticContentAttributeOverride = semanticContentAttribute
         self.items = items
         self.delegate = delegate
@@ -104,13 +78,15 @@ open class WMFTableOfContentsViewController: UIViewController,
         super.init(nibName: nil, bundle: nil)
         if let presentingViewController = presentingViewController {
             animator = WMFTableOfContentsAnimator(presentingViewController: presentingViewController, presentedViewController: self)
+            animator?.apply(theme: theme)
             animator?.delegate = self
             animator?.displaySide = displaySide
             animator?.displayMode = displayMode
         }
         modalPresentationStyle = .custom
         transitioningDelegate = self.animator
-                            
+        edgesForExtendedLayout = .all
+        extendedLayoutIncludesOpaqueBars = true
     }
     
     public required init?(coder aDecoder: NSCoder) {
@@ -126,7 +102,7 @@ open class WMFTableOfContentsViewController: UIViewController,
         }
     }
 
-    open func selectAndScrollToItem(atIndex index: Int, animated: Bool) {
+    @objc open func selectAndScrollToItem(atIndex index: Int, animated: Bool) {
         guard index < items.count else {
             assertionFailure("Trying to select/scroll to an item put of range")
             return
@@ -150,6 +126,11 @@ open class WMFTableOfContentsViewController: UIViewController,
         }
         guard let indexPath = indexPathForItem(item) else {
             assertionFailure("No indexPath known for TOC item \(item)")
+            return
+        }
+
+        guard indexPath.section < tableView.numberOfSections && indexPath.row < tableView.numberOfRows(inSection: indexPath.section) else {
+            assertionFailure("Attempted to select out of range item \(item)")
             return
         }
         
@@ -208,21 +189,35 @@ open class WMFTableOfContentsViewController: UIViewController,
     // MARK: - UIViewController
     open override func viewDidLoad() {
         super.viewDidLoad()
-        
+
+        assert(tableView.style == .grouped, "Use grouped UITableView layout so our WMFTableOfContentsHeader's autolayout works properly. Formerly we used a .Plain table style and set self.tableView.tableHeaderView to our WMFTableOfContentsHeader, but doing so caused autolayout issues for unknown reasons. Instead, we now use a grouped layout and use WMFTableOfContentsHeader with viewForHeaderInSection, which plays nicely with autolayout. (grouped layouts also used because they allow the header to scroll *with* the section cells rather than floating)")
+
+        tableView.separatorStyle = .none
+        tableView.delegate = self
+        tableView.dataSource = self
+        tableView.backgroundView = nil
+
+        tableView.register(WMFTableOfContentsCell.wmf_classNib(),
+                    forCellReuseIdentifier: WMFTableOfContentsCell.reuseIdentifier())
+        tableView.estimatedRowHeight = 41
+        tableView.rowHeight = UITableViewAutomaticDimension
+
+        tableView.sectionHeaderHeight = UITableViewAutomaticDimension
+        tableView.estimatedSectionHeaderHeight = 32
+        tableView.separatorStyle = .none
+
+        view.wmf_addSubviewWithConstraintsToEdges(tableView)
+
+        if #available(iOS 11.0, *) {
+            tableView.contentInsetAdjustmentBehavior = .never
+        }
+        tableView.semanticContentAttribute = self.semanticContentAttributeOverride
+
         view.semanticContentAttribute = semanticContentAttributeOverride
-        tableView.semanticContentAttribute = semanticContentAttributeOverride
-        
-        tableView.mas_makeConstraints { make in
-            _ = make?.top.bottom().leading().and().trailing().equalTo()(self.view)
-        }
-        
-        if let delegate = delegate, delegate.tableOfContentsDisplayModeIsModal() {
-            tableView.backgroundColor = .wmf_modalTableOfContentsBackground
-        } else {
-            tableView.backgroundColor = .wmf_inlineTableOfContentsBackground
-        }
 
         automaticallyAdjustsScrollViewInsets = false
+
+        apply(theme: theme)
     }
 
     open override func viewWillAppear(_ animated: Bool) {
@@ -236,9 +231,6 @@ open class WMFTableOfContentsViewController: UIViewController,
         deselectAllRows()
     }
     
-    open override var preferredStatusBarStyle : UIStatusBarStyle {
-        return .default
-    }
     
     // MARK: - UITableViewDataSource
     open func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -262,8 +254,9 @@ open class WMFTableOfContentsViewController: UIViewController,
         
         cell.titleIndentationLevel = item.indentationLevel
         cell.titleLabel.text = item.titleText
-        cell.titleLabel.font = UIFont.wmf_preferredFontForFontFamily(item.itemType.titleFontFamily, withTextStyle: item.itemType.titleFontTextStyle, compatibleWithTraitCollection: self.traitCollection)
-        cell.titleColor = item.itemType.titleColor
+        cell.titleLabel.font = UIFont.wmf_font(item.itemType.titleTextStyle, compatibleWithTraitCollection: self.traitCollection)
+        cell.selectionColor = theme.colors.link
+        cell.titleColor = item.itemType == .primary ? theme.colors.primaryText : theme.colors.secondaryText
         
         cell.setNeedsLayout()
 
@@ -282,6 +275,7 @@ open class WMFTableOfContentsViewController: UIViewController,
             header?.backgroundColor = tableView.backgroundColor
             header?.semanticContentAttribute = semanticContentAttributeOverride
             header?.contentsLabel.semanticContentAttribute = semanticContentAttributeOverride
+            header?.contentsLabel.textColor = theme.colors.secondaryText
             return header
         } else {
             return nil
@@ -324,6 +318,19 @@ open class WMFTableOfContentsViewController: UIViewController,
     open override func accessibilityPerformMagicTap() -> Bool {
         return didRequestClose(nil)
     }
-
+    
+    public func apply(theme: Theme) {
+        self.theme = theme
+        self.animator?.apply(theme: theme)
+        guard viewIfLoaded != nil else {
+            return
+        }
+        if let delegate = delegate, delegate.tableOfContentsDisplayModeIsModal() {
+            tableView.backgroundColor = theme.colors.paperBackground
+        } else {
+            tableView.backgroundColor = theme.colors.midBackground
+        }
+        tableView.reloadData()
+    }
 }
 

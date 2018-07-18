@@ -28,7 +28,9 @@
                 delay:0.0f
                             options:UIViewAnimationOptionBeginFromCurrentState
                          animations:^{
-                             self.contentOffset = offset;
+                             CGPoint safeOffset = CGPointMake(offset.x, MAX(0 - self.contentInset.top, MIN(self.contentSize.height - self.bounds.size.height, offset.y)));
+
+                             self.contentOffset = safeOffset;
                          }
                          completion:completion];
     } else {

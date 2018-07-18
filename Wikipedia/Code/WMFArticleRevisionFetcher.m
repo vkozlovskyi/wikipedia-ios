@@ -18,10 +18,13 @@
     if (self) {
         self.requestManager = [AFHTTPSessionManager wmf_createDefaultManager];
         self.requestManager.responseSerializer =
-            [WMFMantleJSONResponseSerializer serializerForArrayOf:[WMFRevisionQueryResults class]
-                                                      fromKeypath:@"query.pages"];
+            [WMFMantleJSONResponseSerializer serializerForArrayOf:[WMFRevisionQueryResults class] fromKeypath:@"query.pages" emptyValueForJSONKeypathAllowed:NO];
     }
     return self;
+}
+
+- (void)dealloc {
+    [self.requestManager invalidateSessionCancelingTasks:YES];
 }
 
 - (void)setTimeoutInterval:(NSTimeInterval)timeoutInterval {
@@ -44,8 +47,8 @@
             @"titles": articleURL.wmf_title,
             @"rvlimit": @(numberOfResults),
             @"rvendid": @(revisionId),
-            @"rvprop": WMFJoinedPropertyParameters(@[@"ids", @"size", @"flags"]),
-            @"pilicense": @"any"
+            @"rvprop": WMFJoinedPropertyParameters(@[@"ids", @"size", @"flags"]) //,
+            //@"pilicense": @"any"
         }
         retry:^(NSURLSessionDataTask *retryOperation, NSError *error) {
 

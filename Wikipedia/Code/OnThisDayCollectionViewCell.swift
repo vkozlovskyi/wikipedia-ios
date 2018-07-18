@@ -1,97 +1,70 @@
 import UIKit
 
-@objc(WMFOnThisDayCollectionViewCell)
-class OnThisDayCollectionViewCell: SideScrollingCollectionViewCell {
+public class OnThisDayCollectionViewCell: SideScrollingCollectionViewCell {
 
-    let timelineView = OnThisDayTimelineView()
-
-    @objc(configureForExploreWithOnThisDayEvent:previousEvent:dataStore:layoutOnly:)
-    func configureForExplore(with onThisDayEvent: WMFFeedOnThisDayEvent,  previousEvent: WMFFeedOnThisDayEvent, dataStore: MWKDataStore, layoutOnly: Bool) {
-        bottomTitleLabel.textColor = .wmf_blue
-        bottomTitleLabel.text = previousEvent.yearWithEraString()
-        configure(with: onThisDayEvent, dataStore: dataStore, layoutOnly: layoutOnly, shouldAnimateDots: false)
-    }
-    
-    @objc(configureWithOnThisDayEvent:dataStore:layoutOnly:shouldAnimateDots:)
-    func configure(with onThisDayEvent: WMFFeedOnThisDayEvent, dataStore: MWKDataStore, layoutOnly: Bool, shouldAnimateDots: Bool) {
-        let previews = onThisDayEvent.articlePreviews ?? []
-        let currentYear = Calendar.current.component(.year, from: Date())
+    public let timelineView = OnThisDayTimelineView()
         
-        titleLabel.textColor = .wmf_blue
-        subTitleLabel.textColor = .wmf_customGray
-        
-        titleLabel.text = onThisDayEvent.yearWithEraString()
-
-        if let eventYear = onThisDayEvent.year {
-            let yearsSinceEvent = currentYear - eventYear.intValue
-            subTitleLabel.text = String.localizedStringWithFormat(WMFLocalizedDateFormatStrings.yearsAgo(), yearsSinceEvent)
-        } else {
-            subTitleLabel.text = nil
-        }
-            
-        descriptionLabel.text = onThisDayEvent.text
-        
-        articles = previews.map { (articlePreview) -> CellArticle in
-            return CellArticle(articleURL:articlePreview.articleURL, title: articlePreview.displayTitle, description: articlePreview.descriptionOrSnippet(), imageURL: articlePreview.thumbnailURL)
-        }
-        
-        let articleLanguage = (onThisDayEvent.articlePreviews?.first?.articleURL as NSURL?)?.wmf_language
-        descriptionLabel.accessibilityLanguage = articleLanguage
-        semanticContentAttributeOverride = MWLanguageInfo.semanticContentAttribute(forWMFLanguage: articleLanguage)
-        
-        isImageViewHidden = true
-        timelineView.shouldAnimateDots = shouldAnimateDots
-
-        setNeedsLayout()
-    }
-    
-    static let descriptionTextStyle = UIFontTextStyle.subheadline
-    var descriptionFont = UIFont.preferredFont(forTextStyle: descriptionTextStyle)
-    
-    static let titleTextStyle = UIFontTextStyle.title3
-    var titleFont = UIFont.preferredFont(forTextStyle: titleTextStyle)
-    
-    static let subTitleTextStyle = UIFontTextStyle.subheadline
-    var subTitleFont = UIFont.preferredFont(forTextStyle: subTitleTextStyle)
-    
-    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
+    override public func updateFonts(with traitCollection: UITraitCollection) {
+        super.updateFonts(with: traitCollection)
+        let titleFont = UIFont.wmf_font(.title3, compatibleWithTraitCollection: traitCollection)
         titleLabel.font = titleFont
-        bottomTitleLabel.font = titleFont
+        
+        let subTitleFont = UIFont.wmf_font(.subheadline, compatibleWithTraitCollection: traitCollection)
         subTitleLabel.font = subTitleFont
-        descriptionLabel.font = descriptionFont
+        descriptionLabel.font = subTitleFont
     }
     
-    override func sizeThatFits(_ size: CGSize, apply: Bool) -> CGSize {
+    let timelineViewWidth:CGFloat = 66.0
 
-        let timelineViewWidth:CGFloat = 66.0
-        timelineView.frame = CGRect(x: bounds.origin.x, y: bounds.origin.y, width: timelineViewWidth, height: bounds.size.height)
-        
-        margins.left = timelineViewWidth
+    override public func sizeThatFits(_ size: CGSize, apply: Bool) -> CGSize {
+        let x: CGFloat
+        if semanticContentAttributeOverride == .forceRightToLeft {
+            x = size.width - timelineViewWidth - layoutMargins.right
+            layoutMarginsAdditions = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: timelineViewWidth)
+        } else {
+            x = layoutMargins.left
+            layoutMarginsAdditions = UIEdgeInsets(top: 0, left: timelineViewWidth, bottom: 0, right: 0)
+        }
+        if apply {
+            timelineView.frame = CGRect(x: x, y: 0, width: timelineViewWidth, height: size.height)
+        }
         return super.sizeThatFits(size, apply: apply)
     }
     
     override open func setup() {
         super.setup()
-        collectionView.backgroundColor = .clear
+        timelineView.isOpaque = true
         insertSubview(timelineView, belowSubview: collectionView)
     }
     
-    var pauseDotsAnimation: Bool = true {
+    public var pauseDotsAnimation: Bool = true {
         didSet {
             timelineView.pauseDotsAnimation = pauseDotsAnimation
         }
     }
     
-    override var isHidden: Bool {
+    override public var isHidden: Bool {
         didSet {
             pauseDotsAnimation = isHidden
         }
     }
     
-    override func layoutSublayers(of layer: CALayer) {
+    override public func layoutSublayers(of layer: CALayer) {
         super.layoutSublayers(of: layer)
-        timelineView.topDotsY = titleLabel.convert(titleLabel.bounds, to: timelineView).midY
-        timelineView.bottomDotY = bottomTitleLabel.convert(bottomTitleLabel.bounds, to: timelineView).midY
+        timelineView.dotsY = titleLabel.convert(titleLabel.bounds, to: timelineView).midY
+    }
+    
+    override public func apply(theme: Theme) {
+        super.apply(theme: theme)
+        timelineView.backgroundColor = theme.colors.paperBackground
+        timelineView.tintColor = theme.colors.link
+        titleLabel.textColor = theme.colors.link
+        subTitleLabel.textColor = theme.colors.secondaryText
+        collectionView.backgroundColor = .clear
+    }
+    
+    override public func updateBackgroundColorOfLabels() {
+        super.updateBackgroundColorOfLabels()
+        timelineView.backgroundColor = labelBackgroundColor
     }
 }

@@ -114,6 +114,12 @@ static id _sharedInstance;
     }];
 }
 
+- (NSArray<NSURL *> *)preferredSiteURLs {
+    return [[self preferredLanguages] wmf_mapAndRejectNil:^NSURL * _Nullable(MWKLanguageLink * _Nonnull obj) {
+        return [obj siteURL];
+    }];
+}
+
 - (NSArray<MWKLanguageLink *> *)otherLanguages {
     return [self.allLanguages wmf_select:^BOOL(MWKLanguageLink *langLink) {
         return ![self.preferredLanguages containsObject:langLink];
@@ -122,6 +128,7 @@ static id _sharedInstance;
 
 #pragma mark - Preferred Language Management
 
+// Used for testing only.
 - (void)addPreferredLanguage:(MWKLanguageLink *)language {
     NSParameterAssert(language);
     NSMutableArray<NSString *> *langCodes = [[self readPreferredLanguageCodes] mutableCopy];
@@ -135,6 +142,7 @@ static id _sharedInstance;
     NSMutableArray<NSString *> *langCodes = [[self readPreferredLanguageCodes] mutableCopy];
     [langCodes removeObject:language.languageCode];
     [langCodes addObject:language.languageCode];
+    self.mostRecentlyModifiedPreferredLanguage = language;
     [self savePreferredLanguageCodes:langCodes];
 }
 
@@ -151,12 +159,14 @@ static id _sharedInstance;
     }
     [langCodes removeObject:language.languageCode];
     [langCodes insertObject:language.languageCode atIndex:(NSUInteger)newIndex];
+    self.mostRecentlyModifiedPreferredLanguage = language;
     [self savePreferredLanguageCodes:langCodes];
 }
 
 - (void)removePreferredLanguage:(MWKLanguageLink *)language {
     NSMutableArray<NSString *> *langCodes = [[self readPreferredLanguageCodes] mutableCopy];
     [langCodes removeObject:language.languageCode];
+    self.mostRecentlyModifiedPreferredLanguage = language;
     [self savePreferredLanguageCodes:langCodes];
 }
 
@@ -181,10 +191,10 @@ static id _sharedInstance;
     NSArray<NSString *> *osLanguages = [self readOSPreferredLanguageCodes];
 
     if (preferredLanguages.count == 0) {
-        [osLanguages enumerateObjectsWithOptions:NSEnumerationReverse
+        [osLanguages enumerateObjectsWithOptions:0
                                       usingBlock:^(id _Nonnull obj, NSUInteger idx, BOOL *_Nonnull stop) {
                                           if (![preferredLanguages containsObject:obj]) {
-                                              [preferredLanguages insertObject:obj atIndex:0];
+                                              [preferredLanguages addObject:obj];
                                           }
                                       }];
     }
@@ -194,6 +204,7 @@ static id _sharedInstance;
 }
 
 - (void)savePreferredLanguageCodes:(NSArray<NSString *> *)languageCodes {
+    self.previousPreferredLanguages = self.preferredLanguages;
     NSString *previousAppLanguageCode = self.appLanguage.languageCode;
     [self willChangeValueForKey:WMF_SAFE_KEYPATH(self, allLanguages)];
     [[NSUserDefaults wmf_userDefaults] setObject:languageCodes forKey:WMFPreviousLanguagesKey];

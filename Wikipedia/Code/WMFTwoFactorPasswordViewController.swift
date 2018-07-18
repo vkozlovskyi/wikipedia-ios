@@ -11,26 +11,28 @@ fileprivate enum WMFTwoFactorTokenDisplayMode {
     case longAlphaNumeric
 }
 
-class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDelegate, WMFDeleteBackwardReportingTextFieldDelegate {
+class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDelegate, WMFDeleteBackwardReportingTextFieldDelegate, Themeable {
     
     @IBOutlet fileprivate var titleLabel: UILabel!
     @IBOutlet fileprivate var subTitleLabel: UILabel!
     @IBOutlet fileprivate var tokenLabel: UILabel!
     @IBOutlet fileprivate var tokenAlertLabel: UILabel!
-    @IBOutlet fileprivate var oathTokenFields: [UITextField]!
+    @IBOutlet fileprivate var oathTokenFields: [ThemeableTextField]!
     @IBOutlet fileprivate var oathTokenFieldsStackView: UIStackView!
     @IBOutlet fileprivate var displayModeToggle: UILabel!
-    @IBOutlet fileprivate var backupOathTokenField: UITextField!
+    @IBOutlet fileprivate var backupOathTokenField: ThemeableTextField!
     @IBOutlet fileprivate var loginButton: WMFAuthButton!
     
-    public var funnel: LoginFunnel?
+    fileprivate var theme = Theme.standard
+    
+    public var funnel: WMFLoginFunnel?
     
     public var userName:String?
     public var password:String?
     public var captchaID:String?
     public var captchaWord:String?
     
-    func displayModeToggleTapped(_ recognizer: UITapGestureRecognizer) {
+    @objc func displayModeToggleTapped(_ recognizer: UITapGestureRecognizer) {
         guard recognizer.state == .ended else {
             return
         }
@@ -89,7 +91,7 @@ class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDe
         }
     }
     
-    @IBAction func textFieldDidChange(_ sender: UITextField) {
+    @IBAction func textFieldDidChange(_ sender: ThemeableTextField) {
         enableProgressiveButton(areRequiredFieldsPopulated())
         guard
             displayMode == .shortNumeric,
@@ -100,7 +102,7 @@ class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDe
         makeNextTextFieldFirstResponder(currentTextField: sender, direction: .forward)
     }
     
-    fileprivate func makeNextTextFieldFirstResponder(currentTextField: UITextField, direction: WMFTwoFactorNextFirstResponderDirection) {
+    fileprivate func makeNextTextFieldFirstResponder(currentTextField: ThemeableTextField, direction: WMFTwoFactorNextFirstResponderDirection) {
         guard let index = oathTokenFields.index(of: currentTextField) else {
             return
         }
@@ -114,7 +116,7 @@ class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDe
         oathTokenFields[nextIndex].becomeFirstResponder()
     }
     
-    func wmf_deleteBackward(_ sender: UITextField) {
+    func wmf_deleteBackward(_ sender: WMFDeleteBackwardReportingTextField) {
         guard
             displayMode == .shortNumeric,
             sender.text.wmf_safeCharacterCount == 0
@@ -176,8 +178,8 @@ class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDe
         // Support numeric code pasting when showing individual digit UITextFields - i.e. when displayMode == .shortNumeric.
         // If displayMode == .shortNumeric 'string' has been verified to be comprised of decimal digits by this point.
         // Backup code (when displayMode == .longAlphaNumeric) pasting already works as-is because it uses a single UITextField.
-        if displayMode == .shortNumeric && string.characters.count == oathTokenFields.count{
-            for (field, char) in zip(oathTokenFields, string.characters) {
+        if displayMode == .shortNumeric && string.count == oathTokenFields.count{
+            for (field, char) in zip(oathTokenFields, string) {
                 field.text = String(char)
             }
             enableProgressiveButton(areRequiredFieldsPopulated())
@@ -185,7 +187,7 @@ class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDe
         }
         
         // Enforce max count.
-        let countIfAllowed = textField.text.wmf_safeCharacterCount + string.characters.count
+        let countIfAllowed = textField.text.wmf_safeCharacterCount + string.count
         return (countIfAllowed <= maxTextFieldCharacterCount())
     }
     
@@ -209,12 +211,13 @@ class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDe
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        [titleLabel, tokenLabel].forEach{$0.textColor = .wmf_authTitle}
-        tokenAlertLabel.textColor = .wmf_red
-
         oathTokenFields.sort { $0.tag < $1.tag }
-        oathTokenFields.forEach {$0.wmf_addThinBottomBorder()}
 
+        oathTokenFields.forEach {
+            $0.rightViewMode = .never
+            $0.textAlignment = .center
+        }
+        
         // Cast fields once here to set 'deleteBackwardDelegate' rather than casting everywhere else UITextField is expected.
         if let fields = oathTokenFields as? [WMFDeleteBackwardReportingTextField] {
             fields.forEach {$0.deleteBackwardDelegate = self}
@@ -223,20 +226,22 @@ class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDe
         }
         
         navigationItem.leftBarButtonItem = UIBarButtonItem(image: UIImage(named:"close"), style: .plain, target:self, action:#selector(closeButtonPushed(_:)))
-        
+        navigationItem.leftBarButtonItem?.accessibilityLabel = CommonStrings.closeButtonAccessibilityLabel
+
         loginButton.setTitle(WMFLocalizedString("two-factor-login-continue", value:"Continue log in", comment:"Button text for finishing two factor login"), for: .normal)
         titleLabel.text = WMFLocalizedString("two-factor-login-title", value:"Log in to your account", comment:"Title for two factor login interface")
         subTitleLabel.text = WMFLocalizedString("two-factor-login-instructions", value:"Please enter two factor verification code", comment:"Instructions for two factor login interface")
         
-        backupOathTokenField.wmf_addThinBottomBorder()
         displayMode = .shortNumeric
 
         displayModeToggle.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(displayModeToggleTapped(_:))))
 
         view.wmf_configureSubviewsForDynamicType()
+        
+        apply(theme: theme)
     }
     
-    func closeButtonPushed(_ : UIBarButtonItem) {
+    @objc func closeButtonPushed(_ : UIBarButtonItem) {
         dismiss(animated: true, completion: nil)
     }
     
@@ -272,7 +277,10 @@ class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDe
                    success: { _ in
                     let loggedInMessage = String.localizedStringWithFormat(WMFLocalizedString("main-menu-account-title-logged-in", value:"Logged in as %1$@", comment:"Header text used when account is logged in. %1$@ will be replaced with current username."), userName)
                     WMFAlertManager.sharedInstance.showSuccessAlert(loggedInMessage, sticky: false, dismissPreviousAlerts: true, tapCallBack: nil)
-                    self.dismiss(animated: true, completion: nil)
+                    let presenter = self.presentingViewController
+                    self.dismiss(animated: true, completion: {
+                        presenter?.wmf_showEnableReadingListSyncPanel(theme: self.theme, oncePerLogin: true)
+                    })
                     self.funnel?.logSuccess()
             }, failure: { error in
                 
@@ -309,10 +317,36 @@ class WMFTwoFactorPasswordViewController: WMFScrollViewController, UITextFieldDe
             assertionFailure("Expected view controller(s) not found")
             return
         }
+        changePasswordVC.apply(theme: theme)
         dismiss(animated: true, completion: {
             changePasswordVC.userName = self.userName
-            let navigationController = UINavigationController.init(rootViewController: changePasswordVC)
+            let navigationController = WMFThemeableNavigationController(rootViewController: changePasswordVC, theme: self.theme)
             presenter.present(navigationController, animated: true, completion: nil)
         })
+    }
+    
+    func apply(theme: Theme) {
+        self.theme = theme
+        guard viewIfLoaded != nil else {
+            return
+        }
+        
+        view.backgroundColor = theme.colors.paperBackground
+        view.tintColor = theme.colors.link
+        
+        tokenAlertLabel.textColor = theme.colors.error
+        
+        var fields = oathTokenFields ?? []
+        fields.append(backupOathTokenField)
+        
+        for textField in fields {
+            textField.apply(theme: theme)
+        }
+        
+        titleLabel.textColor = theme.colors.primaryText
+        tokenLabel.textColor = theme.colors.secondaryText
+        
+        displayModeToggle.textColor = theme.colors.link
+        subTitleLabel.textColor = theme.colors.secondaryText
     }
 }

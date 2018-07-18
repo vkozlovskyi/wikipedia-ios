@@ -33,7 +33,7 @@
     NSString *testURLString = @"http://test/request.png";
     self.testURL = [NSURL URLWithString:testURLString];
 
-    UIImage *testImage = [UIImage imageNamed:@"image-placeholder"];
+    UIImage *testImage = [UIImage imageNamed:@"wikipedia-wordmark"];
     self.stubbedData = UIImagePNGRepresentation(testImage);
 
     [[LSNocilla sharedInstance] start];
@@ -41,8 +41,9 @@
 }
 
 - (void)tearDown {
-    [super tearDown];
+    [[LSNocilla sharedInstance] stop];
     [[UIImageView faceDetectionCache] clearCache];
+    [super tearDown];
 }
 
 #pragma mark - Fetch Tests

@@ -1,21 +1,22 @@
 #import "WMFUnderlineButton.h"
-#import "UIFont+WMFStyle.h"
-@import Masonry;
+@import WMF;
 
+IB_DESIGNABLE
 @interface WMFUnderlineButton ()
 
 @property (nonatomic, strong) UIView *underline;
+@property (nonatomic) IBInspectable CGFloat underlineHeight;
+@property (nonatomic) IBInspectable BOOL useDefaultFont;
 
 @end
 
 @implementation WMFUnderlineButton
 
-- (instancetype)initWithCoder:(NSCoder *)coder {
-    self = [super initWithCoder:coder];
+- (void)awakeFromNib {
+    [super awakeFromNib];
     if (self) {
         [self configureStyle];
     }
-    return self;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame {
@@ -26,8 +27,18 @@
     return self;
 }
 
+- (instancetype)initWithCoder:(NSCoder *)coder {
+    self = [super initWithCoder:coder];
+    if (self) {
+        [self inspectableDefaults];
+    }
+    return self;
+}
+
 - (void)configureStyle {
-    self.titleLabel.font = [UIFont wmf_subtitle];
+    if (self.useDefaultFont) {
+        self.titleLabel.font = [UIFont wmf_fontForDynamicTextStyle:[WMFDynamicTextStyle subheadline]];
+    }
     [self addUnderline];
     [self setTitleColor:self.tintColor forState:UIControlStateSelected];
 }
@@ -39,21 +50,16 @@
 }
 
 - (void)addUnderline {
-    self.underlineHeight = 1.0;
+    CGFloat underlineHeight = self.underlineHeight;
     UIView *v = [[UIView alloc] initWithFrame:CGRectZero];
     v.backgroundColor = self.tintColor;
+    CGRect underlineRect = CGRectMake(0, self.bounds.size.height - underlineHeight, self.bounds.size.width, underlineHeight);
+    underlineRect = CGRectInset(underlineRect, 2, 0);
+    v.frame = underlineRect;
+    v.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
     [self addSubview:v];
     self.underline = v;
-    [self updateUnderlineConstraints];
     [self setSelected:self.selected];
-}
-
-- (void)updateUnderlineConstraints {
-    [self.underline mas_remakeConstraints:^(MASConstraintMaker *make) {
-        make.leading.and.trailing.equalTo(self);
-        make.height.equalTo(@(self.underlineHeight));
-        make.bottom.equalTo(self.mas_bottom);
-    }];
 }
 
 - (void)setSelected:(BOOL)selected {
@@ -63,6 +69,11 @@
     } else {
         self.underline.alpha = 0.0;
     }
+}
+
+- (void)inspectableDefaults {
+    _useDefaultFont = YES;
+    _underlineHeight = 1.0;
 }
 
 @end

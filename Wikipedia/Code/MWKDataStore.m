@@ -8,6 +8,7 @@
 
 // Emitted when article state changes. Can be used for things such as being notified when article 'saved' state changes.
 NSString *const WMFArticleUpdatedNotification = @"WMFArticleUpdatedNotification";
+NSString *const WMFLibraryVersionKey = @"WMFLibraryVersion";
 
 NSString *const MWKDataStoreValidImageSitePrefix = @"//upload.wikimedia.org/";
 
@@ -23,6 +24,8 @@ static NSString *const MWKImageInfoFilename = @"ImageInfo.plist";
 @property (readwrite, strong, nonatomic) MWKSavedPageList *savedPageList;
 @property (readwrite, strong, nonatomic) MWKRecentSearchList *recentSearchList;
 @property (readwrite, strong, nonatomic) ArticleLocationController *articleLocationController;
+
+@property (nonatomic, strong) WMFReadingListsController *readingListsController;
 
 @property (nonatomic, strong) WMFExploreFeedContentController *feedContentController;
 
@@ -71,11 +74,11 @@ static NSString *const MWKImageInfoFilename = @"ImageInfo.plist";
     [self asynchronouslyCacheArticle:article toDisk:toDisk completion:nil];
 }
 
-- (void)asynchronouslyCacheArticle:(MWKArticle *)article toDisk:(BOOL)toDisk completion:(nullable dispatch_block_t)completion {
+- (void)asynchronouslyCacheArticle:(MWKArticle *)article toDisk:(BOOL)toDisk completion:(nullable void (^)(NSError *error))completion {
     [self addArticleToMemoryCache:article];
     if (!toDisk) {
         if (completion) {
-            completion();
+            completion(nil);
         }
         return;
     }
@@ -94,12 +97,13 @@ static NSString *const MWKImageInfoFilename = @"ImageInfo.plist";
         }
 
         op = [NSBlockOperation blockOperationWithBlock:^{
-            [article save];
+            NSError *error = nil;
+            [article save:&error];
             @synchronized(queue) {
                 [operations removeObjectForKey:key];
             }
+            completion(error);
         }];
-        op.completionBlock = completion;
 
         if (!op) {
             return;
@@ -158,7 +162,7 @@ static uint64_t bundleHash() {
         [self setupHistoryAndSavedPageLists];
         self.feedContentController = [[WMFExploreFeedContentController alloc] init];
         self.feedContentController.dataStore = self;
-        self.feedContentController.siteURL = [[[MWKLanguageLinkController sharedInstance] appLanguage] siteURL];
+        self.feedContentController.siteURLs = [[MWKLanguageLinkController sharedInstance] preferredSiteURLs];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(didReceiveMemoryWarningWithNotification:) name:UIApplicationDidReceiveMemoryWarningNotification object:nil];
         self.articleLocationController = [ArticleLocationController new];
     }
@@ -171,7 +175,7 @@ static uint64_t bundleHash() {
     NSDictionary *infoDictionary = [NSKeyedUnarchiver unarchiveObjectWithData:infoDictionaryData];
     if (!infoDictionary[@"CrossProcessNotificiationChannelName"]) {
         NSString *channelName = [NSString stringWithFormat:@"org.wikimedia.wikipedia.cd-cpn-%@", [NSUUID new].UUIDString].lowercaseString;
-        infoDictionary = @{ @"CrossProcessNotificiationChannelName": channelName };
+        infoDictionary = @{@"CrossProcessNotificiationChannelName": channelName};
         NSData *data = [NSKeyedArchiver archivedDataWithRootObject:infoDictionary];
         [data writeToURL:infoDictionaryURL atomically:YES];
     }
@@ -394,7 +398,7 @@ static uint64_t bundleHash() {
             article.viewedScrollPosition = entry.scrollPosition;
         }
         if (preview) {
-            article.displayTitle = preview.displayTitle;
+            article.displayTitleHTML = preview.displayTitle;
             article.wikidataDescription = preview.wikidataDescription;
             article.snippet = preview.snippet;
             article.thumbnailURL = preview.thumbnailURL;
@@ -470,7 +474,7 @@ static uint64_t bundleHash() {
 }
 
 - (NSManagedObjectContext *)feedImportContext {
-    WMFAssertMainThread(@"feedImportContext be created on the main thread");
+    WMFAssertMainThread(@"feedImportContext must be created on the main thread");
     if (!_feedImportContext) {
         _feedImportContext = [[NSManagedObjectContext alloc] initWithConcurrencyType:NSPrivateQueueConcurrencyType];
         _feedImportContext.parentContext = _viewContext;
@@ -501,6 +505,184 @@ static uint64_t bundleHash() {
         [self markAllDownloadedArticlesInManagedObjectContextAsUndownloaded:moc];
         dispatch_async(dispatch_get_main_queue(), completion);
     }];
+}
+
+- (BOOL)migrateToReadingListsInManagedObjectContext:(NSManagedObjectContext *)moc error:(NSError **)migrationError {
+    ReadingList *defaultReadingList = [moc wmf_fetchDefaultReadingList];
+    if (!defaultReadingList) {
+        defaultReadingList = [[ReadingList alloc] initWithContext:moc];
+        defaultReadingList.canonicalName = [ReadingList defaultListCanonicalName];
+        defaultReadingList.isDefault = YES;
+    }
+    
+    for (ReadingListEntry *entry in defaultReadingList.entries) {
+        entry.isUpdatedLocally = YES;
+    }
+    
+    if ([moc hasChanges] && ![moc save:migrationError]) {
+        return NO;
+    }
+    
+    NSFetchRequest<WMFArticle *> *request = [WMFArticle fetchRequest];
+    request.fetchLimit = 500;
+    request.predicate = [NSPredicate predicateWithFormat:@"savedDate != NULL && readingLists.@count == 0", defaultReadingList];
+    
+    NSArray<WMFArticle *> *results = [moc executeFetchRequest:request error:migrationError];
+    if (!results) {
+        return NO;
+    }
+    
+    NSError *addError = nil;
+    
+    while (results.count > 0) {
+        for (WMFArticle *article in results) {
+            [self.readingListsController addArticleToDefaultReadingList:article error:&addError];
+            if (addError) {
+                break;
+            }
+        }
+        if (addError) {
+            break;
+        }
+        if (![moc save:migrationError]) {
+            return NO;
+        }
+        [moc reset];
+        defaultReadingList = [moc wmf_fetchDefaultReadingList]; // needs to re-fetch after reset
+        results = [moc executeFetchRequest:request error:migrationError];
+        if (!defaultReadingList || !results) {
+            return NO;
+        }
+    }
+    if (addError) {
+        DDLogError(@"Error adding to default reading list: %@", addError);
+    } else {
+        [moc wmf_setValue:@(5) forKey:WMFLibraryVersionKey];
+    }
+
+    return [moc save:migrationError];
+}
+
+- (BOOL)migrateMainPageContentGroupInManagedObjectContext:(NSManagedObjectContext *)moc error:(NSError **)migrationError {
+    NSArray *mainPages = [moc contentGroupsOfKind:WMFContentGroupKindMainPage];
+    for (WMFContentGroup *mainPage in mainPages) {
+        [moc deleteObject:mainPage];
+    }
+    [moc wmf_setValue:@(6) forKey:WMFLibraryVersionKey];
+    return [moc save:migrationError];
+}
+
+- (void)performUpdatesFromLibraryVersion:(NSUInteger)currentLibraryVersion inManagedObjectContext:(NSManagedObjectContext *)moc {
+    NSError *migrationError = nil;
+    if (currentLibraryVersion < 1) {
+        if ([self migrateContentGroupsToPreviewContentInManagedObjectContext:moc error:nil]) {
+            [moc wmf_setValue:@(1) forKey:WMFLibraryVersionKey];
+            if ([moc hasChanges] && ![moc save:&migrationError]) {
+                DDLogError(@"Error saving during migration: %@", migrationError);
+                return;
+            }
+        } else {
+            return;
+        }
+    }
+
+    if (currentLibraryVersion < 5) {
+        if (![self migrateToReadingListsInManagedObjectContext:moc error:&migrationError]) {
+            DDLogError(@"Error during migration: %@", migrationError);
+            return;
+        }
+    }
+    
+    if (currentLibraryVersion < 6) {
+        if (![self migrateMainPageContentGroupInManagedObjectContext:moc error:&migrationError]) {
+            DDLogError(@"Error during migration: %@", migrationError);
+            return;
+        }
+    }
+}
+
+- (void)performLibraryUpdates:(dispatch_block_t)completion {
+    static const NSInteger libraryVersion = 6;
+    NSNumber *libraryVersionNumber = [self.viewContext wmf_numberValueForKey:WMFLibraryVersionKey];
+    NSInteger currentLibraryVersion = [libraryVersionNumber integerValue];
+    if (currentLibraryVersion >= libraryVersion) {
+        if (completion) {
+            completion();
+        }
+        return;
+    }
+    [self performBackgroundCoreDataOperationOnATemporaryContext:^(NSManagedObjectContext *moc) {
+        dispatch_block_t done = ^{
+            dispatch_async(dispatch_get_main_queue(), completion);
+        };
+        if (currentLibraryVersion < libraryVersion) {
+            [self performUpdatesFromLibraryVersion:currentLibraryVersion inManagedObjectContext:moc];
+        }
+        done();
+    }];
+}
+
+- (BOOL)migrateContentGroupsToPreviewContentInManagedObjectContext:(NSManagedObjectContext *)moc error:(NSError **)error {
+    NSFetchRequest *request = [WMFContentGroup fetchRequest];
+    request.predicate = [NSPredicate predicateWithFormat:@"content != NULL"];
+    request.fetchLimit = 500;
+    NSError *fetchError = nil;
+    NSArray *contentGroups = [moc executeFetchRequest:request error:&fetchError];
+    if (fetchError) {
+        DDLogError(@"Error fetching content groups: %@", fetchError);
+        if (error) {
+            *error = fetchError;
+        }
+        return false;
+    }
+
+    while (contentGroups.count > 0) {
+        @autoreleasepool {
+            NSMutableArray *toDelete = [NSMutableArray arrayWithCapacity:1];
+            for (WMFContentGroup *contentGroup in contentGroups) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+                NSArray *content = contentGroup.content;
+                if (!content) {
+                    continue;
+                }
+                contentGroup.fullContentObject = content;
+                contentGroup.featuredContentIdentifier = contentGroup.articleURLString;
+                [contentGroup updateContentPreviewWithContent:content];
+                contentGroup.content = nil;
+#pragma clang diagnostic pop
+                if (contentGroup.contentPreview == nil) {
+                    [toDelete addObject:contentGroup];
+                }
+            }
+            for (WMFContentGroup *group in toDelete) {
+                [moc deleteObject:group];
+            }
+
+            if ([moc hasChanges]) {
+                NSError *saveError = nil;
+                [moc save:&saveError];
+                if (saveError) {
+                    DDLogError(@"Error saving downloaded articles: %@", fetchError);
+                    if (error) {
+                        *error = saveError;
+                    }
+                    return false;
+                }
+                [moc reset];
+            }
+        }
+
+        contentGroups = [moc executeFetchRequest:request error:&fetchError];
+        if (fetchError) {
+            DDLogError(@"Error fetching content groups: %@", fetchError);
+            if (error) {
+                *error = fetchError;
+            }
+            return false;
+        }
+    }
+    return true;
 }
 
 - (void)markAllDownloadedArticlesInManagedObjectContextAsUndownloaded:(NSManagedObjectContext *)moc {
@@ -659,7 +841,10 @@ static uint64_t bundleHash() {
                     newContentGroup.placemark = oldContentGroup.placemark;
                     newContentGroup.contentMidnightUTCDate = oldContentGroup.mostReadDate.wmf_midnightUTCDateFromUTCDate;
                     newContentGroup.wasDismissed = oldContentGroup.wasDismissed;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
                     newContentGroup.content = metadata;
+#pragma clang diagnostic pop
                     [newContentGroup updateKey];
                     [newContentGroup updateContentType];
                     [newContentGroup updateDailySortPriority];
@@ -735,6 +920,7 @@ static uint64_t bundleHash() {
     [self.historyList migrateLegacyDataIfNeeded];
     self.savedPageList = [[MWKSavedPageList alloc] initWithDataStore:self];
     [self.savedPageList migrateLegacyDataIfNeeded];
+    self.readingListsController = [[WMFReadingListsController alloc] initWithDataStore:self];
 }
 
 #pragma mark - Legacy DataStore
@@ -765,7 +951,7 @@ static uint64_t bundleHash() {
     self.articleCache.countLimit = 50;
 
     self.articlePreviewCache = [[NSCache alloc] init];
-    self.articlePreviewCache.countLimit = 100;
+    self.articlePreviewCache.countLimit = 1000;
 
     self.cacheRemovalQueue = dispatch_queue_create("org.wikimedia.cache_removal", DISPATCH_QUEUE_SERIAL);
 }
@@ -794,7 +980,7 @@ static uint64_t bundleHash() {
 /// Returns the folder where data for the correspnoding title is stored.
 - (NSString *)pathForArticleURL:(NSURL *)url {
     NSString *articlesPath = [self pathForArticlesInDomainFromURL:url];
-    NSString *encTitle = [self safeFilenameWithString:url.wmf_titleWithUnderScores];
+    NSString *encTitle = [self safeFilenameWithString:url.wmf_titleWithUnderscores];
     return [articlesPath stringByAppendingPathComponent:encTitle];
 }
 
@@ -909,55 +1095,38 @@ static uint64_t bundleHash() {
     return [self saveData:data toFile:name atPath:path error:error];
 }
 
-- (void)saveDictionary:(NSDictionary *)dict path:(NSString *)path name:(NSString *)name {
-    [self saveDictionary:dict path:path name:name error:NULL];
-}
-
 - (BOOL)saveString:(NSString *)string path:(NSString *)path name:(NSString *)name error:(NSError **)error {
     return [self saveData:[string dataUsingEncoding:NSUTF8StringEncoding] toFile:name atPath:path error:error];
 }
 
-- (void)saveString:(NSString *)string path:(NSString *)path name:(NSString *)name {
-    [self saveString:string path:path name:name error:NULL];
-}
-
-- (void)saveArticle:(MWKArticle *)article {
+- (BOOL)saveArticle:(MWKArticle *)article error:(NSError **)outError {
     if (article.url.wmf_title == nil) {
-        return;
+        return YES; // OK to fail without error
     }
 
     if (article.url.wmf_isNonStandardURL) {
-        return;
+        return YES;  // OK to fail without error
     }
     [self addArticleToMemoryCache:article];
     NSString *path = [self pathForArticle:article];
     NSDictionary *export = [article dataExport];
-    [self saveDictionary:export path:path name:@"Article.plist"];
+    return [self saveDictionary:export path:path name:@"Article.plist" error:outError];
 }
 
-- (void)saveSection:(MWKSection *)section {
+- (BOOL)saveSection:(MWKSection *)section error:(NSError **)outError {
     NSString *path = [self pathForSection:section];
     NSDictionary *export = [section dataExport];
-    [self saveDictionary:export path:path name:@"Section.plist"];
+    return [self saveDictionary:export path:path name:@"Section.plist" error:outError];
 }
 
-- (void)saveSectionText:(NSString *)html section:(MWKSection *)section {
+- (BOOL)saveSectionText:(NSString *)html section:(MWKSection *)section error:(NSError **)outError {
     NSString *path = [self pathForSection:section];
-    [self saveString:html path:path name:@"Section.html"];
-}
-
-- (void)saveImage:(MWKImage *)image {
-    if ([image.article isMain]) {
-        return;
-    }
-    NSString *path = [self pathForImage:image];
-    NSDictionary *export = [image dataExport];
-    [self saveDictionary:export path:path name:@"Image.plist"];
+    return [self saveString:html path:path name:@"Section.html" error:outError];
 }
 
 - (BOOL)saveRecentSearchList:(MWKRecentSearchList *)list error:(NSError **)error {
     NSString *path = self.basePath;
-    NSDictionary *export = @{ @"entries": [list dataExport] };
+    NSDictionary *export = @{@"entries": [list dataExport]};
     return [self saveDictionary:export path:path name:@"RecentSearches.plist" error:error];
 }
 
@@ -1106,12 +1275,22 @@ static uint64_t bundleHash() {
 }
 
 - (NSArray *)imageInfoForArticleWithURL:(NSURL *)url {
+    MWKArticle *article = [self articleWithURL:url];
+    NSArray *infos = [article imageInfosForGallery];
+    if (infos) {
+        return infos;
+    }
     return [[NSArray arrayWithContentsOfFile:[self pathForImageInfoForArticleWithURL:url]] wmf_mapAndRejectNil:^MWKImageInfo *(id obj) {
         return [MWKImageInfo imageInfoWithExportedData:obj];
     }];
 }
 
 #pragma mark - helper methods
+
+- (NSInteger)sitesDirectorySize {
+    NSURL *sitesURL = [NSURL fileURLWithPath:[self pathForSites]];
+    return (NSInteger)[[NSFileManager defaultManager] sizeOfDirectoryAt:sitesURL];
+}
 
 - (void)removeUnreferencedArticlesFromDiskCacheWithFailure:(WMFErrorHandler)failure success:(WMFSuccessHandler)success {
     [self performBackgroundCoreDataOperationOnATemporaryContext:^(NSManagedObjectContext *moc) {
@@ -1124,7 +1303,6 @@ static uint64_t bundleHash() {
         }
 
         for (WMFArticle *article in articlesWithHTMLInTheTitle) {
-            article.displayTitle = [article.displayTitle wmf_stringByRemovingHTML];
             article.wikidataDescription = [article.wikidataDescription wmf_stringByRemovingHTML];
         }
 
@@ -1360,11 +1538,74 @@ static uint64_t bundleHash() {
 
 #pragma mark - Cache
 
+- (void)prefetchArticles {
+    NSFetchRequest *request = [WMFArticle fetchRequest];
+    request.fetchLimit = 1000;
+    NSManagedObjectContext *moc = self.viewContext;
+    NSArray<WMFArticle *> *prefetchedArticles = [moc executeFetchRequest:request error:nil];
+    for (WMFArticle *article in prefetchedArticles) {
+        NSString *key = article.key;
+        if (!key) {
+            continue;
+        }
+        [self.articlePreviewCache setObject:article forKey:key];
+    }
+}
+
 - (void)clearMemoryCache {
     @synchronized(self.articleCache) {
         [self.articleCache removeAllObjects];
     }
     [self.articlePreviewCache removeAllObjects];
+}
+
+- (void)clearCachesForUnsavedArticles {
+    [[WMFImageController sharedInstance] deleteTemporaryCache];
+    [[WMFImageController sharedInstance] removeLegacyCache];
+    [self removeUnreferencedArticlesFromDiskCacheWithFailure:^(NSError *_Nonnull error) {
+        DDLogError(@"Error removing unreferenced articles: %@", error);
+    }
+        success:^{
+            DDLogDebug(@"Successfully removed unreferenced articles");
+        }];
+}
+
+#pragma mark - Remote Configuration
+
+- (void)updateLocalConfigurationFromRemoteConfigurationWithCompletion:(nullable void (^)(NSError *nullable))completion {
+    void (^combinedCompletion)(NSError *) = ^(NSError *error) {
+        if (completion) {
+            completion(error);
+        }
+    };
+    NSURL *remoteConfigURL = [NSURL URLWithString:@"https://meta.wikimedia.org/static/current/extensions/MobileApp/config/ios.json"];
+    if (!remoteConfigURL) {
+        combinedCompletion([NSError wmf_errorWithType:WMFErrorTypeInvalidRequestParameters userInfo:nil]);
+        return;
+    }
+    NSURLRequest *request = [NSURLRequest requestWithURL:remoteConfigURL];
+    if (!request) {
+        combinedCompletion([NSError wmf_errorWithType:WMFErrorTypeInvalidRequestParameters userInfo:nil]);
+        return;
+    }
+    [[[WMFSession shared] jsonDictionaryTaskWith:request
+                               completionHandler:^(NSDictionary<NSString *, id> *_Nullable remoteConfigurationDictionary, NSURLResponse *_Nullable response, NSError *_Nullable error) {
+                                   dispatch_async(dispatch_get_main_queue(), ^{
+                                       if (error) {
+                                           DDLogError(@"Error checking remote config: %@", error);
+                                           combinedCompletion(error);
+                                           return;
+                                       }
+                                       [self updateLocalConfigurationFromRemoteConfiguration:remoteConfigurationDictionary];
+                                       combinedCompletion(error);
+                                   });
+                               }] resume];
+}
+
+- (void)updateLocalConfigurationFromRemoteConfiguration:(NSDictionary *)remoteConfigurationDictionary {
+    NSNumber *disableReadingListSyncNumber = remoteConfigurationDictionary[@"disableReadingListSync"];
+    BOOL shouldDisableReadingListSync = [disableReadingListSyncNumber boolValue];
+    self.readingListsController.isSyncRemotelyEnabled = !shouldDisableReadingListSync;
 }
 
 #pragma mark - Core Data
@@ -1389,14 +1630,14 @@ static uint64_t bundleHash() {
 
 - (nullable WMFArticle *)fetchArticleWithKey:(NSString *)key inManagedObjectContext:(nonnull NSManagedObjectContext *)moc {
     WMFArticle *article = nil;
-    if (moc == self.viewContext) {
+    if (moc == _viewContext) { // use ivar to avoid main thread check
         article = [self.articlePreviewCache objectForKey:key];
         if (article) {
             return article;
         }
     }
     article = [moc fetchArticleWithKey:key];
-    if (article && moc == self.viewContext) {
+    if (article && moc == _viewContext) { // use ivar to avoid main thread check
         [self.articlePreviewCache setObject:article forKey:key];
     }
     return article;
@@ -1413,7 +1654,7 @@ static uint64_t bundleHash() {
     if (!article) {
         article = [[WMFArticle alloc] initWithEntity:[NSEntityDescription entityForName:@"WMFArticle" inManagedObjectContext:moc] insertIntoManagedObjectContext:moc];
         article.key = key;
-        article.displayTitle = title.wmf_unescapedNormalizedPageTitle;
+        article.displayTitleHTML = article.displayTitle;
         if (moc == self.viewContext) {
             [self.articlePreviewCache setObject:article forKey:key];
         }

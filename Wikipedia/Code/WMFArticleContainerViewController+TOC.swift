@@ -15,10 +15,10 @@ extension WMFArticleViewController : WMFTableOfContentsViewControllerDelegate {
             }
         }
     }
-
+    
     public func tableOfContentsController(_ controller: WMFTableOfContentsViewController,
                                           didSelectItem item: TableOfContentsItem) {
-        
+
         switch tableOfContentsDisplayMode {
         case .inline:
             if let section = item as? MWKSection {
@@ -60,9 +60,9 @@ extension WMFArticleViewController : WMFTableOfContentsViewControllerDelegate {
     private func scrollToFooterSection(for item: TableOfContentsItem) {
         switch item {
         case is TableOfContentsAboutThisArticleItem:
-            self.webViewController.scroll(toFragment: "footer_container_menu", animated: true)
+            self.webViewController.scroll(toFragment: "pagelib_footer_container_menu", animated: true)
         case is TableOfContentsReadMoreItem:
-            self.webViewController.scroll(toFragment: "footer_container_readmore", animated: true)
+            self.webViewController.scroll(toFragment: "pagelib_footer_container_readmore", animated: true)
         default:
             assertionFailure("Unsupported selection of TOC item \(item)")
             break
@@ -105,17 +105,17 @@ extension WMFArticleViewController {
     /**
     Create a new instance of `WMFTableOfContentsViewController` which is configured to be used with the receiver.
     */
-    public func createTableOfContentsViewControllerIfNeeded() {
+    @objc public func createTableOfContentsViewControllerIfNeeded() {
         if let items = createTableOfContentsSections() {
-            let semanticContentAttribute:UISemanticContentAttribute = MWLanguageInfo.articleLanguageIsRTL(article) ? .forceRightToLeft : .forceLeftToRight
-            self.tableOfContentsViewController = WMFTableOfContentsViewController(presentingViewController: tableOfContentsDisplayMode == .modal ? self : nil , items: items, delegate: self, semanticContentAttribute: semanticContentAttribute)
+            let semanticContentAttribute:UISemanticContentAttribute = MWLanguageInfo.semanticContentAttribute(forWMFLanguage: article?.url.wmf_language)
+            self.tableOfContentsViewController = WMFTableOfContentsViewController(presentingViewController: tableOfContentsDisplayMode == .modal ? self : nil , items: items, delegate: self, semanticContentAttribute: semanticContentAttribute, theme: self.theme)
         }
     }
 
     /**
      Append a read more section to the table of contents.
      */
-    public func appendItemsToTableOfContentsIncludingAboutThisArticle(_ includeAbout: Bool, includeReadMore: Bool) {
+    @objc public func appendItemsToTableOfContentsIncludingAboutThisArticle(_ includeAbout: Bool, includeReadMore: Bool) {
         assert(self.tableOfContentsViewController != nil, "Attempting to add read more when toc is nil")
         guard let tvc = self.tableOfContentsViewController else { return; }
 
@@ -133,16 +133,16 @@ extension WMFArticleViewController {
     func backgroundView() -> UIVisualEffectView {
         let view = UIVisualEffectView(frame: CGRect.zero)
         view.autoresizingMask = .flexibleWidth
-        view.effect = UIBlurEffect(style: .light)
+        view.effect = UIBlurEffect(style: self.theme.blurEffectStyle)
         view.alpha = 0.0
         return view
     }
 
-    public func selectAndScrollToTableOfContentsItemForSection(_ section: MWKSection, animated: Bool) {
+    @objc public func selectAndScrollToTableOfContentsItemForSection(_ section: MWKSection, animated: Bool) {
         tableOfContentsViewController?.selectAndScrollToItem(section, animated: animated)
     }
     
-    public func selectAndScrollToTableOfContentsFooterItemAtIndex(_ index: Int, animated: Bool) {
+    @objc public func selectAndScrollToTableOfContentsFooterItemAtIndex(_ index: Int, animated: Bool) {
         tableOfContentsViewController?.selectAndScrollToFooterItem(atIndex: index, animated: animated)
     }
 }

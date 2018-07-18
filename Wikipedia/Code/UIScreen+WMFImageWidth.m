@@ -49,8 +49,8 @@ typedef NS_ENUM(NSInteger, WMFImageWidth) {
     return @(self.wmf_maxScale * WMFImageWidthMedium);
 }
 
-- (NSNumber *)wmf_galleryImageWidthForScale {
-    return @(self.wmf_maxScale * WMFImageWidthLarge);
+- (NSInteger)wmf_galleryImageWidthForScale {
+    return self.wmf_maxScale * WMFImageWidthLarge;
 }
 
 - (NSInteger)wmf_articleImageWidthForScale {
@@ -79,7 +79,7 @@ typedef NS_ENUM(NSInteger, WMFImageWidth) {
 }
 
 - (NSInteger)wmf_leadImageWidth {
-    return self.wmf_maxScale * WMFImageWidthMedium;
+    return self.wmf_maxScale * WMFImageWidthLarge;
 }
 
 - (NSInteger)wmf_potdImageWidth {

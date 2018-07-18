@@ -1,7 +1,6 @@
 #import "UIViewController+WMFDynamicHeightPopoverMessage.h"
 #import "WMFBarButtonItemPopoverMessageViewController.h"
 #import "UIViewController+WMFStoryboardUtilities.h"
-#import "WMFBarButtonItemPopoverBackgroundView.h"
 @import WMF;
 
 typedef void (^WMFDynamicHeightPopoverPresentationHandler)(UIPopoverPresentationController *presenter);
@@ -45,10 +44,6 @@ typedef void (^WMFDynamicHeightPopoverPresentationHandler)(UIPopoverPresentation
                                                       duration:(NSTimeInterval)duration
                                withPresenterConfigurationBlock:(WMFDynamicHeightPopoverPresentationHandler)presenterConfigurationBlock {
 
-    if (self.navigationController.visibleViewController != self) {
-        return;
-    }
-
     UIViewController *popoverVC = [self wmf_dynamicHeightPopoverViewControllerWithTitle:title
                                                                                 message:message
                                                                                   width:width
@@ -83,18 +78,24 @@ typedef void (^WMFDynamicHeightPopoverPresentationHandler)(UIPopoverPresentation
     popoverVC.message = message;
     popoverVC.width = width;
 
-    popoverVC.view.backgroundColor = [UIColor wmf_barButtonItemPopoverMessageBackground];
-
     UIPopoverPresentationController *presenter = [popoverVC popoverPresentationController];
 
     presenter.delegate = popoverVC;
-    presenter.passthroughViews = @[self.view];
 
     if (presenterConfigurationBlock) {
         presenterConfigurationBlock(presenter);
     }
 
-    presenter.popoverBackgroundViewClass = [WMFBarButtonItemPopoverBackgroundView class];
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+    if ([self respondsToSelector:@selector(theme)]) {
+        id maybeTheme = [(id)self performSelector:@selector(theme)];
+        if ([maybeTheme isKindOfClass:[WMFTheme class]]) {
+            [popoverVC applyTheme:maybeTheme];
+            presenter.backgroundColor = [(WMFTheme *)maybeTheme colors].paperBackground;
+        }
+    }
+#pragma clang diagnostic pop
 
     return popoverVC;
 }

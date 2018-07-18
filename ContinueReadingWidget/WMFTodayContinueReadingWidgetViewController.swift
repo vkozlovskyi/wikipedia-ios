@@ -18,18 +18,21 @@ class WMFTodayContinueReadingWidgetViewController: UIViewController, NCWidgetPro
     @IBOutlet var titleLabelTrailingConstraint: NSLayoutConstraint!
     
     var articleURL: URL?
-    
+
+    var theme: Theme = .widget
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        if #available(iOSApplicationExtension 10.0, *) {
-            
-        } else {
-            titleLabel.textColor = UIColor(white: 1, alpha: 1)
-            textLabel.textColor = UIColor(white: 1, alpha: 1)
-            emptyTitleLabel.textColor = UIColor(white: 1, alpha: 1)
-            emptyDescriptionLabel.textColor = UIColor(white: 1, alpha: 0.7)
-            daysAgoLabel.textColor = UIColor(white: 1, alpha: 0.7)
-            daysAgoView.backgroundColor = UIColor(white: 0.3, alpha: 0.3)
+
+        titleLabel.textColor = theme.colors.primaryText
+        textLabel.textColor = theme.colors.secondaryText
+        emptyTitleLabel.textColor = theme.colors.primaryText
+        emptyDescriptionLabel.textColor = theme.colors.secondaryText
+        daysAgoLabel.textColor = theme.colors.overlayText
+        daysAgoView.backgroundColor = theme.colors.overlayBackground
+
+        if #available(iOSApplicationExtension 11.0, *) {
+            imageView.accessibilityIgnoresInvertColors = true
         }
         
         emptyDescriptionLabel.text = WMFLocalizedString("continue-reading-empty-title", value:"No recently read articles", comment: "No recently read articles")
@@ -39,7 +42,7 @@ class WMFTodayContinueReadingWidgetViewController: UIViewController, NCWidgetPro
         view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.handleTapGestureRecognizer(_:))))
     }
     
-    func handleTapGestureRecognizer(_ recognizer: UITapGestureRecognizer) {
+    @objc func handleTapGestureRecognizer(_ recognizer: UITapGestureRecognizer) {
         switch recognizer.state {
         case .ended:
             continueReading(self)
@@ -53,14 +56,12 @@ class WMFTodayContinueReadingWidgetViewController: UIViewController, NCWidgetPro
         _ = updateView()
     }
     
-    func widgetPerformUpdate(_ completionHandler: (NCUpdateResult) -> Void) {
-        
+    func widgetPerformUpdate(completionHandler: @escaping (NCUpdateResult) -> Void) {
         let didUpdate = updateView()
         
-        if(didUpdate){
+        if didUpdate {
             completionHandler(.newData)
-            
-        }else{
+        } else {
             completionHandler(.noData)
         }
     }
@@ -100,18 +101,19 @@ class WMFTodayContinueReadingWidgetViewController: UIViewController, NCWidgetPro
             return false
         }
         
-        let fragment = article.viewedFragment
-        
-        guard let newArticleURL = (article.url as NSURL?)?.wmf_URL(withFragment: fragment) else {
-            return false
+        let newArticleURL: URL?
+        if let fragment = article.viewedFragment {
+            newArticleURL = article.url?.wmf_URL(withFragment: fragment)
+        } else {
+            newArticleURL = article.url
         }
         
-        guard newArticleURL.absoluteString != articleURL?.absoluteString else {
+        guard newArticleURL != nil, newArticleURL?.absoluteString != articleURL?.absoluteString else {
             return false
         }
-        
-        articleURL = newArticleURL
 
+        articleURL = newArticleURL
+        
         textLabel.text = nil
         titleLabel.text = nil
         imageView.image = nil
@@ -133,20 +135,14 @@ class WMFTodayContinueReadingWidgetViewController: UIViewController, NCWidgetPro
             self.daysAgoView.isHidden = true
         }
         
+        self.titleLabel.attributedText = article.displayTitleHTML.byAttributingHTML(with: .headline, matching: traitCollection)
         
-        self.titleLabel.text = article.displayTitle
-        
-        
-        if #available(iOSApplicationExtension 10.0, *) {
-            if let imageURL = article.imageURL(forWidth: self.traitCollection.wmf_nearbyThumbnailWidth) {
-                self.collapseImageAndWidenLabels = false
-                self.imageView.wmf_setImage(with: imageURL, detectFaces: true, onGPU: true, failure: { (error) in
-                    self.collapseImageAndWidenLabels = true
-                }) {
-                    self.collapseImageAndWidenLabels = false
-                }
-            } else {
+        if let imageURL = article.imageURL(forWidth: self.traitCollection.wmf_nearbyThumbnailWidth) {
+            self.collapseImageAndWidenLabels = false
+            self.imageView.wmf_setImage(with: imageURL, detectFaces: true, onGPU: true, failure: { (error) in
                 self.collapseImageAndWidenLabels = true
+            }) {
+                self.collapseImageAndWidenLabels = false
             }
         } else {
             self.collapseImageAndWidenLabels = true
@@ -154,20 +150,22 @@ class WMFTodayContinueReadingWidgetViewController: UIViewController, NCWidgetPro
         
         var fitSize = UILayoutFittingCompressedSize
         fitSize.width = view.bounds.size.width
-        fitSize = view.systemLayoutSizeFitting(fitSize, withHorizontalFittingPriority: UILayoutPriorityRequired, verticalFittingPriority: UILayoutPriorityDefaultLow)
+        fitSize = view.systemLayoutSizeFitting(fitSize, withHorizontalFittingPriority: UILayoutPriority.required, verticalFittingPriority: UILayoutPriority.defaultLow)
         preferredContentSize = fitSize
         
         return true
     }
     
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        _ = updateView()
+    }
 
     @IBAction func continueReading(_ sender: AnyObject) {
         let URL = articleURL as NSURL?
         let URLToOpen = URL?.wmf_wikipediaScheme ?? NSUserActivity.wmf_baseURLForActivity(of: .explore)
         
-        self.extensionContext?.open(URLToOpen, completionHandler: { (success) in
-            
-        })
+        self.extensionContext?.open(URLToOpen)
     }
 
 

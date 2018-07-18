@@ -1,8 +1,8 @@
 import UIKit
 
-class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFCaptchaViewControllerDelegate {
-    @IBOutlet fileprivate var usernameField: UITextField!
-    @IBOutlet fileprivate var passwordField: UITextField!
+class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFCaptchaViewControllerDelegate, Themeable {
+    @IBOutlet fileprivate var usernameField: ThemeableTextField!
+    @IBOutlet fileprivate var passwordField: ThemeableTextField!
     @IBOutlet fileprivate var usernameTitleLabel: UILabel!
     @IBOutlet fileprivate var passwordTitleLabel: UILabel!
     @IBOutlet fileprivate var passwordAlertLabel: UILabel!
@@ -10,17 +10,31 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
     @IBOutlet fileprivate var forgotPasswordButton: UILabel!
     @IBOutlet fileprivate var titleLabel: UILabel!
     @IBOutlet fileprivate var captchaContainer: UIView!
-    @IBOutlet fileprivate var stackView: UIStackView!
     @IBOutlet fileprivate var loginButton: WMFAuthButton!
+    @IBOutlet weak var scrollContainer: UIView!
     
-    public var funnel: LoginFunnel?
+    public var loginSuccessCompletion: (() -> Void)?
+    public var loginDismissedCompletion: (() -> Void)?
+    
+    @objc public var funnel: WMFLoginFunnel?
 
+    private var startDate: Date? // to calculate time elapsed between login start and login success
+    
+    fileprivate var theme: Theme = Theme.standard
+    
     fileprivate lazy var captchaViewController: WMFCaptchaViewController? = WMFCaptchaViewController.wmf_initialViewControllerFromClassStoryboard()
     private let loginInfoFetcher = WMFAuthLoginInfoFetcher()
     let tokenFetcher = WMFAuthTokenFetcher()
+    
+    required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        startDate = Date()
+        
+    }
 
-    func closeButtonPushed(_ : UIBarButtonItem) {
+    @objc func closeButtonPushed(_ : UIBarButtonItem) {
         dismiss(animated: true, completion: nil)
+        loginDismissedCompletion?()
     }
 
     @IBAction fileprivate func loginButtonTapped(withSender sender: UIButton) {
@@ -30,13 +44,8 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let labels = [titleLabel, usernameTitleLabel, passwordTitleLabel]
-        for label in labels {
-            label?.textColor = .wmf_authTitle
-        }
-        passwordAlertLabel.textColor = .wmf_red
-    
         navigationItem.leftBarButtonItem = UIBarButtonItem(image: UIImage(named:"close"), style: .plain, target:self, action:#selector(closeButtonPushed(_:)))
+        navigationItem.leftBarButtonItem?.accessibilityLabel = CommonStrings.closeButtonAccessibilityLabel
 
         loginButton.setTitle(WMFLocalizedString("main-menu-account-login", value:"Log in", comment:"Button text for logging in.\n{{Identical|Log in}}"), for: .normal)
         
@@ -54,14 +63,13 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
         titleLabel.text = WMFLocalizedString("login-title", value:"Log in to your account", comment:"Title for log in interface")
         usernameTitleLabel.text = WMFLocalizedString("field-username-title", value:"Username", comment:"Title for username field\n{{Identical|Username}}")
         passwordTitleLabel.text = WMFLocalizedString("field-password-title", value:"Password", comment:"Title for password field\n{{Identical|Password}}")
-
-        usernameField.wmf_addThinBottomBorder()
-        passwordField.wmf_addThinBottomBorder()
     
         view.wmf_configureSubviewsForDynamicType()
         
         captchaViewController?.captchaDelegate = self
         wmf_add(childController:captchaViewController, andConstrainToEdgesOfContainerView: captchaContainer)
+        
+        apply(theme: theme)
     }
     
     @IBAction func textFieldDidChange(_ sender: UITextField) {
@@ -88,7 +96,7 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
         guard let text = captchaViewController?.solution else {
             return false
         }
-        return (text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).characters.count > 0)
+        return (text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).count > 0)
     }
     
     fileprivate func requiredInputFields() -> [UITextField] {
@@ -134,22 +142,35 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
     @IBAction func textFieldDidBeginEditing(_ textField: UITextField) {
         if textField == passwordField {
             passwordAlertLabel.isHidden = true
-            passwordField.textColor = .black
+            passwordField.textColor = theme.colors.primaryText
+            passwordField.keyboardAppearance = theme.keyboardAppearance
         }
     }
 
     fileprivate func save() {
         wmf_hideKeyboard()
         passwordAlertLabel.isHidden = true
+        setViewControllerUserInteraction(enabled: false)
         disableProgressiveButton()
-        WMFAlertManager.sharedInstance.showAlert(WMFLocalizedString("account-creation-logging-in", value:"Logging in...", comment:"Alert shown after account successfully created and the user is being logged in automatically.\n{{Identical|Logging in}}"), sticky: true, dismissPreviousAlerts: true, tapCallBack: nil)
+        WMFAlertManager.sharedInstance.showAlert(WMFLocalizedString("account-creation-logging-in", value:"Logging in...", comment:"Alert shown after account successfully created and the user is being logged in automatically.\n{{Identical|Logging in}}"), sticky: true, canBeDismissedByUser: false, dismissPreviousAlerts: true, tapCallBack: nil)
         WMFAuthenticationManager.sharedInstance.login(username: usernameField.text!, password: passwordField.text!, retypePassword:nil, oathToken:nil, captchaID: captchaViewController?.captcha?.captchaID, captchaWord: captchaViewController?.solution, success: { _ in
             let loggedInMessage = String.localizedStringWithFormat(WMFLocalizedString("main-menu-account-title-logged-in", value:"Logged in as %1$@", comment:"Header text used when account is logged in. %1$@ will be replaced with current username."), self.usernameField.text ?? "")
             WMFAlertManager.sharedInstance.showSuccessAlert(loggedInMessage, sticky: false, dismissPreviousAlerts: true, tapCallBack: nil)
-            self.dismiss(animated: true, completion: nil)
+            self.loginSuccessCompletion?()
+            self.setViewControllerUserInteraction(enabled: true)
+            self.dismiss(animated: true)
             self.funnel?.logSuccess()
+            
+            if let start = self.startDate {
+                LoginFunnel.shared.logSuccess(timeElapsed: fabs(start.timeIntervalSinceNow))
+            } else {
+                assertionFailure("startDate is nil; startDate is required to calculate timeElapsed")
+            }
+        
         }, failure: { error in
 
+            self.setViewControllerUserInteraction(enabled: true)
+            
             // Captcha's appear to be one-time, so always try to get a new one on failure.
             self.getCaptcha()
             
@@ -167,7 +188,8 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
                 case .wrongPassword:
                     self.passwordAlertLabel.text = error.localizedDescription
                     self.passwordAlertLabel.isHidden = false
-                    self.passwordField.textColor = .wmf_red
+                    self.passwordField.textColor = self.theme.colors.error
+                    self.passwordField.keyboardAppearance = self.theme.keyboardAppearance
                     self.funnel?.logError(error.localizedDescription)
                     WMFAlertManager.sharedInstance.dismissAlert()
                     return
@@ -188,7 +210,8 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
         dismiss(animated: true, completion: {
             let changePasswordVC = WMFChangePasswordViewController.wmf_initialViewControllerFromClassStoryboard()
             changePasswordVC?.userName = self.usernameField!.text
-            let navigationController = UINavigationController.init(rootViewController: changePasswordVC!)
+            changePasswordVC?.apply(theme: self.theme)
+            let navigationController = WMFThemeableNavigationController(rootViewController: changePasswordVC!, theme: self.theme)
             presenter.present(navigationController, animated: true, completion: nil)
         })
     }
@@ -206,12 +229,13 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
             twoFactorViewController.password = self.passwordField!.text
             twoFactorViewController.captchaID = self.captchaViewController?.captcha?.captchaID
             twoFactorViewController.captchaWord = self.captchaViewController?.solution
-            let navigationController = UINavigationController.init(rootViewController: twoFactorViewController)
+            twoFactorViewController.apply(theme: self.theme)
+            let navigationController = WMFThemeableNavigationController(rootViewController: twoFactorViewController, theme: self.theme)
             presenter.present(navigationController, animated: true, completion: nil)
         })
     }
 
-    func forgotPasswordButtonPushed(_ recognizer: UITapGestureRecognizer) {
+    @objc func forgotPasswordButtonPushed(_ recognizer: UITapGestureRecognizer) {
         guard
             recognizer.state == .ended,
             let presenter = presentingViewController,
@@ -221,12 +245,13 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
             return
         }
         dismiss(animated: true, completion: {
-            let navigationController = UINavigationController.init(rootViewController: forgotPasswordVC)
+            let navigationController = WMFThemeableNavigationController(rootViewController: forgotPasswordVC, theme: self.theme)
+            forgotPasswordVC.apply(theme: self.theme)
             presenter.present(navigationController, animated: true, completion: nil)
         })
     }
     
-    func createAccountButtonPushed(_ recognizer: UITapGestureRecognizer) {
+    @objc func createAccountButtonPushed(_ recognizer: UITapGestureRecognizer) {
         guard
             recognizer.state == .ended,
             let presenter = presentingViewController,
@@ -235,11 +260,13 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
             assertionFailure("Expected view controller(s) not found")
             return
         }
+        createAcctVC.apply(theme: theme)
         funnel?.logCreateAccountAttempt()
+        LoginFunnel.shared.logCreateAccountAttempt()
         dismiss(animated: true, completion: {
             createAcctVC.funnel = CreateAccountFunnel()
             createAcctVC.funnel?.logStart(fromLogin: self.funnel?.loginSessionToken)
-            let navigationController = UINavigationController.init(rootViewController: createAcctVC)
+            let navigationController = WMFThemeableNavigationController(rootViewController: createAcctVC, theme: self.theme)
             presenter.present(navigationController, animated: true, completion: nil)
         })
     }
@@ -288,5 +315,34 @@ class WMFLoginViewController: WMFScrollViewController, UITextFieldDelegate, WMFC
             passwordField.resignFirstResponder()
             passwordField.becomeFirstResponder()
         }
+    }
+    
+    func apply(theme: Theme) {
+        self.theme = theme
+        guard viewIfLoaded != nil else {
+            return
+        }
+        
+        view.backgroundColor = theme.colors.paperBackground
+        view.tintColor = theme.colors.link
+
+        titleLabel.textColor = theme.colors.primaryText
+        
+        let labels = [usernameTitleLabel, passwordTitleLabel, passwordAlertLabel]
+        for label in labels {
+            label?.textColor = theme.colors.secondaryText
+        }
+        
+        usernameField.apply(theme: theme)
+        passwordField.apply(theme: theme)
+        
+        titleLabel.textColor = theme.colors.primaryText
+        forgotPasswordButton.textColor = theme.colors.link
+        captchaContainer.backgroundColor = theme.colors.baseBackground
+        createAccountButton.apply(theme: theme)
+        loginButton.apply(theme: theme)
+        passwordAlertLabel.textColor = theme.colors.error
+        scrollContainer.backgroundColor = theme.colors.paperBackground
+        captchaViewController?.apply(theme: theme)
     }
 }

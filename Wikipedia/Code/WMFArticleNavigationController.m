@@ -15,20 +15,13 @@ static const NSTimeInterval WMFArticleNavigationControllerSecondToolbarAnimation
 
 @implementation WMFArticleNavigationController
 
-- (instancetype)initWithCoder:(NSCoder *)coder {
-    self = [super initWithCoder:coder];
-    if (self) {
-        self.title = WMFLocalizedStringWithDefaultValue(@"home-title", nil, nil, @"Explore", @"Title for home interface.\n{{Identical|Explore}}");
-    }
-    return self;
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     [super setDelegate:self];
 
     self.secondToolbarHidden = YES;
     self.secondToolbar = [[UIToolbar alloc] initWithFrame:CGRectZero];
+    self.readingListHintHidden = YES;
 
     static UIImage *clearImage = nil;
     static dispatch_once_t onceToken;
@@ -59,6 +52,18 @@ static const NSTimeInterval WMFArticleNavigationControllerSecondToolbarAnimation
     self.navigationDelegate = delegate;
 }
 
+#pragma mark - Hint
+
+- (void)setReadingListHintHidden:(BOOL)readingListHintHidden {
+    _readingListHintHidden = readingListHintHidden;
+    [self layoutSecondToolbarForViewBounds:self.view.bounds hidden:self.isSecondToolbarHidden animated:YES];
+}
+
+- (void)setReadingListHintHeight:(CGFloat)readingListHintHeight {
+    _readingListHintHeight = readingListHintHeight;
+    [self layoutSecondToolbarForViewBounds:self.view.bounds hidden:self.isSecondToolbarHidden animated:YES];
+}
+
 #pragma mark - Layout
 
 - (void)viewDidLayoutSubviews {
@@ -79,7 +84,11 @@ static const NSTimeInterval WMFArticleNavigationControllerSecondToolbarAnimation
         if (self.isToolbarHidden) {
             origin = CGPointMake(0, bounds.size.height - size.height);
         } else {
-            origin = CGPointMake(0, self.toolbar.frame.origin.y - size.height);
+            if (self.readingListHintHidden) {
+                origin = CGPointMake(0, self.toolbar.frame.origin.y - size.height);
+            } else {
+                origin = CGPointMake(0, self.toolbar.frame.origin.y - size.height - self.readingListHintHeight);
+            }
         }
     }
     dispatch_block_t animations = ^{
@@ -117,22 +126,6 @@ static const NSTimeInterval WMFArticleNavigationControllerSecondToolbarAnimation
 - (void)navigationController:(UINavigationController *)navigationController didShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
     if ([self.navigationDelegate respondsToSelector:@selector(navigationController:didShowViewController:animated:)]) {
         [self.navigationDelegate navigationController:navigationController didShowViewController:viewController animated:animated];
-    }
-}
-
-- (UIInterfaceOrientationMask)navigationControllerSupportedInterfaceOrientations:(UINavigationController *)navigationController {
-    if ([self.navigationDelegate respondsToSelector:@selector(navigationControllerSupportedInterfaceOrientations:)]) {
-        return [self.navigationDelegate navigationControllerSupportedInterfaceOrientations:navigationController];
-    } else {
-        return self.supportedInterfaceOrientations;
-    }
-}
-
-- (UIInterfaceOrientation)navigationControllerPreferredInterfaceOrientationForPresentation:(UINavigationController *)navigationController {
-    if ([self.navigationDelegate respondsToSelector:@selector(navigationControllerPreferredInterfaceOrientationForPresentation:)]) {
-        return [self.navigationDelegate navigationControllerPreferredInterfaceOrientationForPresentation:navigationController];
-    } else {
-        return self.preferredInterfaceOrientationForPresentation;
     }
 }
 

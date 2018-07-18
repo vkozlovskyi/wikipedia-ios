@@ -45,11 +45,6 @@ class WMFInTheNewsNotificationViewController: UIViewController, UNNotificationCo
         return AnalyticsContent(articleURL?.host ?? AnalyticsContent.defaultContent).analyticsContentType
     }
     
-    override func awakeFromNib() {
-        super.awakeFromNib()
-        PiwikTracker.wmf_start()
-    }
-    
     override func viewDidLoad() {
         super.viewDidLoad()
         marginWidthForVisibleImageView = articleTitleLabelLeadingMargin.constant
@@ -66,15 +61,13 @@ class WMFInTheNewsNotificationViewController: UIViewController, UNNotificationCo
             articleURL = URL(string: articleURLString)
         }
         
-        PiwikTracker.sharedInstance()?.wmf_logActionPreview(inContext: self, contentType: self, date: Date())
-        
         do {
             if let dictionary = info[WMFNotificationInfoFeedNewsStoryKey] as? [String: AnyObject],
                 let newsStory = try MTLJSONAdapter.model(of: WMFFeedNewsStory.self, fromJSONDictionary: dictionary) as? WMFFeedNewsStory,
                 let html = newsStory.storyHTML  {
                 let font = UIFont.preferredFont(forTextStyle: UIFontTextStyle.footnote, compatibleWith: nil)
                 let linkFont = UIFont.boldSystemFont(ofSize: font.pointSize)
-                let attributedString = html.wmf_attributedStringByRemovingHTML(with: font, linkFont: linkFont)
+                let attributedString = html.wmf_attributedStringFromHTML(with: font, boldFont: linkFont, italicFont: font, boldItalicFont: linkFont, withAdditionalBoldingForMatchingSubstring:nil, boldLinks: true).wmf_trim()
                 summaryLabel.attributedText = attributedString
             }
         } catch let error as NSError {
@@ -132,7 +125,6 @@ class WMFInTheNewsNotificationViewController: UIViewController, UNNotificationCo
         case WMFInTheNewsNotificationSaveForLaterActionIdentifier:
             statusView.isHidden = false
             statusLabel.text = WMFLocalizedString("status-saving-for-later", value:"Saving for later...", comment: "Indicates to the user that the article is being saved for later")
-            PiwikTracker.sharedInstance()?.wmf_logActionSave(inContext: self, contentType: self)
             if let dataStore = SessionSingleton.sharedInstance().dataStore {
                 dataStore.savedPageList.addSavedPage(with: articleURL)
                 self.statusView.isHidden = false
@@ -143,7 +135,6 @@ class WMFInTheNewsNotificationViewController: UIViewController, UNNotificationCo
                 break
             }
         case WMFInTheNewsNotificationShareActionIdentifier:
-            PiwikTracker.sharedInstance()?.wmf_logActionTapThrough(inContext: self, contentType: self)
             completion(.dismissAndForwardAction)
         case WMFInTheNewsNotificationReadNowActionIdentifier:
             fallthrough
@@ -155,7 +146,6 @@ class WMFInTheNewsNotificationViewController: UIViewController, UNNotificationCo
                 completion(.dismiss)
                 break
             }
-            PiwikTracker.sharedInstance()?.wmf_logActionTapThrough(inContext: self, contentType: self)
             extensionContext.open(wikipediaSchemeURL, completionHandler: { (didOpen) in
                 completion(.dismiss)
             })

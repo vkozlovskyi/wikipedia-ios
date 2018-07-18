@@ -1,3 +1,4 @@
+import WMF
 
 public struct LibraryUsed {
     let title:String
@@ -9,7 +10,7 @@ class LibrariesUsedViewController: UIViewController, UITableViewDelegate, UITabl
     var libraries:[LibraryUsed] = []
     @IBOutlet weak var tableView: UITableView!
     
-    public static let storyboardName = "LibrariesUsed"
+    @objc public static let storyboardName = "LibrariesUsed"
     
     private static let cellReuseIdentifier = "org.wikimedia.libraries.used.cell"
     private static let dataFileName = "LibrariesUsed.plist"
@@ -18,14 +19,17 @@ class LibrariesUsedViewController: UIViewController, UITableViewDelegate, UITabl
     private static let plistTitleKey = "Title"
     private static let plistLicenseNameKey = "LicenseName"
     private static let plistLicenseTextKey = "LicenseText"
+    
+    fileprivate var theme = Theme.standard
 
-    func closeButtonPushed(_ : UIBarButtonItem) {
+    @objc func closeButtonPushed(_ : UIBarButtonItem) {
         dismiss(animated: true, completion: nil)
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationItem.leftBarButtonItem = UIBarButtonItem(image: UIImage(named:"close"), style: .plain, target:self, action:#selector(closeButtonPushed(_:)))
+        navigationItem.leftBarButtonItem?.accessibilityLabel = CommonStrings.closeButtonAccessibilityLabel
     }
     
     lazy private var tableHeaderView: UIView = {
@@ -33,11 +37,9 @@ class LibrariesUsedViewController: UIViewController, UITableViewDelegate, UITabl
         let headerView = UIView.init(frame: headerFrame)
         let labelFrame = headerView.frame.insetBy(dx: 10, dy: 10)
         let label = UILabel.init(frame: labelFrame)
-        if #available(iOS 10.0, *) {
-            label.adjustsFontForContentSizeCategory = true
-        }
+        label.adjustsFontForContentSizeCategory = true
         label.font = UIFont.preferredFont(forTextStyle: .footnote)
-        label.textColor = .wmf_darkGray
+        label.textColor = self.theme.colors.primaryText
         label.textAlignment = .center
         label.numberOfLines = 0
         label.lineBreakMode = .byWordWrapping
@@ -50,6 +52,7 @@ class LibrariesUsedViewController: UIViewController, UITableViewDelegate, UITabl
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        self.apply(theme: self.theme)
         view.backgroundColor = .wmf_lightGray
         tableView.register(UITableViewCell.self, forCellReuseIdentifier: LibrariesUsedViewController.cellReuseIdentifier)
         tableView.estimatedRowHeight = 41
@@ -79,7 +82,7 @@ class LibrariesUsedViewController: UIViewController, UITableViewDelegate, UITabl
             return []
         }
         return librariesUsedDataArray
-            .flatMap {library -> LibraryUsed? in
+            .compactMap {library -> LibraryUsed? in
                 guard
                     let title = library[LibrariesUsedViewController.plistTitleKey] as? String,
                     let licenseName = library[LibrariesUsedViewController.plistLicenseNameKey] as? String,
@@ -108,6 +111,14 @@ class LibrariesUsedViewController: UIViewController, UITableViewDelegate, UITabl
         cell.contentView.semanticContentAttribute = .forceLeftToRight
         cell.textLabel?.semanticContentAttribute = .forceLeftToRight
         cell.textLabel?.textAlignment = .left
+        
+        cell.backgroundColor = theme.colors.paperBackground;
+        cell.textLabel?.textColor = theme.colors.primaryText;
+        
+        cell.selectionStyle = .default
+        cell.selectedBackgroundView = UIView()
+        cell.selectedBackgroundView?.backgroundColor = theme.colors.midBackground
+        
         let library:LibraryUsed = self.libraries[indexPath.row];
         cell.textLabel?.text = library.title
         return cell
@@ -116,6 +127,7 @@ class LibrariesUsedViewController: UIViewController, UITableViewDelegate, UITabl
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let libraryVC = LibraryUsedViewController.wmf_viewControllerFromStoryboardNamed(LibrariesUsedViewController.storyboardName)
+        libraryVC.apply(theme: self.theme)
         let library = self.libraries[indexPath.row];
         libraryVC.library = library
         libraryVC.title = library.title
@@ -127,11 +139,14 @@ class LibraryUsedViewController: UIViewController {
     @IBOutlet weak var textView: UITextView!
     public var library: LibraryUsed?
     
+    fileprivate var theme = Theme.standard
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-        if #available(iOS 10.0, *) {
-            textView.adjustsFontForContentSizeCategory = true
-        }
+        
+        self.apply(theme: self.theme)
+        
+        textView.adjustsFontForContentSizeCategory = true
         textView.textContainerInset = UIEdgeInsets.init(top: 10, left: 10, bottom: 10, right: 10)
         guard let licenseText = library?.licenseText else { return }
         textView.text = normalizeWhitespaceForBetterReadability(from: licenseText)
@@ -174,10 +189,36 @@ class LibraryUsedViewController: UIViewController {
         }
         var string = licenseString
         let placeholder = "#temporary_placeholder#"
-        string = multiNewlineRegex.stringByReplacingMatches(in: string, options: [], range: NSRange(location: 0, length: string.characters.count), withTemplate: placeholder)
+        string = multiNewlineRegex.stringByReplacingMatches(in: string, options: [], range: NSRange(location: 0, length: string.count), withTemplate: placeholder)
         string = string.components(separatedBy: .newlines).joined(separator: " ")
-        string = whitespaceRegex.stringByReplacingMatches(in: string, options: [], range: NSRange(location: 0, length: string.characters.count), withTemplate: " ")
+        string = whitespaceRegex.stringByReplacingMatches(in: string, options: [], range: NSRange(location: 0, length: string.count), withTemplate: " ")
         string = string.replacingOccurrences(of: placeholder, with: "\n\n")
         return string
+    }
+}
+
+extension LibrariesUsedViewController: Themeable {
+    public func apply(theme: Theme) {
+        self.theme = theme
+        
+        guard viewIfLoaded != nil else {
+            return
+        }
+        tableView.backgroundColor = theme.colors.baseBackground
+        tableView.separatorColor = theme.colors.chromeBackground
+        tableView.reloadData()
+    }
+}
+
+extension LibraryUsedViewController: Themeable {
+    public func apply(theme: Theme) {
+        self.theme = theme
+        
+        guard viewIfLoaded != nil else {
+            return
+        }
+        self.view.backgroundColor = theme.colors.baseBackground
+        self.textView.backgroundColor = theme.colors.baseBackground
+        self.textView.textColor = theme.colors.primaryText
     }
 }

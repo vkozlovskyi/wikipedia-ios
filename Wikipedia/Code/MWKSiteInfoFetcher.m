@@ -22,6 +22,10 @@
     return self;
 }
 
+- (void)dealloc {
+    [self.operationManager invalidateSessionCancelingTasks:YES];
+}
+
 - (BOOL)isFetching {
     return [[self.operationManager operationQueue] operationCount] > 0;
 }
@@ -41,7 +45,8 @@
         success:^(NSURLSessionDataTask *operation, id responseObject) {
             [[MWNetworkActivityIndicatorManager sharedManager] pop];
             NSDictionary *generalProps = [responseObject valueForKeyPath:@"query.general"];
-            MWKSiteInfo *info = [[MWKSiteInfo alloc] initWithSiteURL:siteURL mainPageTitleText:generalProps[@"mainpage"]];
+            NSDictionary *readingListsConfig = generalProps[@"readinglists-config"];
+            MWKSiteInfo *info = [[MWKSiteInfo alloc] initWithSiteURL:siteURL mainPageTitleText:generalProps[@"mainpage"] readingListsConfigMaxEntriesPerList:readingListsConfig[@"maxEntriesPerList"] readingListsConfigMaxListsPerUser:readingListsConfig[@"maxListsPerUser"]];
             completion(info);
         }
         failure:^(NSURLSessionDataTask *operation, NSError *error) {

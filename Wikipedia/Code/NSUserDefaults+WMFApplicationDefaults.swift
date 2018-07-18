@@ -8,13 +8,13 @@ let WMFArticleFontSizeMultiplierKey = "WMFArticleFontSizeMultiplier"
     case small = 80
     case medium = 90
     case large = 100
-    case extraLarge = 120
-    case extraExtraLarge = 140
-    case extraExtraExtraLarge = 160
+    case extraLarge = 125
+    case extraExtraLarge = 150
+    case extraExtraExtraLarge = 175
 }
 
 extension UserDefaults {
-    public func wmf_migrateFontSizeMultiplier() {
+    @objc public func wmf_migrateFontSizeMultiplier() {
         if let readingFontSize = self.object(forKey: WMFReadingFontSizeLegacyKey) as? NSNumber {
             if readingFontSize.intValue != WMFFontSizeMultiplier.large.rawValue {
                 self.set(readingFontSize.intValue, forKey: WMFArticleFontSizeMultiplierKey)
@@ -23,12 +23,12 @@ extension UserDefaults {
         }
     }
     
-    public func wmf_setArticleFontSizeMultiplier(_ fontSize: NSNumber) {
+    @objc public func wmf_setArticleFontSizeMultiplier(_ fontSize: NSNumber) {
         self.set(fontSize, forKey: WMFArticleFontSizeMultiplierKey)
         self.synchronize()
     }
     
-    public func wmf_articleFontSizeMultiplier() -> NSNumber {
+    @objc public func wmf_articleFontSizeMultiplier() -> NSNumber {
         if let fontSize = self.object(forKey: WMFArticleFontSizeMultiplierKey) as? NSNumber {
             return fontSize
         } else {

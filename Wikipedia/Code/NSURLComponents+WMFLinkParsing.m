@@ -1,5 +1,6 @@
 #import <WMF/NSURLComponents+WMFLinkParsing.h>
 #import <WMF/NSString+WMFPageUtilities.h>
+#import <WMF/NSCharacterSet+WMFLinkParsing.h>
 
 @implementation NSURLComponents (WMFLinkParsing)
 
@@ -60,22 +61,36 @@
     if (isMobile) {
         [hostComponents addObject:@"m"];
     }
-    [hostComponents addObject:domain];
+    if (domain) {
+        [hostComponents addObject:domain];
+    }
     return [hostComponents componentsJoinedByString:@"."];
 }
 
-- (void)setWmf_title:(NSString *)wmf_title {
-    NSString *path = [wmf_title wmf_denormalizedPageTitle];
+- (void)setWmf_titleWithUnderscores:(NSString *_Nullable)titleWithUnderscores {
+    NSString *path = [titleWithUnderscores stringByAddingPercentEncodingWithAllowedCharacters:[NSCharacterSet wmf_URLPathComponentAllowedCharacterSet]];
     if (path != nil && path.length > 0) {
         NSArray *pathComponents = @[@"/wiki/", path];
-        self.path = [NSString pathWithComponents:pathComponents];
+        self.percentEncodedPath = [NSString pathWithComponents:pathComponents];
     } else {
-        self.path = nil;
+        self.percentEncodedPath = nil;
     }
+}
+
+- (void)setWmf_title:(NSString *)wmf_title {
+    self.wmf_titleWithUnderscores = [wmf_title wmf_denormalizedPageTitle];
 }
 
 - (NSString *)wmf_title {
     NSString *title = [[self.path wmf_pathWithoutWikiPrefix] wmf_normalizedPageTitle];
+    if (title == nil) {
+        title = @"";
+    }
+    return title;
+}
+
+- (NSString *)wmf_titleWithUnderscores {
+    NSString *title = [[self.path wmf_pathWithoutWikiPrefix] wmf_denormalizedPageTitle];
     if (title == nil) {
         title = @"";
     }
@@ -88,6 +103,42 @@
 
 - (NSString *)wmf_fragment {
     return [self.fragment precomposedStringWithCanonicalMapping];
+}
+
+- (NSURLComponents *)wmf_componentsByRemovingQueryItemsNamed:(NSSet<NSString *> *)queryItemNames {
+    if (self.queryItems.count == 0) {
+        return self;
+    }
+    NSURLComponents *updatedComponents = [self copy];
+    NSMutableArray *validQueryItems = [NSMutableArray arrayWithCapacity:self.queryItems.count];
+    for (NSURLQueryItem *queryItem in self.queryItems) {
+        if ([queryItemNames containsObject:queryItem.name]) {
+            continue;
+        }
+        [validQueryItems addObject:queryItem];
+    }
+    updatedComponents.queryItems = validQueryItems.count > 0 ? validQueryItems : nil;
+    return updatedComponents;
+}
+
+- (nullable NSString *)wmf_valueForQueryItemNamed:(NSString *)queryItemName {
+    NSString *value = nil;
+    for (NSURLQueryItem *queryItem in self.queryItems) {
+        if (![queryItem.name isEqualToString:queryItemName]) {
+            continue;
+        }
+        value = queryItem.value;
+        break;
+    }
+    return value;
+}
+
+- (nullable NSString *)wmf_eventLoggingLabel {
+    return [self wmf_valueForQueryItemNamed:@"event_logging_label"];
+}
+
+- (nullable NSURLComponents *)wmf_componentsByRemovingInternalQueryParameters {
+    return [self wmf_componentsByRemovingQueryItemsNamed:[NSSet setWithObject:@"event_logging_label"]];
 }
 
 @end

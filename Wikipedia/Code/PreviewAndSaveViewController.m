@@ -5,7 +5,6 @@
 #import "PreviewWebViewContainer.h"
 #import "PaddedLabel.h"
 #import "MenuButton.h"
-#import "EditSummaryViewController.h"
 #import "PreviewLicenseView.h"
 #import "UIScrollView+ScrollSubviewToLocation.h"
 #import "AbuseFilterAlert.h"
@@ -17,9 +16,7 @@
 #import "WMFOpenExternalLinkDelegateProtocol.h"
 #import "Wikipedia-Swift.h"
 #import "UIViewController+WMFOpenExternalUrl.h"
-@import Masonry;
 #import <WMF/AFHTTPSessionManager+WMFCancelAll.h>
-#import "WKWebView+LoadAssetsHtml.h"
 
 typedef NS_ENUM(NSInteger, WMFCannedSummaryChoices) {
     CANNED_SUMMARY_TYPOS,
@@ -36,12 +33,15 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
     PREVIEW_MODE_EDIT_WIKITEXT_CAPTCHA
 };
 
+static const NSString *kvo_PreviewAndSaveViewController_previewWebViewContainer_webView_scrollView = @"kvo_PreviewAndSaveViewController_previewWebViewContainer_webView_scrollView";
+
 @interface PreviewAndSaveViewController () <FetchFinishedDelegate, UITextFieldDelegate, UIScrollViewDelegate, WMFOpenExternalLinkDelegate, WMFPreviewSectionLanguageInfoDelegate, WMFPreviewAnchorTapAlertDelegate, PreviewLicenseViewDelegate, WMFCaptchaViewControllerDelegate>
 
 @property (strong, nonatomic) WMFCaptchaViewController *captchaViewController;
 @property (strong, nonatomic) IBOutlet UIView *captchaContainer;
 @property (strong, nonatomic) IBOutlet UIScrollView *captchaScrollView;
 @property (strong, nonatomic) IBOutlet UIView *captchaScrollContainer;
+@property (weak, nonatomic) IBOutlet UIView *previewLabelContainer;
 
 @property (strong, nonatomic) IBOutlet UIView *editSummaryContainer;
 @property (strong, nonatomic) IBOutlet PreviewWebViewContainer *previewWebViewContainer;
@@ -71,6 +71,8 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 @property (strong, nonatomic) PreviewHtmlFetcher *previewHtmlFetcher;
 @property (strong, nonatomic) WMFAuthTokenFetcher *editTokenFetcher;
 
+@property (strong, nonatomic) WMFTheme *theme;
+
 @end
 
 @implementation PreviewAndSaveViewController
@@ -99,10 +101,6 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
     }
 
     return [summaryArray componentsJoinedByString:@"; "];
-}
-
-- (BOOL)prefersStatusBarHidden {
-    return YES;
 }
 
 - (void)wmf_showAlertForTappedAnchorHref:(NSString *)href {
@@ -186,6 +184,10 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    if (!self.theme) {
+        self.theme = [WMFTheme standard];
+    }
+
     self.previewLicenseView.previewLicenseViewDelegate = self;
     self.previewWebViewContainer.externalLinksOpenerDelegate = self;
 
@@ -228,8 +230,9 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
     [self.previewWebViewContainer.webView.scrollView addObserver:self
                                                       forKeyPath:@"contentSize"
                                                          options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial
-                                                         context:nil];
+                                                         context:&kvo_PreviewAndSaveViewController_previewWebViewContainer_webView_scrollView];
     [self preview];
+    [self applyTheme:self.theme];
 }
 
 - (void)previewLabelTapped:(UITapGestureRecognizer *)recognizer {
@@ -242,15 +245,15 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
                       ofObject:(id)object
                         change:(NSDictionary *)change
                        context:(void *)context {
-    if (
-        (object == self.previewWebViewContainer.webView.scrollView) &&
-        [keyPath isEqual:@"contentSize"]) {
+    if (context == &kvo_PreviewAndSaveViewController_previewWebViewContainer_webView_scrollView) {
         // Size the web view to the height of the html content it is displaying (gets rid of the web view's scroll bars).
         // Note: the PreviewWebView class has to call "forceScrollViewContentSizeToReflectActualHTMLHeight" in its
         // overridden "layoutSubviews" method for the contentSize to be reported accurately such that it reflects the
         // actual height of the web view content here. Without the web view class calling this method in its
         // layoutSubviews, the contentSize.height wouldn't change if we, say, rotated the device.
         self.previewWebViewHeightConstraint.constant = self.previewWebViewContainer.webView.scrollView.contentSize.height;
+    } else {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     }
 }
 
@@ -302,7 +305,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 
 - (void)setupEditSummaryContainerSubviews {
     // Setup the canned edit summary buttons.
-    UIColor *color = [UIColor wmf_blue];
+    UIColor *color = self.theme.colors.link;
     UIEdgeInsets padding = UIEdgeInsetsMake(6, 10, 6, 10);
     UIEdgeInsets margin = UIEdgeInsetsMake(8, 0, 8, 0);
     CGFloat fontSize = 14.0;
@@ -330,7 +333,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
     self.aboutLabel = [[UILabel alloc] init];
     self.aboutLabel.numberOfLines = 0;
     self.aboutLabel.font = [UIFont boldSystemFontOfSize:24.0];
-    self.aboutLabel.textColor = [UIColor darkGrayColor];
+    self.aboutLabel.textColor = self.theme.colors.secondaryText;
     self.aboutLabel.lineBreakMode = NSLineBreakByWordWrapping;
     self.aboutLabel.translatesAutoresizingMaskIntoConstraints = NO;
     self.aboutLabel.text = WMFLocalizedStringWithDefaultValue(@"edit-summary-title", nil, nil, @"How did you improve the article?", @"Title for edit summary area of the preview page");
@@ -380,8 +383,12 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
     // Set the overlay's text field to self.summaryText so it can display
     // any existing value (in case user taps "Other" again)
     summaryVC.summaryText = self.summaryText;
-    summaryVC.previewVC = self;
-    [self presentViewController:[[UINavigationController alloc] initWithRootViewController:summaryVC] animated:YES completion:nil];
+    __weak typeof(self) weakSelf = self;
+    summaryVC.didSaveSummary = ^void(NSString *savedSummary) {
+        weakSelf.summaryText = savedSummary;
+    };
+    [summaryVC applyTheme:self.theme];
+    [self presentViewController:[[WMFThemeableNavigationController alloc] initWithRootViewController:summaryVC theme:self.theme] animated:YES completion:nil];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -420,9 +427,10 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
         // Call if user taps the blue "Log In" text in the CC text.
         //self.saveAutomaticallyIfSignedIn = YES;
         WMFLoginViewController *loginVC = [WMFLoginViewController wmf_initialViewControllerFromClassStoryboard];
-        loginVC.funnel = [[LoginFunnel alloc] init];
+        loginVC.funnel = [[WMFLoginFunnel alloc] init];
         [loginVC.funnel logStartFromEdit:self.funnel.editSessionToken];
-        UINavigationController *nc = [[UINavigationController alloc] initWithRootViewController:loginVC];
+        [loginVC applyTheme:self.theme];
+        UINavigationController *nc = [[WMFThemeableNavigationController alloc] initWithRootViewController:loginVC theme:self.theme];
         [self presentViewController:nc animated:YES completion:nil];
     }
 }
@@ -457,7 +465,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
         switch (status) {
             case FETCH_FINAL_STATUS_SUCCEEDED: {
                 [[WMFAlertManager sharedInstance] dismissAlert];
-                [self.previewWebViewContainer.webView loadHTML:fetchedData baseURL:[NSURL URLWithString:@"https://wikipedia.org"] withAssetsFile:@"preview.html" scrolledToFragment:nil padding:UIEdgeInsetsZero];
+                [self.previewWebViewContainer.webView loadHTML:fetchedData baseURL:[NSURL URLWithString:@"https://wikipedia.org"] withAssetsFile:@"preview.html" scrolledToFragment:nil padding:UIEdgeInsetsZero theme:self.theme];
             } break;
             case FETCH_FINAL_STATUS_FAILED: {
                 [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
@@ -482,7 +490,6 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
             } break;
 
             case FETCH_FINAL_STATUS_FAILED: {
-                [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
 
                 switch (error.code) {
                     case WIKITEXT_UPLOAD_ERROR_NEEDS_CAPTCHA: {
@@ -492,7 +499,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 
                         NSURL *captchaUrl = [[NSURL alloc] initWithString:error.userInfo[@"captchaUrl"]];
                         NSString *captchaId = error.userInfo[@"captchaId"];
-                        [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
+                        [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:NO dismissPreviousAlerts:YES tapCallBack:NULL];
                         self.captchaViewController.captcha = [[WMFCaptcha alloc] initWithCaptchaID:captchaId captchaURL:captchaUrl];
                         [self revealCaptcha];
                     } break;
@@ -501,6 +508,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
                     case WIKITEXT_UPLOAD_ERROR_ABUSEFILTER_WARNING:
                     case WIKITEXT_UPLOAD_ERROR_ABUSEFILTER_OTHER: {
                         //NSString *warningHtml = error.userInfo[@"warning"];
+                        [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
 
                         [self wmf_hideKeyboard];
 
@@ -524,11 +532,13 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 
                     case WIKITEXT_UPLOAD_ERROR_SERVER:
                     case WIKITEXT_UPLOAD_ERROR_UNKNOWN:
+                        [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
 
                         [self.funnel logError:error.localizedDescription]; // @fixme is this right msg?
                         break;
 
                     default:
+                        [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
                         break;
                 }
             } break;
@@ -558,7 +568,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 
     [self.funnel logSaveAttempt];
     if (self.savedPagesFunnel) {
-        [self.savedPagesFunnel logEditAttempt];
+        [self.savedPagesFunnel logEditAttemptWithArticleURL:self.section.article.url];
     }
 
     [[QueuesSingleton sharedInstance].sectionWikiTextUploadManager wmf_cancelAllTasksWithCompletionHandler:^{
@@ -589,12 +599,10 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
                                                                          token:result.token
                                                                    withManager:[QueuesSingleton sharedInstance].sectionWikiTextUploadManager
                                                             thenNotifyDelegate:self];
-
                 }
                 failure:^(NSError *error) {
                     [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:YES dismissPreviousAlerts:YES tapCallBack:NULL];
                 }];
-
     }];
 }
 
@@ -603,7 +611,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
 
     [self.view addSubview:abuseFilterAlert];
 
-    NSDictionary *views = @{ @"abuseFilterAlert": abuseFilterAlert };
+    NSDictionary *views = @{@"abuseFilterAlert": abuseFilterAlert};
 
     [self.view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[abuseFilterAlert]|"
                                                                       options:0
@@ -654,7 +662,7 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
     [self.view bringSubviewToFront:self.captchaScrollView];
 
     self.captchaScrollView.alpha = 1.0f;
-    self.captchaScrollView.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.98];
+    self.captchaScrollView.backgroundColor = self.theme.colors.paperBackground;
 
     self.captchaScrollContainer.backgroundColor = [UIColor clearColor];
     self.captchaContainer.backgroundColor = [UIColor clearColor];
@@ -678,13 +686,42 @@ typedef NS_ENUM(NSInteger, WMFPreviewAndSaveMode) {
                                             handler:^(UIAlertAction *_Nonnull action) {
                                                 [self wmf_openExternalUrl:WMFLicenses.CCBYSA3URL];
                                             }]];
-    [sheet addAction:[UIAlertAction actionWithTitle:WMFLicenses.localizedGDFLTitle
+    [sheet addAction:[UIAlertAction actionWithTitle:WMFLicenses.localizedGFDLTitle
                                               style:UIAlertActionStyleDefault
                                             handler:^(UIAlertAction *_Nonnull action) {
-                                                [self wmf_openExternalUrl:WMFLicenses.GDFLURL];
+                                                [self wmf_openExternalUrl:WMFLicenses.GFDLURL];
                                             }]];
     [sheet addAction:[UIAlertAction actionWithTitle:WMFLocalizedStringWithDefaultValue(@"open-link-cancel", nil, nil, @"Cancel", @"Text for cancel button in popup menu of terms/license link options\n{{Identical|Cancel}}") style:UIAlertActionStyleCancel handler:NULL]];
     [self presentViewController:sheet animated:YES completion:NULL];
+}
+
+#pragma mark - WMFThemeable
+
+- (void)applyTheme:(WMFTheme *)theme {
+    self.theme = theme;
+    if (self.viewIfLoaded == nil) {
+        return;
+    }
+
+    self.previewWebViewContainer.webView.opaque = NO;
+    self.previewWebViewContainer.webView.scrollView.backgroundColor = [UIColor clearColor];
+
+    self.scrollView.backgroundColor = theme.colors.baseBackground;
+    self.captchaScrollView.backgroundColor = theme.colors.baseBackground;
+
+    [self.previewLicenseView applyTheme:theme];
+
+    self.scrollContainer.backgroundColor = theme.colors.paperBackground;
+    self.editSummaryContainer.backgroundColor = theme.colors.paperBackground;
+    self.captchaContainer.backgroundColor = theme.colors.paperBackground;
+    self.captchaScrollContainer.backgroundColor = theme.colors.paperBackground;
+    self.previewWebViewContainer.webView.backgroundColor = theme.colors.paperBackground;
+
+    self.previewLabel.backgroundColor = theme.colors.midBackground;
+    self.previewLabel.textColor = theme.colors.secondaryText;
+    self.previewLabelContainer.backgroundColor = theme.colors.midBackground;
+
+    self.previewWebViewContainer.backgroundColor = theme.colors.paperBackground;
 }
 
 @end

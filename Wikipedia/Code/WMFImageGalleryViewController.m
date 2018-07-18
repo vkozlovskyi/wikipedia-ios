@@ -2,12 +2,10 @@
 @import WMF;
 @import FLAnimatedImage;
 @import NYTPhotoViewer;
-@import Masonry;
 #import "Wikipedia-Swift.h"
 #import "MWKImageInfoFetcher+PicOfTheDayInfo.h"
 #import "UIViewController+WMFOpenExternalUrl.h"
 #import "WMFImageGalleryDetailOverlayView.h"
-#import "WMFGradientView.h"
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -53,9 +51,25 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (UIImageView *)currentImageView;
 
+@property (nonatomic, strong) WMFTheme *theme;
+
 @end
 
-@interface WMFArticlePhoto : NSObject <WMFPhoto>
+@interface WMFBasePhoto: NSObject
+
+@property (nullable, nonatomic, strong) WMFTypedImageData *typedImageData;
+
+@property (nullable, nonatomic, strong) NSString *imageDataUTType;
+
+@property (nullable, nonatomic, strong) NSData *imageData;
+
+//used for metadaata
+@property (nonatomic, strong, nullable) MWKImageInfo *imageInfo;
+
+
+@end
+
+@interface WMFArticlePhoto : WMFBasePhoto <WMFPhoto>
 
 //set to display a thumbnail during download
 @property (nonatomic, strong, nullable) MWKImage *thumbnailImageObject;
@@ -63,10 +77,37 @@ NS_ASSUME_NONNULL_BEGIN
 //used to fetch the full size image
 @property (nonatomic, strong, nullable) MWKImage *imageObject;
 
-//used for metadaata
-@property (nonatomic, strong, nullable) MWKImageInfo *imageInfo;
 
 @end
+
+@implementation WMFBasePhoto
+
+- (nullable WMFTypedImageData *)typedImageData {
+    @synchronized(self) {
+        if (!_typedImageData) {
+            NSURL *URL = self.imageInfo.canonicalFileURL;
+            if (URL) {
+                _typedImageData = [[WMFImageController sharedInstance] dataWithURL:URL];
+            }
+        }
+        return _typedImageData;
+    }
+}
+
+- (BOOL)isGIF {
+    return [self.imageInfo.canonicalFileURL.absoluteString.lowercaseString hasSuffix:@".gif"];
+}
+
+- (nullable NSData *)imageData {
+    return self.isGIF ? self.typedImageData.data : nil;
+}
+
+- (nullable NSString *)imageDataUTType {
+    return  self.isGIF ? (NSString *)kUTTypeGIF : nil;
+}
+
+@end
+
 
 @implementation WMFArticlePhoto
 
@@ -90,6 +131,10 @@ NS_ASSUME_NONNULL_BEGIN
         self.thumbnailImageObject = imageObject;
     }
     return self;
+}
+
+- (void)dealloc {
+    [NSObject cancelPreviousPerformRequestsWithTarget:self];
 }
 
 - (nullable MWKImage *)bestImageObject {
@@ -147,15 +192,10 @@ NS_ASSUME_NONNULL_BEGIN
     if (self.imageObject) {
         return self.imageObject.sourceURL;
     } else if (self.imageInfo) {
-        return self.imageInfo.imageThumbURL;
+        return [self.imageInfo imageURLForTargetWidth:[[UIScreen mainScreen] wmf_galleryImageWidthForScale]];
     } else {
         return nil;
     }
-}
-
-- (nullable NSData *)imageData {
-    NSURL *URL = self.bestImageURL;
-    return [URL.absoluteString.lowercaseString containsString:@".gif"] ? [[[WMFImageController sharedInstance] dataWithURL:URL] data] : nil;
 }
 
 - (nullable NSAttributedString *)attributedCaptionTitle {
@@ -176,7 +216,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 @dynamic dataSource;
 
-- (instancetype)initWithPhotos:(nullable NSArray<id<NYTPhoto>> *)photos initialPhoto:(nullable id<NYTPhoto>)initialPhoto delegate:(nullable id<NYTPhotosViewControllerDelegate>)delegate {
+- (instancetype)initWithPhotos:(nullable NSArray<id<NYTPhoto>> *)photos initialPhoto:(nullable id<NYTPhoto>)initialPhoto delegate:(nullable id<NYTPhotosViewControllerDelegate>)delegate theme:(WMFTheme *)theme overlayViewTopBarHidden:(BOOL)overlayViewTopBarHidden {
     self = [super initWithPhotos:photos initialPhoto:initialPhoto delegate:self];
     if (self) {
         /**
@@ -192,19 +232,28 @@ NS_ASSUME_NONNULL_BEGIN
         NSAssert([self respondsToSelector:@selector(currentImageView)], @"NYTPhoto implementation changed!");
         NSAssert([self respondsToSelector:@selector(newPhotoViewControllerForPhoto:)], @"NYTPhoto implementation changed!");
 
-        UIBarButtonItem *share = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"share"] style:UIBarButtonItemStylePlain target:self action:@selector(didTapShareButton)];
-        share.tintColor = [UIColor whiteColor];
-        self.rightBarButtonItem = share;
+        self.theme = theme;
 
-        UIBarButtonItem *close = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"close"] style:UIBarButtonItemStylePlain target:self action:@selector(didTapCloseButton)];
-        close.tintColor = [UIColor whiteColor];
-        self.leftBarButtonItem = close;
+        [self setOverlayViewTopBarHidden:overlayViewTopBarHidden];
     }
     return self;
 }
 
-- (BOOL)prefersStatusBarHidden {
-    return YES;
+- (void)setOverlayViewTopBarHidden:(BOOL)hidden {
+    if (hidden) {
+        self.overlayView.rightBarButtonItem = nil;
+        self.overlayView.leftBarButtonItem = nil;
+        self.overlayView.topCoverBackgroundColor = [UIColor clearColor];
+    } else {
+        UIBarButtonItem *share = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"share"] style:UIBarButtonItemStylePlain target:self action:@selector(didTapShareButton)];
+        share.tintColor = [UIColor whiteColor];
+        self.overlayView.rightBarButtonItem = share;
+
+        UIBarButtonItem *close = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"close"] style:UIBarButtonItemStylePlain target:self action:@selector(didTapCloseButton)];
+        close.tintColor = [UIColor whiteColor];
+        close.accessibilityLabel = [WMFCommonStrings closeButtonAccessibilityLabel];
+        self.overlayView.leftBarButtonItem = close;
+    }
 }
 
 - (UIInterfaceOrientationMask)supportedInterfaceOrientations {
@@ -262,30 +311,21 @@ NS_ASSUME_NONNULL_BEGIN
 - (NYTPhotoViewController *)newPhotoViewControllerForPhoto:(id<NYTPhoto>)photo {
     NYTPhotoViewController *vc = [super newPhotoViewControllerForPhoto:photo];
     vc.scalingImageView.imageView.backgroundColor = [UIColor whiteColor];
+    if (!self.theme) {
+        // don't do this elsewhere
+        // self.theme needs to be set before the [super init] call
+        // this is easiest way to do it for now
+        self.theme = NSUserDefaults.wmf_userDefaults.wmf_appTheme;
+    }
+    vc.scalingImageView.imageView.alpha = self.theme.imageOpacity;
     return vc;
 }
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    [self addGradientToGalleryNavigationBar];
-}
-
-- (void)addGradientToGalleryNavigationBar {
-    WMFGradientView *gradientView = [WMFGradientView new];
-    [gradientView.gradientLayer setLocations:@[@0, @.745, @1]];
-    [gradientView.gradientLayer setColors:@[
-        (id)[UIColor blackColor].CGColor,
-        (id)[UIColor blackColor].CGColor,
-        (id)[UIColor clearColor].CGColor
-    ]];
-    [gradientView.gradientLayer setStartPoint:CGPointMake(0.5, 0.0)];
-    [gradientView.gradientLayer setEndPoint:CGPointMake(0.5, 1.0)];
-    [self.overlayView.navigationBar addSubview:gradientView];
-    [self.overlayView.navigationBar sendSubviewToBack:gradientView];
-    [gradientView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.top.leading.trailing.equalTo(self.overlayView.navigationBar);
-        make.height.equalTo(self.overlayView.navigationBar).multipliedBy(1.34);
-    }];
+    if (@available(iOS 11.0, *)) {
+        self.view.accessibilityIgnoresInvertColors = YES;
+    }
 }
 
 #pragma mark - Actions
@@ -306,19 +346,8 @@ NS_ASSUME_NONNULL_BEGIN
         }
         success:^(WMFImageDownload *_Nonnull download) {
             @strongify(self);
-            NSMutableArray *items = [NSMutableArray array];
 
-            WMFImageTextActivitySource *textSource = [[WMFImageTextActivitySource alloc] initWithInfo:info];
-            [items addObject:textSource];
-
-            WMFImageURLActivitySource *imageSource = [[WMFImageURLActivitySource alloc] initWithInfo:info];
-            [items addObject:imageSource];
-
-            if (download.image) {
-                [items addObject:download.image];
-            }
-
-            UIActivityViewController *vc = [[UIActivityViewController alloc] initWithActivityItems:items applicationActivities:nil];
+            UIActivityViewController *vc = [[WMFShareActivityController alloc] initWithImageInfo:info imageDownload:download];
             vc.excludedActivityTypes = @[UIActivityTypeAddToReadingList];
             UIPopoverPresentationController *presenter = [vc popoverPresentationController];
             presenter.barButtonItem = self.rightBarButtonItem;
@@ -368,14 +397,29 @@ NS_ASSUME_NONNULL_BEGIN
     @weakify(self)
         caption.ownerTapCallback = ^{
         @strongify(self)
-            [self wmf_openExternalUrl:imageInfo.license.URL];
+            if (imageInfo.license.URL) {
+                [self wmf_openExternalUrl:imageInfo.license.URL];
+            }
     };
     caption.infoTapCallback = ^{
         @strongify(self)
+        if (imageInfo.filePageURL) {
             [self wmf_openExternalUrl:imageInfo.filePageURL];
+        }
     };
 
     return caption;
+}
+
+- (void)updateImageForPhotoAfterUserInteractionIsFinished:(id<NYTPhoto> _Nullable)photo {
+    //Exclude UITrackingRunLoopMode so the update doesn't happen while the user is pinching or scrolling
+    [self performSelector:@selector(updateImageForPhoto:) withObject:photo afterDelay:0 inModes:@[NSDefaultRunLoopMode]];
+}
+
+#pragma mark - WMFThemeable
+
+- (void)applyTheme:(WMFTheme *)theme {
+    self.theme = theme;
 }
 
 @end
@@ -385,16 +429,16 @@ NS_ASSUME_NONNULL_BEGIN
 @interface WMFArticleImageGalleryViewController ()
 
 @property (nonatomic, strong) WMFImageInfoController *infoController;
-
+@property (nonatomic, getter=areDownloadErrorAlertsDisabled) BOOL downloadErrorAlertsDisabled;
 @end
 
 @implementation WMFArticleImageGalleryViewController
 
-- (nullable instancetype)initWithArticle:(MWKArticle *)article {
-    return [self initWithArticle:article selectedImage:nil];
+- (nullable instancetype)initWithArticle:(MWKArticle *)article theme:(WMFTheme *)theme overlayViewTopBarHidden:(BOOL)overlayViewTopBarHidden {
+    return [self initWithArticle:article selectedImage:nil theme:theme overlayViewTopBarHidden:(BOOL)overlayViewTopBarHidden];
 }
 
-- (nullable instancetype)initWithArticle:(MWKArticle *)article selectedImage:(nullable MWKImage *)image {
+- (nullable instancetype)initWithArticle:(MWKArticle *)article selectedImage:(nullable MWKImage *)image theme:(WMFTheme *)theme overlayViewTopBarHidden:(BOOL)overlayViewTopBarHidden {
     NSParameterAssert(article);
     NSParameterAssert(article.dataStore);
 
@@ -411,7 +455,7 @@ NS_ASSUME_NONNULL_BEGIN
         selected = [[self class] photoWithImage:image inPhotos:photos];
     }
 
-    self = [super initWithPhotos:photos initialPhoto:selected delegate:nil];
+    self = [super initWithPhotos:photos initialPhoto:selected delegate:nil theme:theme overlayViewTopBarHidden:overlayViewTopBarHidden];
     if (self) {
         self.infoController = [[WMFImageInfoController alloc] initWithDataStore:article.dataStore batchSize:50];
         [self.infoController setUniqueArticleImages:items forArticleURL:article.url];
@@ -493,10 +537,10 @@ NS_ASSUME_NONNULL_BEGIN
             }
             success:^(WMFImageDownload *_Nonnull download) {
                 @strongify(self);
-                [self updateImageForPhoto:galleryImage];
+                [self updateImageForPhotoAfterUserInteractionIsFinished:galleryImage];
             }];
     } else {
-        [self updateImageForPhoto:galleryImage];
+        [self updateImageForPhotoAfterUserInteractionIsFinished:galleryImage];
     }
 }
 
@@ -533,6 +577,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)imageInfoController:(WMFImageInfoController *)controller
          failedToFetchBatch:(NSRange)range
                       error:(NSError *)error {
+    if (self.areDownloadErrorAlertsDisabled) {
+        return;
+    }
+    self.downloadErrorAlertsDisabled = YES; //only show one alert per gallery session
     [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:NO dismissPreviousAlerts:NO tapCallBack:NULL];
     //display error image?
 }
@@ -544,18 +592,44 @@ NS_ASSUME_NONNULL_BEGIN
     return YES;
 }
 
+#pragma mark - Peek & Pop
+
+- (NSArray *)previewActionItems {
+    UIPreviewAction *share = [UIPreviewAction actionWithTitle:[WMFCommonStrings shareActionTitle]
+                                                        style:UIPreviewActionStyleDefault
+                                                      handler:^(UIPreviewAction *_Nonnull action, UIViewController *_Nonnull previewViewController) {
+
+                                                          id<WMFPhoto> photo = (id<WMFPhoto>)self.currentlyDisplayedPhoto;
+                                                          MWKImageInfo *info = [photo bestImageInfo];
+                                                          NSURL *url = [photo bestImageURL];
+
+                                                          @weakify(self);
+                                                          [[WMFImageController sharedInstance] fetchImageWithURL:url
+                                                              failure:^(NSError *_Nonnull error) {
+                                                                  [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:NO dismissPreviousAlerts:NO tapCallBack:NULL];
+                                                              }
+                                                              success:^(WMFImageDownload *_Nonnull download) {
+                                                                  @strongify(self);
+
+                                                                  UIActivityViewController *vc = [[WMFShareActivityController alloc] initWithImageInfo:info imageDownload:download];
+                                                                  vc.excludedActivityTypes = @[UIActivityTypeAddToReadingList];
+
+                                                                  [self.imagePreviewingActionsDelegate shareImagePreviewActionSelectedWithImageController:(WMFImageGalleryViewController *)previewViewController shareActivityController:vc];
+                                                              }];
+
+                                                      }];
+    return @[share];
+}
+
 @end
 
-@interface WMFPOTDPhoto : NSObject <WMFPhoto>
+@interface WMFPOTDPhoto : WMFBasePhoto <WMFPhoto>
 
 //used to fetch imageInfo
 @property (nonatomic, strong, nullable) NSDate *potdDate;
 
 //set to display a thumbnail during download
 @property (nonatomic, strong, nullable) MWKImageInfo *thumbnailImageInfo;
-
-//used for metadaata
-@property (nonatomic, strong, nullable) MWKImageInfo *imageInfo;
 
 @end
 
@@ -580,13 +654,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (nullable NSURL *)bestImageURL {
-    if (self.imageInfo) {
-        return self.imageInfo.imageThumbURL;
-    } else if (self.thumbnailImageInfo) {
-        return self.thumbnailImageInfo.imageThumbURL;
-    } else {
-        return nil;
-    }
+    return self.imageURL;
 }
 
 - (nullable UIImage *)placeholderImage {
@@ -621,11 +689,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (nullable NSURL *)imageURL {
-    return self.imageInfo.imageThumbURL;
-}
-
-- (nullable NSData *)imageData {
-    return nil;
+    return [self.imageInfo imageURLForTargetWidth:[[UIScreen mainScreen] wmf_galleryImageWidthForScale]];
 }
 
 - (nullable NSAttributedString *)attributedCaptionTitle {
@@ -650,12 +714,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 @implementation WMFPOTDImageGalleryViewController
 
-- (instancetype)initWithDates:(NSArray<NSDate *> *)imageDates {
+- (instancetype)initWithDates:(NSArray<NSDate *> *)imageDates theme:(WMFTheme *)theme overlayViewTopBarHidden:(BOOL)overlayViewTopBarHidden {
     NSParameterAssert(imageDates);
     NSArray *items = imageDates;
     NSArray<WMFPOTDPhoto *> *photos = [WMFPOTDPhoto photosWithDates:items];
 
-    self = [super initWithPhotos:photos initialPhoto:nil delegate:nil];
+    self = [super initWithPhotos:photos initialPhoto:nil delegate:nil theme:theme overlayViewTopBarHidden:overlayViewTopBarHidden];
     if (self) {
         self.infoFetcher = [[MWKImageInfoFetcher alloc] init];
     }
@@ -718,10 +782,10 @@ NS_ASSUME_NONNULL_BEGIN
             }
             success:^(WMFImageDownload *_Nonnull download) {
                 @strongify(self);
-                [self updateImageForPhoto:galleryImage];
+                [self updateImageForPhotoAfterUserInteractionIsFinished:galleryImage];
             }];
     } else {
-        [self updateImageForPhoto:galleryImage];
+        [self updateImageForPhotoAfterUserInteractionIsFinished:galleryImage];
     }
 }
 

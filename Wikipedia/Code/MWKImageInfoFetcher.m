@@ -42,6 +42,10 @@
     return self;
 }
 
+- (void)dealloc {
+    [_manager invalidateSessionCancelingTasks:YES];
+}
+
 - (void)fetchGalleryInfoForImage:(NSString *)canonicalPageTitle fromSiteURL:(NSURL *)siteURL failure:(WMFErrorHandler)failure success:(WMFSuccessIdHandler)success {
     [self fetchGalleryInfoForImageFiles:@[canonicalPageTitle]
                             fromSiteURL:siteURL
@@ -58,7 +62,7 @@
                                  success:(WMFSuccessIdHandler)success {
     [self fetchInfoForTitles:pageTitles
                  fromSiteURL:siteURL
-              thumbnailWidth:[[UIScreen mainScreen] wmf_galleryImageWidthForScale]
+              thumbnailWidth:[NSNumber numberWithInteger:[[UIScreen mainScreen] wmf_articleImageWidthForScale]]
              extmetadataKeys:[MWKImageInfoResponseSerializer galleryExtMetadataKeys]
             metadataLanguage:metadataLanguage
                 useGenerator:YES
@@ -87,7 +91,7 @@
                                                  failure:(void (^)(NSError *error))failure {
     return [self fetchInfoForTitles:imageTitles
                         fromSiteURL:siteURL
-                     thumbnailWidth:[[UIScreen mainScreen] wmf_galleryImageWidthForScale]
+                     thumbnailWidth:[NSNumber numberWithInteger:[[UIScreen mainScreen] wmf_articleImageWidthForScale]]
                     extmetadataKeys:[MWKImageInfoResponseSerializer galleryExtMetadataKeys]
                    metadataLanguage:siteURL.wmf_language
                        useGenerator:NO

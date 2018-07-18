@@ -1,5 +1,9 @@
 import Foundation
 
+enum AsyncOperationError: Error {
+    case cancelled
+}
+
 // Adapted from https://gist.github.com/calebd/93fa347397cec5f88233
 
 @objc(WMFAsyncOperation) open class AsyncOperation: Operation {
@@ -9,15 +13,17 @@ import Foundation
     static fileprivate let stateKeyPath = "state" // For KVO
     fileprivate let semaphore = DispatchSemaphore(value: 1) // Ensures `state` is thread-safe
     
-    fileprivate enum State: Int {
+    @objc public enum State: Int {
         case ready
         case executing
         case finished
     }
     
+    public var error: Error?
+    
     fileprivate var _state = AsyncOperation.State.ready
     
-    fileprivate var state: AsyncOperation.State {
+    @objc public var state: AsyncOperation.State {
         get {
             semaphore.wait()
             let state = _state
@@ -75,7 +81,7 @@ import Foundation
         // "Your custom implementation must not call super at any time."
         
         if isCancelled {
-            finish()
+            finish(with: AsyncOperationError.cancelled)
             return
         }
         
@@ -85,7 +91,12 @@ import Foundation
     
     // MARK: - Custom behavior
     
-    open func finish() {
+    @objc open func finish() {
+        state = .finished
+    }
+    
+    @objc open func finish(with error: Error) {
+        self.error = error
         state = .finished
     }
     
@@ -100,7 +111,7 @@ import Foundation
 @objc(WMFAsyncBlockOperation) open class AsyncBlockOperation: AsyncOperation {
     let asyncBlock: (AsyncBlockOperation) -> Void
     
-    init(asyncBlock block: @escaping (AsyncBlockOperation) -> Void) {
+    @objc init(asyncBlock block: @escaping (AsyncBlockOperation) -> Void) {
        asyncBlock = block
     }
     

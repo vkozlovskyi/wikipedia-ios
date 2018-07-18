@@ -5,8 +5,14 @@
 #import <WMF/WMFImageTag.h>
 #import <WMF/WMFImageTag+TargetImageWidthURL.h>
 #import <WMF/NSString+WMFHTMLParsing.h>
+#import <WMF/WMFFIFOCache.h>
+#import "MWKArticle.h"
 
-static const NSInteger WMFCachedResponseCountLimit = 4;
+NSString *const WMFProxyServerArticleSectionDataBasePath = @"articleSectionData";
+NSString *const WMFProxyServerArticleKeyQueryItem = @"articleKey";
+NSString *const WMFProxyServerImageWidthQueryItem = @"imageWidth";
+
+static const NSInteger WMFCachedResponseCountLimit = 6;
 
 @interface WMFProxyServerResponse : NSObject
 @property (nonatomic, copy) NSData *data;
@@ -16,10 +22,10 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
 @end
 
 @interface WMFProxyServer () <GCDWebServerDelegate>
-@property (nonatomic, strong) NSMutableDictionary<NSString *, WMFProxyServerResponse *> *responsesByPath;
-@property (nonatomic, strong) NSMutableOrderedSet<NSString *> *responsePaths;
-
+@property (nonatomic, strong) WMFFIFOCache<NSString *, WMFProxyServerResponse *> *responseCache;
+@property (nonatomic, strong) WMFFIFOCache<NSString *, MWKArticle *> *articleCache;
 @property (nonatomic, strong) GCDWebServer *webServer;
+@property (nonatomic) NSUInteger port;
 @property (nonatomic, copy, nonnull) NSString *secret;
 @property (nonatomic, copy, nonnull) NSString *hostedFolderPath;
 @property (nonatomic) NSURLComponents *hostURLComponents;
@@ -47,8 +53,10 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
 }
 
 - (void)setup {
-    self.responsesByPath = [NSMutableDictionary dictionaryWithCapacity:4];
-    self.responsePaths = [NSMutableOrderedSet orderedSetWithCapacity:4];
+    self.port = 0; // setting the port to 0 allows the OS to pick a random port on the first pass
+
+    self.responseCache = [[WMFFIFOCache alloc] initWithCountLimit:WMFCachedResponseCountLimit];
+    self.articleCache = [[WMFFIFOCache alloc] initWithCountLimit:WMFCachedResponseCountLimit];
 
     NSString *secret = [[NSUUID UUID] UUIDString];
     self.secret = secret;
@@ -62,6 +70,9 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
     [self.webServer addDefaultHandlerForMethod:@"GET" requestClass:[GCDWebServerRequest class] asyncProcessBlock:self.defaultHandler];
 
     [self start];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(appDidEnterBackground:) name:UIApplicationDidEnterBackgroundNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(appWillEnterForeground:) name:UIApplicationWillEnterForegroundNotification object:nil];
 }
 
 - (void)start {
@@ -70,7 +81,8 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
     }
 
     NSDictionary *options = @{ GCDWebServerOption_BindToLocalhost: @(YES), //only accept requests from localhost
-                               GCDWebServerOption_Port: @(0) };            // allow the OS to pick a random port
+                               GCDWebServerOption_Port: @(self.port),
+                               GCDWebServerOption_AutomaticallySuspendInBackground: @(NO) };
 
     NSError *serverStartError = nil;
     NSUInteger attempts = 0;
@@ -79,7 +91,10 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
 
     while (!didStartServer && attempts < attemptLimit) {
         didStartServer = [self.webServer startWithOptions:options error:&serverStartError];
-        if (!didStartServer) {
+        if (didStartServer) {
+            self.port = self.webServer.port; // store the port to re-use on app resume - fixes mismatched image URLs causing images to remain blank
+        } else {
+            self.port = 0; // setting the port to 0 will pick a new random port on the next pass
             DDLogError(@"Error starting proxy: %@", serverStartError);
             attempts++;
             if (attempts == attemptLimit) {
@@ -100,12 +115,28 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
     }
 }
 
+- (void)stop {
+    if (!self.isRunning) {
+        return;
+    }
+
+    [self.webServer stop];
+}
+
 #pragma mark - GCDWebServer
 
 - (void)webServerDidStop:(GCDWebServer *)server {
     if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateBackground) { //restart the server if it fails for some reason other than being in the background
         [self start];
     }
+}
+
+- (void)appDidEnterBackground:(NSNotification *)note {
+    [self stop];
+}
+
+- (void)appWillEnterForeground:(NSNotification *)note {
+    [self start];
 }
 
 - (BOOL)isRunning {
@@ -164,14 +195,66 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
             }
 
             [self handleImageRequestForURL:imgURL completionBlock:completionBlock];
+        } else if ([baseComponent isEqualToString:WMFProxyServerArticleSectionDataBasePath]) {
+            NSString *articleKey = [request.URL wmf_valueForQueryKey:WMFProxyServerArticleKeyQueryItem];
+            if (!articleKey) {
+                notFound();
+                return;
+            }
+            MWKArticle *article = [self articleForKey:articleKey];
+            if (!article) {
+                notFound();
+                return;
+            }
+            NSString *imageWidthString = [request.URL wmf_valueForQueryKey:WMFProxyServerImageWidthQueryItem];
+            if (!imageWidthString) {
+                notFound();
+                return;
+            }
+            NSInteger imageWidth = [imageWidthString integerValue];
+            if (imageWidth <= 0) {
+                notFound();
+                return;
+            }
+            MWKSectionList *sections = article.sections;
+            NSInteger count = sections.count;
+            NSMutableArray *sectionJSONs = [NSMutableArray arrayWithCapacity:count];
+            NSURL *baseURL = article.url;
+            for (MWKSection *section in sections) {
+                NSString *sectionHTML = [self stringByReplacingImageURLsWithProxyURLsInHTMLString:section.text withBaseURL:baseURL targetImageWidth:imageWidth];
+                if (!sectionHTML) {
+                    continue;
+                }
+                NSMutableDictionary *sectionJSON = [NSMutableDictionary dictionaryWithCapacity:5];
+                sectionJSON[@"id"] = @(section.sectionId);
+                sectionJSON[@"line"] = section.line;
+                sectionJSON[@"level"] = section.level;
+                sectionJSON[@"anchor"] = section.anchor;
+                sectionJSON[@"text"] = sectionHTML;
+                [sectionJSONs addObject:sectionJSON];
+            }
+            NSMutableDictionary *responseJSON = [NSMutableDictionary dictionaryWithCapacity:1];
+            NSMutableDictionary *mobileviewJSON = [NSMutableDictionary dictionaryWithCapacity:1];
+            mobileviewJSON[@"sections"] = sectionJSONs;
+            responseJSON[@"mobileview"] = mobileviewJSON;
+            NSError *JSONError = nil;
+            NSData *JSONData = [NSJSONSerialization dataWithJSONObject:responseJSON options:0 error:&JSONError];
+            if (!JSONData) {
+                DDLogError(@"Error serializing mobileview JSON: %@", JSONError);
+                notFound();
+                return;
+            }
+            GCDWebServerResponse *response = [GCDWebServerDataResponse responseWithData:JSONData contentType:@"application/json; charset=utf-8"];
+            completionBlock(response);
         } else if ([baseComponent isEqualToString:WMFProxyAPIBasePath]) {
             NSAssert(components.count == 6, @"Expected 6 components when using WMFProxyAPIBasePath");
             if (components.count == 6) {
 
-                // APIURL is APIProxyURL without components 3, 4 and 5.
+                // APIURL is APIProxyURL with components[3] as the host, components[4..5] as the path.
                 NSURLComponents *APIProxyURLComponents = [NSURLComponents componentsWithURL:request.URL resolvingAgainstBaseURL:NO];
-                APIProxyURLComponents.path = [NSString pathWithComponents:@[components[3], components[4], components[5]]];
-                APIProxyURLComponents.scheme = request.URL.scheme;
+                APIProxyURLComponents.path = [NSString pathWithComponents:@[@"/", components[4], components[5]]];
+                APIProxyURLComponents.host = components[3];
+                APIProxyURLComponents.scheme = @"https";
                 NSURL *APIURL = APIProxyURLComponents.URL;
                 [self handleAPIRequestForURL:APIURL completionBlock:completionBlock];
 
@@ -214,9 +297,9 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
         NSError *fileReadError = nil;
         if ([localFileURL getResourceValue:&isRegularFile forKey:NSURLIsRegularFileKey error:&fileReadError] && [isRegularFile boolValue]) {
             NSData *data = [NSData dataWithContentsOfURL:localFileURL];
-            NSString *contentType = GCDWebServerGetMimeTypeForExtension([localFileURL pathExtension]);
+            NSString *contentType = GCDWebServerGetMimeTypeForExtension([localFileURL pathExtension], nil);
             response = [WMFProxyServerResponse responseWithData:data contentType:contentType];
-            self.responsesByPath[relativePath] = response;
+            [self setResponseData:data withContentType:contentType forPath:relativePath];
             completionBlock(response.GCDWebServerResponse);
         } else {
             completionBlock([GCDWebServerErrorResponse responseWithClientError:kGCDWebServerHTTPStatusCode_NotFound message:@"404"]);
@@ -291,6 +374,30 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
     return [self.hostedFolderPath stringByAppendingPathComponent:relativeFilePath];
 }
 
+#pragma - Article Section Data URLs
+
+- (nullable NSURL *)articleSectionDataURLForArticleWithURL:(NSURL *)articleURL targetImageWidth:(NSInteger)targetImageWidth {
+    NSString *secret = self.secret;
+    NSURL *serverURL = self.webServer.serverURL;
+    NSString *key = articleURL.wmf_articleDatabaseKey;
+    if (secret == nil || serverURL == nil || key == nil) {
+        return nil;
+    }
+
+    NSURLComponents *components = [NSURLComponents componentsWithURL:serverURL resolvingAgainstBaseURL:NO];
+    components.path = [NSString pathWithComponents:@[@"/", secret, WMFProxyServerArticleSectionDataBasePath]];
+    NSURLQueryItem *articleKeyQueryItem = [NSURLQueryItem queryItemWithName:WMFProxyServerArticleKeyQueryItem value:key];
+    NSString *imageWidthString = [NSString stringWithFormat:@"%lli", (long long)targetImageWidth];
+    NSURLQueryItem *imageWidthQueryItem = [NSURLQueryItem queryItemWithName:WMFProxyServerImageWidthQueryItem value:imageWidthString];
+    if (!articleKeyQueryItem || !imageWidthString) {
+        return nil;
+    }
+
+    components.queryItems = @[articleKeyQueryItem, imageWidthQueryItem];
+
+    return components.URL;
+}
+
 #pragma - Image Proxy URLs
 
 - (NSURL *)proxyURLForImageURLString:(NSString *)imageURLString {
@@ -309,7 +416,7 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
     return components.URL;
 }
 
-- (NSString *)stringByReplacingImageURLsWithProxyURLsInHTMLString:(NSString *)HTMLString withBaseURL:(NSURL *)baseURL targetImageWidth:(NSUInteger)targetImageWidth {
+- (NSString *)stringByReplacingImageURLsWithProxyURLsInHTMLString:(NSString *)HTMLString withBaseURL:(nullable NSURL *)baseURL targetImageWidth:(NSUInteger)targetImageWidth {
 
     //defensively copy
     HTMLString = [HTMLString copy];
@@ -330,7 +437,9 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
     }];
 
     //append the final chunk of the original string
-    [newHTMLString appendString:[HTMLString substringWithRange:NSMakeRange(location, HTMLString.length - location)]];
+    if (HTMLString && location < HTMLString.length) {
+        [newHTMLString appendString:[HTMLString substringWithRange:NSMakeRange(location, HTMLString.length - location)]];
+    }
 
     return newHTMLString;
 }
@@ -378,23 +487,29 @@ static const NSInteger WMFCachedResponseCountLimit = 4;
     if (path == nil) {
         return;
     }
-    self.responsesByPath[path] = [WMFProxyServerResponse responseWithData:data contentType:contentType];
-    if ([self.responsePaths containsObject:path]) { // NSOrderedSet will no-op when adding an object that is already in the set. This ensures the most recently requested path goes to the end of the ordered set.
-        [self.responsePaths removeObject:path];
-    }
-    [self.responsePaths addObject:path];
-    if (self.responsePaths.count > WMFCachedResponseCountLimit) {
-        NSString *pathToRemove = self.responsePaths[0];
-        [self.responsesByPath removeObjectForKey:pathToRemove];
-        [self.responsePaths removeObjectAtIndex:0];
-    }
+    [self.responseCache setObject:[WMFProxyServerResponse responseWithData:data contentType:contentType] forKey:path];
 }
 
 - (WMFProxyServerResponse *)responseForPath:(NSString *)path {
     if (path == nil) {
         return nil;
     }
-    return self.responsesByPath[path];
+    return [self.responseCache objectForKey:path];
+}
+
+- (void)cacheSectionDataForArticle:(MWKArticle *)article {
+    NSString *articleKey = article.url.wmf_articleDatabaseKey;
+    if (articleKey == nil) {
+        return;
+    }
+    [self.articleCache setObject:article forKey:articleKey];
+}
+
+- (MWKArticle *)articleForKey:(NSString *)path {
+    if (path == nil) {
+        return nil;
+    }
+    return [self.articleCache objectForKey:path];
 }
 
 #pragma mark - BaseURL (for testing only)

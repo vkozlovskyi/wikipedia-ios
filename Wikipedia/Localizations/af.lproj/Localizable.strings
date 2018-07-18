@@ -45,6 +45,7 @@
 "action-saved" = "Bewaar";
 "action-share" = "Deel";
 "alert-no-internet" = "Daar is geen internetverbinding";
+// Fuzzy
 "announcements-dismiss" = "Nee dankie";
 "article-about-title" = "Oor hierdie artikel";
 "article-languages-filter-placeholder" = "Soek taal";
@@ -98,8 +99,6 @@
 // Fuzzy
 "history-clear-confirmation-heading" = "Skrap alle onlangse items?";
 "history-clear-delete-all" = "Ja, skrap alles";
-"history-section-today" = "Vandag";
-"history-section-yesterday" = "Gister";
 "history-title" = "Geskiedenis";
 "hockeyapp-alert-always-send" = "Stuur altyd";
 "hockeyapp-alert-do-not-send" = "Moenie stuur";
@@ -110,8 +109,6 @@
 "hockeyapp-alert-question-with-response-field" = "Wil u 'n breekverslag aan $1 stuur sodat Wikimedia die breek kan hersien? Beskryf asseblief wat gebeur het tydens die breek:";
 "hockeyapp-alert-send-report" = "Stuur verslag";
 "hockeyapp-alert-title" = "Jammer, toep het laaskeer gebreek";
-"home-hide-suggestion-cancel" = "Kanselleer";
-"home-hide-suggestion-prompt" = "Versteek hierdie voorstel";
 "home-more-like-footer" = "Nog soos $1";
 "home-title" = "Verken";
 // Fuzzy
@@ -144,7 +141,6 @@
 "main-menu-title" = "Meer";
 "main-menu-zero-faq" = "Gewilde vrae oor Wikipedia Zero";
 "menu-cancel-accessibility-label" = "Kanselleer";
-"menu-trash-accessibility-label" = "Skrap";
 "navbar-title-mode-edit-wikitext-preview" = "Voorskou";
 "nearby-distance-label-feet" = "$1 voet";
 "nearby-distance-label-km" = "$1 km";
@@ -154,7 +150,6 @@
 "number-billions" = "$1 mjd.";
 "number-millions" = "$1 m.";
 "number-thousands" = "$1 k.";
-"onboarding-wikipedia" = "Wikipedia";
 "open-link-cancel" = "Kanselleer";
 "page-history-title" = "Artikelgeskiedenis";
 "page-issues" = "Bladprobleme";
@@ -172,7 +167,6 @@
 "places-accessibility-show-as-map" = "Toon as vouer";
 "places-accessibility-show-more" = "Toon nog artikels";
 "places-empty-search-description" = "Verken stede, lande, vastelande, natuurlike landmerke, geskiedkundige gebeure, geboue en meer.";
-"places-filter-saved-articles-count" = "{{PLURAL:$1|$1 plek|$1 plekke}} gevind";
 "places-filter-top-articles-count" = "{{PLURAL:$1|$1 artikel|$1 artikels}}";
 "potd-description-prefix" = "Prent van die dag vir $1";
 "preference-summary-eventlogging-opt-in" = "Laat Wikimedia toe om inligting in te samel oor hoe u die toep gebruik om sodoende die toep te verbeter";
@@ -181,11 +175,6 @@
 "readers-accessibility-label" = "$1 lesers";
 "reference-title" = "Verwysing $1";
 "request-feedback-on-error" = "Die toep het ’n probleem ervaar waarvan ons ontwikkelaars meer wil weet. Tik hier om aan ons ’n e-pos met die foutbesonderhede te stuur.";
-"save-action" = "Bewaar";
-"saved-clear-all" = "Maak skoon";
-"saved-pages-clear-cancel" = "Kanselleer";
-"saved-pages-clear-confirmation-heading" = "Is u seker u wil al u bewaarde blaaie skrap?";
-"saved-pages-clear-delete-all" = "Ja, skrap alles";
 "search-did-you-mean" = "Het u $1 bedoel?";
 "search-field-placeholder-text" = "Soek in Wikipedia";
 "search-recent-clear-cancel" = "Kanselleer";
@@ -197,12 +186,9 @@
 "settings-my-languages" = "My tale";
 "settings-notifications" = "Kennisgewings";
 "settings-title" = "Voorkeure";
+// Fuzzy
 "share-a-fact-share-menu-item" = "Deel-’n-feit";
 "share-article-name-on-wikipedia" = "\"$1\" op @Wikipedia:";
-"share-article-name-on-wikipedia-with-selected-text" = "\"$1\" op @Wikipedia: \"$2\"";
-"share-as-image" = "Deel as beeld";
-"share-as-text" = "Deel as teks";
-"share-cancel" = "Kanselleer";
 "share-custom-menu-item" = "Deel…";
 "share-get-directions-in-maps" = "Kry Aanwysings";
 "share-on-twitter-sign-off" = "via @Wikipedia";
@@ -217,10 +203,6 @@
 "top-read-header-with-language" = "$1 Wikipedia";
 "welcome-explore-tell-me-more-done-button" = "Het dit";
 "welcome-languages-add-button" = "Voeg ’n ander taal toe";
-"welcome-languages-continue-button" = "Gaan voort";
-"welcome-languages-sub-title" = "Kies die voorkeurtale waarin u binne Wikipedia wil soek";
-"welcome-languages-title" = "Tale";
-"welcome-volunteer-thanks" = "$1 Dankie!";
 "wikitext-download-failed" = "Kon nie nuutste weergawe bekom nie.";
 "wikitext-download-success" = "Inhoud gelaai.";
 "wikitext-downloading" = "Laai inhoud...";

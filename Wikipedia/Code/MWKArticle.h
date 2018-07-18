@@ -8,7 +8,7 @@ static const NSInteger kMWKArticleSectionNone = -1;
 @class MWKSection;
 @class MWKSectionList;
 @class MWKImage;
-@class MWKImageList;
+@class MWKImageInfo;
 @class MWKProtectionStatus;
 
 @interface MWKArticle : MWKSiteDataObject
@@ -41,6 +41,8 @@ static const NSInteger kMWKArticleSectionNone = -1;
 
 /// Whether or not the receiver is the main page for its @c site.
 @property (readonly, assign, nonatomic, getter=isMain) BOOL main;
+
+@property (readonly, nonatomic) BOOL hasReadMore;
 
 @property (readonly, copy, nonatomic, nullable) NSString *thumbnailURL; // optional; generated from imageURL
 @property (readwrite, copy, nonatomic, nullable) NSString *imageURL;    // optional; pulled in article request
@@ -103,18 +105,18 @@ static const NSInteger kMWKArticleSectionNone = -1;
  */
 - (BOOL)isDeeplyEqualToArticle:(MWKArticle *)article;
 
-- (void)save;
+- (BOOL)save:(NSError **)outError;
 
 - (BOOL)isCached;
 
 /**
+ *  HTML from all sections. Not for display (ie not wrapped in section container divs etc. Only for use when extracting image info)
+ *  TODO: We should probably move the image parsing/url size variant re-writing to JS so we don't have to parse the html in native
+ *  land and since we now have section DocumentFragments which make it easy to access and change individual image properties with
+ *  little to no extra overhead (especially vs native parsing).
  *  @return The HTML for the article (all of the sections)
  */
-- (NSString *)articleHTML;
-
-- (nullable NSArray<NSURL *> *)disambiguationURLs;
-
-- (nullable NSArray<NSString *> *)pageIssues;
+- (NSString *)allSectionsHTMLForImageParsing;
 
 @end
 
@@ -132,9 +134,9 @@ static const NSInteger kMWKArticleSectionNone = -1;
 
 - (NSArray<MWKImage *> *)imagesForGallery;
 
-- (NSArray<NSURL *> *)imageURLsForSaving;
+- (NSArray<MWKImageInfo *> *)imageInfosForGallery;
 
-- (NSArray<MWKImage *> *)imagesForSaving;
+- (NSArray<NSURL *> *)imageURLsForSaving;
 
 @end
 NS_ASSUME_NONNULL_END

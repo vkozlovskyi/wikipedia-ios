@@ -3,97 +3,101 @@ import UIKit
 internal struct CellArticle {
     let articleURL: URL?
     let title: String?
+    let titleHTML: String?
     let description: String?
     let imageURL: URL?
 }
 
-@objc(WMFSideScrollingCollectionViewCellDelegate)
-protocol SideScrollingCollectionViewCellDelegate {
+public protocol SideScrollingCollectionViewCellDelegate: class {
     func sideScrollingCollectionViewCell(_ sideScrollingCollectionViewCell: SideScrollingCollectionViewCell, didSelectArticleWithURL articleURL: URL)
 }
 
-@objc(WMFSideScrollingCollectionViewCell)
-class SideScrollingCollectionViewCell: CollectionViewCell {
+
+public protocol SubCellProtocol {
+    func deselectSelectedSubItems(animated: Bool)
+}
+
+public class SideScrollingCollectionViewCell: CollectionViewCell, SubCellProtocol {
     static let articleCellIdentifier = "ArticleRightAlignedImageCollectionViewCell"
+    var theme: Theme = Theme.standard
     
-    weak var selectionDelegate: SideScrollingCollectionViewCellDelegate?
-    let imageView = UIImageView()
-    let titleLabel = UILabel()
-    let subTitleLabel = UILabel()
-    let descriptionLabel = UILabel()
-    var flowLayout: UICollectionViewFlowLayout? {
+    public weak var selectionDelegate: SideScrollingCollectionViewCellDelegate?
+    public let imageView = UIImageView()
+    public let titleLabel = UILabel()
+    public let subTitleLabel = UILabel()
+    public let descriptionLabel = UILabel()
+
+    internal var flowLayout: UICollectionViewFlowLayout? {
         return collectionView.collectionViewLayout as? UICollectionViewFlowLayout
     }
-    let collectionView = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
-    let bottomTitleLabel = UILabel()
-    let prototypeCell = ArticleRightAlignedImageCollectionViewCell()
+    internal let collectionView = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewFlowLayout())
+    internal let prototypeCell = ArticleRightAlignedImageCollectionViewCell()
     var semanticContentAttributeOverride: UISemanticContentAttribute = .unspecified {
         didSet {
             titleLabel.semanticContentAttribute = semanticContentAttributeOverride
             subTitleLabel.semanticContentAttribute = semanticContentAttributeOverride
             descriptionLabel.semanticContentAttribute = semanticContentAttributeOverride
             collectionView.semanticContentAttribute = semanticContentAttributeOverride
-            bottomTitleLabel.semanticContentAttribute = semanticContentAttributeOverride
         }
     }
     
     internal var articles: [CellArticle] = []
     
     override open func setup() {
-        addSubview(prototypeCell)
-        addSubview(imageView)
+        titleLabel.isOpaque = true
+        subTitleLabel.isOpaque = true
+        descriptionLabel.isOpaque = true
+        imageView.isOpaque = true
+        
         addSubview(titleLabel)
         addSubview(subTitleLabel)
         addSubview(descriptionLabel)
+    
+        addSubview(imageView)
         addSubview(collectionView)
-        addSubview(bottomTitleLabel)
+        addSubview(prototypeCell)
         
+        wmf_configureSubviewsForDynamicType()
+
         //Setup the prototype cell with placeholder content so we can get an accurate height calculation for the collection view that accounts for dynamic type changes
-        prototypeCell.configure(with: CellArticle(articleURL: nil, title: "Lorem", description: "Ipsum", imageURL: nil), semanticContentAttribute: .forceLeftToRight, layoutOnly: true)
+        prototypeCell.configure(with: CellArticle(articleURL: nil, title: "Lorem", titleHTML: "Lorem", description: "Ipsum", imageURL: nil), semanticContentAttribute: .forceLeftToRight, theme: self.theme, layoutOnly: true)
 
         prototypeCell.isHidden = true
-        
-        backgroundColor = .white
-        
+
         imageView.contentMode = .scaleAspectFill
         imageView.clipsToBounds = true
         titleLabel.numberOfLines = 1
-        bottomTitleLabel.numberOfLines = 1
         subTitleLabel.numberOfLines = 1
         descriptionLabel.numberOfLines = 0
         flowLayout?.scrollDirection = .horizontal
         collectionView.register(ArticleRightAlignedImageCollectionViewCell.self, forCellWithReuseIdentifier: SideScrollingCollectionViewCell.articleCellIdentifier)
         collectionView.dataSource = self
         collectionView.delegate = self
-        collectionView.backgroundColor = backgroundColor
         collectionView.showsHorizontalScrollIndicator = false
         collectionView.showsVerticalScrollIndicator = false
+        collectionView.alwaysBounceHorizontal = true
         super.setup()
     }
     
     override open func reset() {
         super.reset()
-        collectionView.contentOffset = CGPoint.init(x: -collectionView.contentInset.left, y: 0)
-        margins = UIEdgeInsets(top: 0, left: 13, bottom: 15, right: 13)
         imageView.wmf_reset()
-        imageView.wmf_showPlaceholder()
     }
     
-    var isImageViewHidden = false {
+    public var isImageViewHidden = false {
         didSet {
             imageView.isHidden = isImageViewHidden
             setNeedsLayout()
         }
     }
     
-    let imageViewHeight: CGFloat = 170
-    var margins: UIEdgeInsets!
-    let spacing: CGFloat = 13
+    public let imageViewHeight: CGFloat = 130
+    public let spacing: CGFloat = 6
     
-    override func sizeThatFits(_ size: CGSize, apply: Bool) -> CGSize {
-        var origin = CGPoint(x: margins.left, y: margins.top)
-        let widthToFit = size.width - margins.left - margins.right
-    
+    override public func sizeThatFits(_ size: CGSize, apply: Bool) -> CGSize {
+        let layoutMargins = calculatedLayoutMargins
+        var origin = CGPoint(x: layoutMargins.left, y: layoutMargins.top)
+        let widthToFit = size.width - layoutMargins.left - layoutMargins.right
         if !isImageViewHidden {
             if (apply) {
                 imageView.frame = CGRect(x: 0, y: 0, width: size.width, height: imageViewHeight)
@@ -103,50 +107,71 @@ class SideScrollingCollectionViewCell: CollectionViewCell {
 
         if titleLabel.wmf_hasAnyText {
             origin.y += spacing
-            origin.y += titleLabel.wmf_preferredHeight(at: origin, fitting: widthToFit, alignedBy: semanticContentAttributeOverride, spacing: 0.4 * spacing, apply: apply)
+            origin.y += titleLabel.wmf_preferredHeight(at: origin, maximumWidth: widthToFit, alignedBy: semanticContentAttributeOverride, spacing: round(0.4 * spacing), apply: apply)
         }
         
         if subTitleLabel.wmf_hasAnyText {
             origin.y += 0
-            origin.y += subTitleLabel.wmf_preferredHeight(at: origin, fitting: widthToFit, alignedBy: semanticContentAttributeOverride, spacing: spacing, apply: apply)
+            origin.y += subTitleLabel.wmf_preferredHeight(at: origin, maximumWidth: widthToFit, alignedBy: semanticContentAttributeOverride, spacing: spacing, apply: apply)
         }
         
         origin.y += spacing
-        origin.y += descriptionLabel.wmf_preferredHeight(at: origin, fitting: widthToFit, alignedBy: semanticContentAttributeOverride, spacing: spacing, apply: apply)
+        origin.y += descriptionLabel.wmf_preferredHeight(at: origin, maximumWidth: widthToFit, alignedBy: semanticContentAttributeOverride, spacing: spacing, apply: apply)
         
         let collectionViewSpacing: CGFloat = 10
-        var height = prototypeCell.wmf_preferredHeight(at: origin, fitting: widthToFit, alignedBy: semanticContentAttributeOverride, spacing: 2*collectionViewSpacing, apply: false)
+        var height = prototypeCell.wmf_preferredHeight(at: origin, maximumWidth: widthToFit, alignedBy: semanticContentAttributeOverride, spacing: 2*collectionViewSpacing, apply: false)
 
-        assert(collectionView.numberOfSections == 1, "Expected one section")
-        if collectionView.numberOfSections == 1 {
-            if collectionView.numberOfItems(inSection: 0) == 0 {
-                height = 0
-            }
+        if articles.count == 0 {
+            height = 0
         }
 
         if (apply) {
             flowLayout?.itemSize = CGSize(width: max(250, round(0.45*size.width)), height: height - 2*collectionViewSpacing)
             flowLayout?.minimumInteritemSpacing = collectionViewSpacing
+            flowLayout?.minimumLineSpacing = 15
             flowLayout?.sectionInset = UIEdgeInsets(top: collectionViewSpacing, left: collectionViewSpacing, bottom: collectionViewSpacing, right: collectionViewSpacing)
             collectionView.frame = CGRect(x: 0, y: origin.y, width: size.width, height: height)
-            collectionView.contentInset = UIEdgeInsets.init(top: 0, left: origin.x - 10, bottom: 0, right: 0)
+            if semanticContentAttributeOverride == .forceRightToLeft {
+                collectionView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: layoutMargins.right - collectionViewSpacing)
+            } else {
+                collectionView.contentInset = UIEdgeInsets(top: 0, left: layoutMargins.left - collectionViewSpacing, bottom: 0, right: 0)
+            }
             collectionView.reloadData()
+            collectionView.layoutIfNeeded()
+            resetContentOffset()
+            deselectSelectedSubItems(animated: false)
         }
-        origin.y += height
 
-        if bottomTitleLabel.wmf_hasAnyText {
-            origin.y += spacing
-            origin.y += bottomTitleLabel.wmf_preferredHeight(at: origin, fitting: widthToFit, alignedBy: semanticContentAttributeOverride, spacing: spacing, apply: apply)
-        }else{
-            origin.y += margins.bottom
-        }
+        origin.y += height
+        origin.y += layoutMargins.bottom
         
         return CGSize(width: size.width, height: origin.y)
+    }
+
+    public func resetContentOffset() {
+        let x: CGFloat = semanticContentAttributeOverride == .forceRightToLeft ? collectionView.contentSize.width - collectionView.bounds.size.width + collectionView.contentInset.right : -collectionView.contentInset.left
+        collectionView.contentOffset = CGPoint(x: x, y: 0)
+    }
+
+    public func deselectSelectedSubItems(animated: Bool) {
+        guard let selectedIndexPaths = collectionView.indexPathsForSelectedItems else {
+            return
+        }
+        for indexPath in selectedIndexPaths {
+            collectionView.deselectItem(at: indexPath, animated: animated)
+        }
+    }
+
+    override public func updateBackgroundColorOfLabels() {
+        super.updateBackgroundColorOfLabels()
+        titleLabel.backgroundColor = labelBackgroundColor
+        subTitleLabel.backgroundColor = labelBackgroundColor
+        descriptionLabel.backgroundColor = labelBackgroundColor
     }
 }
 
 extension SideScrollingCollectionViewCell: UICollectionViewDelegate {
-    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let selectedArticle = articles[indexPath.item]
         guard let articleURL = selectedArticle.articleURL else {
             return
@@ -156,43 +181,50 @@ extension SideScrollingCollectionViewCell: UICollectionViewDelegate {
 }
 
 extension SideScrollingCollectionViewCell: UICollectionViewDataSource {
-    func numberOfSections(in collectionView: UICollectionView) -> Int {
+    public func numberOfSections(in collectionView: UICollectionView) -> Int {
         return 1
     }
     
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return articles.count
     }
     
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+    public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier:  SideScrollingCollectionViewCell.articleCellIdentifier, for: indexPath)
         guard let articleCell = cell as? ArticleRightAlignedImageCollectionViewCell else {
             return cell
         }
         let articleForCell = articles[indexPath.item]
-        articleCell.configure(with: articleForCell, semanticContentAttribute: semanticContentAttributeOverride, layoutOnly: false)
+        articleCell.configure(with: articleForCell, semanticContentAttribute: semanticContentAttributeOverride, theme: self.theme, layoutOnly: false)
         return articleCell
     }
 }
 
 fileprivate extension ArticleRightAlignedImageCollectionViewCell {
-    func configure(with cellArticle: CellArticle, semanticContentAttribute: UISemanticContentAttribute, layoutOnly: Bool) {
-        contentView.layer.cornerRadius = 5
-        contentView.layer.masksToBounds = true
-        contentView.backgroundColor = .white
-        layer.shadowOffset = CGSize(width: 0, height: 2)
-        layer.shadowOpacity = 0.5
-        layer.shadowRadius = 2
-        layer.shadowColor = UIColor.wmf_sideScrollingArticleCellShadow.cgColor
-        layer.masksToBounds = false
+    func configure(with cellArticle: CellArticle, semanticContentAttribute: UISemanticContentAttribute, theme: Theme, layoutOnly: Bool) {
+        apply(theme: theme)
         backgroundColor = .clear
+        setBackgroundColors(theme.colors.subCellBackground, selected: theme.colors.midBackground)
+        backgroundView?.layer.cornerRadius = 3
+        backgroundView?.layer.masksToBounds = true
+        selectedBackgroundView?.layer.cornerRadius = 3
+        selectedBackgroundView?.layer.masksToBounds = true
+        layer.shadowOffset = CGSize(width: 0, height: 1)
+        layer.shadowOpacity = 1.0
+        layer.shadowRadius = 3
+        layer.shadowColor = theme.colors.shadow.cgColor
+        layer.masksToBounds = false
+        titleLabel.backgroundColor = backgroundView?.backgroundColor
+        descriptionLabel.backgroundColor = backgroundView?.backgroundColor
         titleTextStyle = .subheadline
         descriptionTextStyle = .footnote
         imageViewDimension = 40
         isSaveButtonHidden = true
-        margins = UIEdgeInsets(top: 13, left: 13, bottom: 13, right: 13)
+        layoutMargins = UIEdgeInsets(top: 9, left: 10, bottom: 9, right: 10)
         isImageViewHidden = layoutOnly || cellArticle.imageURL == nil
-        titleLabel.text = cellArticle.title
+        
+        titleHTML = cellArticle.titleHTML ?? cellArticle.title
+
         descriptionLabel.text = cellArticle.description
         articleSemanticContentAttribute = semanticContentAttribute
         
@@ -205,13 +237,13 @@ fileprivate extension ArticleRightAlignedImageCollectionViewCell {
             isImageViewHidden = true
         }
         
+        updateFonts(with: traitCollection)
         setNeedsLayout()
     }
 }
 
 extension SideScrollingCollectionViewCell {
-    @objc(subItemIndexAtPoint:)
-    func subItemIndex(at point: CGPoint) -> Int { // NSNotFound for not found
+    public func subItemIndex(at point: CGPoint) -> Int { // NSNotFound for not found
         let collectionViewFrame = collectionView.frame
         guard collectionViewFrame.contains(point) else {
             return NSNotFound
@@ -224,8 +256,7 @@ extension SideScrollingCollectionViewCell {
         return indexPath.item
     }
     
-    @objc(viewForSubItemAtIndex:)
-    func viewForSubItem(at index: Int) -> UIView? {
+    public func viewForSubItem(at index: Int) -> UIView? {
         guard index != NSNotFound, index >= 0, index < collectionView.numberOfItems(inSection: 0) else {
             return nil
         }
@@ -233,5 +264,23 @@ extension SideScrollingCollectionViewCell {
             return nil
         }
         return cell
+    }
+}
+
+extension SideScrollingCollectionViewCell: Themeable {
+    public func apply(theme: Theme) {
+        self.theme = theme
+        imageView.alpha = theme.imageOpacity
+        setBackgroundColors(theme.colors.paperBackground, selected: theme.colors.midBackground)
+        titleLabel.textColor = theme.colors.primaryText
+        subTitleLabel.textColor = theme.colors.secondaryText
+        descriptionLabel.textColor = theme.colors.primaryText
+        collectionView.backgroundColor = theme.colors.paperBackground
+        descriptionLabel.textColor = theme.colors.primaryText
+        updateSelectedOrHighlighted()
+        collectionView.reloadData()
+        if #available(iOSApplicationExtension 11.0, *) {
+            imageView.accessibilityIgnoresInvertColors = true
+        }
     }
 }

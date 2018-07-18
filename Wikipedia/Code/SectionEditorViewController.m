@@ -5,7 +5,6 @@
 #import "PreviewAndSaveViewController.h"
 #import "UIBarButtonItem+WMFButtonConvenience.h"
 #import "UIViewController+WMFStoryboardUtilities.h"
-#import "UIScrollView+WMFScrollsToTop.h"
 #import "Wikipedia-Swift.h"
 
 #define EDIT_TEXT_VIEW_FONT [UIFont systemFontOfSize:16.0f]
@@ -18,26 +17,25 @@
 @property (strong, nonatomic) NSString *unmodifiedWikiText;
 @property (nonatomic) CGRect viewKeyboardRect;
 @property (strong, nonatomic) UIBarButtonItem *rightButton;
+@property (strong, nonatomic) WMFTheme *theme;
 
 @end
 
 @implementation SectionEditorViewController
 
-- (BOOL)prefersStatusBarHidden {
-    return YES;
-}
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view from its nib.
 
-    [self.navigationController setNavigationBarHidden:NO animated:NO];
+    if (!self.theme) {
+        self.theme = [WMFTheme standard];
+    }
 
     UIBarButtonItem *buttonX = [UIBarButtonItem wmf_buttonType:WMFButtonTypeX target:self action:@selector(xButtonPressed)];
     buttonX.accessibilityLabel = WMFLocalizedStringWithDefaultValue(@"back-button-accessibility-label", nil, nil, @"Back", @"Accessibility label for a button to navigate back.\n{{Identical|Back}}");
     self.navigationItem.leftBarButtonItem = buttonX;
 
-    self.rightButton = [[UIBarButtonItem alloc] initWithTitle:WMFLocalizedStringWithDefaultValue(@"button-next", nil, nil, @"Next", @"Button text for next button used in various places.\n{{Identical|Next}}")
+    self.rightButton = [[UIBarButtonItem alloc] initWithTitle:[WMFCommonStrings nextTitle]
                                                         style:UIBarButtonItemStylePlain
                                                        target:self
                                                        action:@selector(rightButtonPressed)];
@@ -59,7 +57,26 @@
         self.editTextView.keyboardDismissMode = UIScrollViewKeyboardDismissModeInteractive;
     }
 
+    if (@available(iOS 11.0, *)) {
+        self.editTextView.smartQuotesType = UITextSmartQuotesTypeNo;
+    }
+
     self.viewKeyboardRect = CGRectNull;
+
+    [self applyTheme:self.theme];
+
+    // "loginWithSavedCredentials..." should help ensure the user will only appear to be logged in when
+    // they reach the 'publish' screen if they actually still are logged in. (It uses the "currentlyLoggedInUserFetcher"
+    // to try to ensure this.)
+    [[WMFAuthenticationManager sharedInstance] loginWithSavedCredentialsWithSuccess:^(WMFAccountLoginResult *_Nonnull success) {
+        DDLogDebug(@"\n\nSuccessfully logged in with saved credentials for user '%@'.\n\n", success.username);
+    }
+        userAlreadyLoggedInHandler:^(WMFCurrentlyLoggedInUser *_Nonnull currentLoggedInHandler) {
+            DDLogDebug(@"\n\nUser '%@' is already logged in.\n\n", currentLoggedInHandler.name);
+        }
+        failure:^(NSError *_Nonnull error) {
+            DDLogDebug(@"\n\nloginWithSavedCredentials failed with error '%@'.\n\n", error);
+        }];
 }
 
 - (void)xButtonPressed {
@@ -96,8 +113,6 @@
     [super viewDidAppear:animated];
 
     [self registerForKeyboardNotifications];
-
-    [self.editTextView wmf_shouldScrollToTopOnStatusBarTap:YES];
 
     [self highlightProgressiveButton:[self changesMade]];
 
@@ -185,6 +200,7 @@
                                         attributes:@{
                                             NSParagraphStyleAttributeName: paragraphStyle,
                                             NSFontAttributeName: EDIT_TEXT_VIEW_FONT,
+                                            NSForegroundColorAttributeName: self.theme.colors.primaryText
                                         }];
 }
 
@@ -195,6 +211,7 @@
     previewVC.funnel = self.funnel;
     previewVC.savedPagesFunnel = self.savedPagesFunnel;
     previewVC.delegate = self;
+    [previewVC applyTheme:self.theme];
     [self.navigationController pushViewController:previewVC animated:YES];
 }
 
@@ -290,6 +307,18 @@
 - (BOOL)accessibilityPerformEscape {
     [self.navigationController popViewControllerAnimated:YES];
     return YES;
+}
+
+#pragma mark WMFThemeable
+
+- (void)applyTheme:(WMFTheme *)theme {
+    self.theme = theme;
+    if (self.viewIfLoaded == nil) {
+        return;
+    }
+    self.editTextView.backgroundColor = theme.colors.paperBackground;
+    self.editTextView.textColor = theme.colors.primaryText;
+    self.view.backgroundColor = theme.colors.paperBackground;
 }
 
 @end

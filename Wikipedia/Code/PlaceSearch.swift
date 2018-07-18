@@ -24,7 +24,7 @@ enum PlaceSearchOrigin: UInt {
 }
 
 enum PlaceSearchError: Error {
-    case deserialization(object: NSObject?)
+    case deserialization(object: NSCoding?)
 }
 
 extension MKCoordinateRegion {
@@ -63,10 +63,10 @@ struct PlaceSearch {
         get {
             var key = "\(type.rawValue)|\(filter.rawValue)|\(sortStyle.rawValue)"
             if let searchResult = searchResult {
-                if let siteURL = siteURL, let articleURL = searchResult.articleURL(forSiteURL: siteURL), let articleKey = (articleURL as NSURL).wmf_articleDatabaseKey {
+                if let siteURL = siteURL, let articleURL = searchResult.articleURL(forSiteURL: siteURL), let articleKey = articleURL.wmf_articleDatabaseKey {
                     key.append("|\(articleKey)")
                 } else {
-                    let lang = (siteURL as NSURL?)?.wmf_language ?? ""
+                    let lang = siteURL?.wmf_language ?? ""
                     key.append("|\(lang)|\(searchResult.displayTitle?.precomposedStringWithCanonicalMapping ?? "")")
                 }
                 
@@ -142,8 +142,8 @@ struct PlaceSearch {
         }
     }
     
-    init?(object: NSObject?) {
-        guard let object = object,
+    init?(object: NSCoding?) {
+        guard let object = object as? NSObject,
             let filterNumber = object.value(forKey: "filter") as? NSNumber,
             let filter = PlaceFilterType(rawValue: filterNumber.uintValue),
             let typeNumber = object.value(forKey: "type") as? NSNumber,

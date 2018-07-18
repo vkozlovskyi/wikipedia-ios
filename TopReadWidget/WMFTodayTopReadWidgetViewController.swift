@@ -6,7 +6,7 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
     
     // Model
     var siteURL: URL!
-    var group: WMFContentGroup?
+    var groupURL: URL?
     var results: [WMFFeedTopReadArticlePreview] = []
     
     var feedContentFetcher = WMFFeedContentFetcher()
@@ -58,10 +58,12 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
     
     var headerVisible = true
     
-    var isExpanded: Bool = true
+    var isExpanded: Bool?
     
     // Controllers
     var articlePreviewViewControllers: [WMFArticlePreviewViewController] = []
+
+    var theme: Theme = .widget
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -69,46 +71,15 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
         guard let appLanguage = MWKLanguageLinkController.sharedInstance().appLanguage else {
             return
         }
-
+    
         siteURL = appLanguage.siteURL()
         userStore = SessionSingleton.sharedInstance().dataStore
         contentSource = WMFFeedContentSource(siteURL: siteURL, userDataStore: userStore, notificationsController: nil)
-        
-        if #available(iOSApplicationExtension 10.0, *) {
-            headerLabel.textColor = .wmf_darkGray
-            footerLabel.textColor = .wmf_darkGray
-        } else {
-            headerLabel.textColor = UIColor(white: 1, alpha: 0.7)
-            footerLabel.textColor = UIColor(white: 1, alpha: 0.7)
-            headerLabelLeadingConstraint.constant = 0
-            footerLabelLeadingConstraint.constant = 0
-        }
-        
-        headerLabel.text = nil
-        footerLabel.text = nil
-        
+
         let tapGR = UITapGestureRecognizer(target: self, action: #selector(self.handleTapGestureRecognizer(_:)))
-        
         view.addGestureRecognizer(tapGR)
         
-        if let context = self.extensionContext {
-            if #available(iOSApplicationExtension 10.0, *) {
-                context.widgetLargestAvailableDisplayMode = .expanded
-                isExpanded = context.widgetActiveDisplayMode == .expanded
-                maximumSize = context.widgetMaximumSize(for: context.widgetActiveDisplayMode)
-            } else {
-                isExpanded = true
-                maximumSize = UIScreen.main.bounds.size
-                headerViewHeightConstraint.constant = 40
-                footerViewHeightConstraint.constant = 40
-            }
-            updateViewPropertiesForIsExpanded(isExpanded)
-            layoutForSize(view.bounds.size)
-        }
-        
-        widgetPerformUpdate { (result) in
-            
-        }
+        extensionContext?.widgetLargestAvailableDisplayMode = .expanded
     }
     
     func layoutForSize(_ size: CGSize) {
@@ -134,39 +105,46 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
     
     override func viewWillTransition(to size: CGSize, with coordinator: UIViewControllerTransitionCoordinator) {
         super.viewWillTransition(to: size, with: coordinator)
-        
-        if #available(iOSApplicationExtension 10.0, *) {
-            coordinator.animate(alongsideTransition: { (context) in
+        coordinator.animate(alongsideTransition: { (context) in
+            self.layoutForSize(size)
+        }) { (context) in
+            if (!context.isAnimated) {
                 self.layoutForSize(size)
-            }) { (context) in
-                if (!context.isAnimated) {
-                    self.layoutForSize(size)
-                }
             }
-        } else {
-            layoutForSize(size)
         }
     }
     
-    func updateViewPropertiesForIsExpanded(_ isExpanded: Bool){
+    func updateViewPropertiesForIsExpanded(_ isExpanded: Bool) {
         self.isExpanded = isExpanded
         headerVisible = isExpanded
         footerVisible = headerVisible
         rowCount = isExpanded ? maximumRowCount : 1
     }
-    
-    @available(iOSApplicationExtension 10.0, *)
+
     func widgetActiveDisplayModeDidChange(_ activeDisplayMode: NCWidgetDisplayMode, withMaximumSize maxSize: CGSize) {
-        maximumSize = maxSize
-        let activeIsExpanded = activeDisplayMode == .expanded
-        if (activeIsExpanded != isExpanded) {
-            updateViewPropertiesForIsExpanded(activeIsExpanded)
-            updateView()
-        }
+        debounceViewUpdate()
+    }
+
+    func debounceViewUpdate() {
+        NSObject.cancelPreviousPerformRequests(withTarget: self, selector: #selector(updateView), object: nil)
+        perform(#selector(updateView), with: nil, afterDelay: 0.1)
     }
     
-    func updateView() {
-        
+    @objc func updateView() {
+        guard viewIfLoaded != nil else {
+            return
+        }
+        if let context = self.extensionContext {
+            var updatedIsExpanded: Bool?
+            updatedIsExpanded = context.widgetActiveDisplayMode == .expanded
+            maximumSize = context.widgetMaximumSize(for: context.widgetActiveDisplayMode)
+            if isExpanded != updatedIsExpanded {
+                isExpanded = updatedIsExpanded
+                updateViewPropertiesForIsExpanded(isExpanded ?? false)
+                layoutForSize(view.bounds.size)
+            }
+        }
+
         let count = min(results.count, maximumRowCount)
         guard count > 0 else {
             return
@@ -185,10 +163,12 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
         } else {
             headerText = WMFLocalizedString("top-read-header-generic", value:"Wikipedia", comment: "Wikipedia\n{{Identical|Wikipedia}}")
         }
-        
+
+        headerLabel.textColor = theme.colors.primaryText
         headerLabel.text = headerText.uppercased()
         headerLabel.isAccessibilityElement = false
         footerLabel.text = WMFLocalizedString("top-read-see-more", value:"See more top read", comment: "Text for footer button allowing the user to see more top read articles").uppercased()
+        footerLabel.textColor = theme.colors.primaryText
         
         var dataValueMin = CGFloat.greatestFiniteMagnitude
         var dataValueMax = CGFloat.leastNormalMagnitude
@@ -210,7 +190,10 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
                 }
             }
         }
-        
+
+        headerSeparatorView.backgroundColor = theme.colors.border
+        footerSeparatorView.backgroundColor = theme.colors.border
+
         var i = 0
         while i < count {
             var vc: WMFArticlePreviewViewController
@@ -227,8 +210,12 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
             }
             let result = results[i]
             
-            
-            vc.titleLabel.text = result.displayTitle
+            vc.titleTextColor = theme.colors.primaryText
+            vc.subtitleLabel.textColor = theme.colors.secondaryText
+            vc.rankLabel.textColor = theme.colors.secondaryText
+            vc.viewCountLabel.textColor =  theme.colors.overlayText
+
+            vc.titleHTML = result.displayTitleHTML
             if let wikidataDescription = result.wikidataDescription {
                 vc.subtitleLabel.text = wikidataDescription.wmf_stringByCapitalizingFirstCharacter(usingWikipediaLanguage: siteURL.wmf_language)
             }else{
@@ -239,6 +226,7 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
             vc.rankLabel.text = rankString
             vc.rankLabel.accessibilityLabel = String.localizedStringWithFormat(WMFLocalizedString("rank-accessibility-label", value:"Number %1$@", comment: "Accessibility label read aloud to sight impared users to indicate a ranking - Number 1, Number 2, etc. %1$@ is replaced with the ranking\n{{Identical|Number}}"), rankString)
             if let articlePreview = self.userStore.fetchArticle(with: result.articleURL) {
+                vc.viewCountAndSparklineContainerView.backgroundColor = theme.colors.overlayBackground
                 if var viewCounts = articlePreview.pageViewsSortedByDate, viewCounts.count >= daysToShowInSparkline {
                     vc.sparklineView.minDataValue = dataValueMin
                     vc.sparklineView.maxDataValue = dataValueMax
@@ -267,15 +255,11 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
                 vc.viewCountAndSparklineContainerView.isHidden = true
             }
             
-            if #available(iOSApplicationExtension 10.0, *) {
-                if let imageURL = result.thumbnailURL {
-                    vc.imageView.wmf_setImage(with: imageURL, detectFaces: true, onGPU: true, failure: { (error) in
-                        vc.collapseImageAndWidenLabels = true
-                    }) {
-                        vc.collapseImageAndWidenLabels = false
-                    }
-                } else {
+            if let imageURL = result.thumbnailURL {
+                vc.imageView.wmf_setImage(with: imageURL, detectFaces: true, onGPU: true, failure: { (error) in
                     vc.collapseImageAndWidenLabels = true
+                }) {
+                    vc.collapseImageAndWidenLabels = false
                 }
             } else {
                 vc.collapseImageAndWidenLabels = true
@@ -286,16 +270,7 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
             } else {
                 vc.separatorView.isHidden = false
             }
-            if #available(iOSApplicationExtension 10.0, *) {
-                
-            } else {
-                vc.marginWidthConstraint.constant = 0
-                vc.titleLabel.textColor = UIColor(white: 1, alpha: 1)
-                vc.subtitleLabel.textColor = UIColor(white: 1, alpha: 1)
-                vc.rankLabel.textColor = UIColor(white: 1, alpha: 0.7)
-                vc.viewCountLabel.textColor = UIColor(white: 1, alpha: 0.7)
-                vc.viewCountAndSparklineContainerView.backgroundColor = UIColor(white: 0.3, alpha: 0.3)
-            }
+            vc.separatorView.backgroundColor = theme.colors.border
             
             i += 1
         }
@@ -304,7 +279,7 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
         stackViewWidthConstraint.constant = maximumSize.width
         var sizeToFit = UILayoutFittingCompressedSize
         sizeToFit.width = maximumSize.width
-        var size = stackView.systemLayoutSizeFitting(sizeToFit, withHorizontalFittingPriority: UILayoutPriorityRequired, verticalFittingPriority: UILayoutPriorityDefaultLow)
+        var size = stackView.systemLayoutSizeFitting(sizeToFit, withHorizontalFittingPriority: UILayoutPriority.required, verticalFittingPriority: UILayoutPriority.defaultLow)
         size.width = maximumSize.width
         stackViewHeightConstraint.isActive = true
         
@@ -324,7 +299,6 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
         }
         
         preferredContentSize = rowCount == 1 ? articlePreviewViewControllers[0].view.frame.size : size
-        
         activityIndicatorHidden = true
     }
     
@@ -342,38 +316,46 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
             stackView.isHidden = !activityIndicatorHidden
         }
     }
-    
-    func widgetPerformUpdate(_ completionHandler: @escaping ((NCUpdateResult) -> Void)) {
+
+    func widgetPerformUpdate(completionHandler: @escaping (NCUpdateResult) -> Void) {
         fetch(siteURL: siteURL, date:Date(), attempt: 1, completionHandler: completionHandler)
     }
     
-    func updateUIWithTopReadFromContentStoreForSiteURL(siteURL: URL, date: Date) -> Bool {
+    func updateUIWithTopReadFromContentStoreForSiteURL(siteURL: URL, date: Date) -> NCUpdateResult {
         if let topRead = self.userStore.viewContext.group(of: .topRead, for: date, siteURL: siteURL) {
-            if let content = topRead.content as? [WMFFeedTopReadArticlePreview] {
-                self.group = topRead
+            if let content = topRead.contentPreview as? [WMFFeedTopReadArticlePreview] {
+                if let previousGroupURL = self.groupURL,
+                    let topReadURL = topRead.url,
+                    self.results.count > 0,
+                    previousGroupURL == topReadURL {
+                    return .noData
+                }
+                self.groupURL = topRead.url
                 self.results = content
                 self.updateView()
-                return true
+                return .newData
             }
         }
-        return false
+        return .failed
     }
     
     
     
     func fetch(siteURL: URL, date: Date, attempt: Int, completionHandler: @escaping ((NCUpdateResult) -> Void)) {
-        guard !updateUIWithTopReadFromContentStoreForSiteURL(siteURL: siteURL, date: date) else {
-            completionHandler(.newData)
+        let result = updateUIWithTopReadFromContentStoreForSiteURL(siteURL: siteURL, date: date)
+        guard result == .failed else {
+            completionHandler(result)
             return
         }
-        
+
         guard attempt < 4 else {
             completionHandler(.noData)
             return
         }
         contentSource.loadContent(for: date, in: userStore.viewContext, force: false) {
             DispatchQueue.main.async(execute: {
-                guard self.updateUIWithTopReadFromContentStoreForSiteURL(siteURL: siteURL, date: date) else {
+                let result = self.updateUIWithTopReadFromContentStoreForSiteURL(siteURL: siteURL, date: date)
+                guard result != .failed else {
                     if (attempt == 1) {
                         let todayUTC = (date as NSDate).wmf_midnightLocalDateForEquivalentUTC as Date
                         self.fetch(siteURL: siteURL, date: todayUTC, attempt: attempt + 1, completionHandler: completionHandler)
@@ -386,22 +368,19 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
                     }
                     return
                 }
-                
-                completionHandler(.newData)
+                completionHandler(result)
             })
         }
     }
     
     func showAllTopReadInApp() {
-        guard let URL = group?.url else {
+        guard let URL = groupURL else {
             return
         }
-        self.extensionContext?.open(URL, completionHandler: { (success) in
-            
-        })
+        self.extensionContext?.open(URL)
     }
     
-    func handleTapGestureRecognizer(_ gestureRecognizer: UITapGestureRecognizer) {
+    @objc func handleTapGestureRecognizer(_ gestureRecognizer: UITapGestureRecognizer) {
         guard let index = self.articlePreviewViewControllers.index(where: { (vc) -> Bool in
             let convertedRect = self.view.convert(vc.view.frame, from: vc.view.superview)
             return convertedRect.contains(gestureRecognizer.location(in: self.view))
@@ -411,14 +390,7 @@ class WMFTodayTopReadWidgetViewController: UIViewController, NCWidgetProviding {
         }
         
         let result = results[index]
-        let displayTitle = result.displayTitle
-        let siteURL = self.siteURL as NSURL
-        guard let URL = siteURL.wmf_wikipediaSchemeURL(withTitle: displayTitle) else {
-            return
-        }
-        self.extensionContext?.open(URL, completionHandler: { (success) in
-            
-        })
+        self.extensionContext?.open(result.articleURL)
     }
     
 }

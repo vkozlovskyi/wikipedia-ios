@@ -1,6 +1,6 @@
 import UIKit
 
-class OnThisDayTimelineView: UIView {
+public class OnThisDayTimelineView: UIView {
     public override init(frame: CGRect) {
         super.init(frame: frame)
         setup()
@@ -12,10 +12,10 @@ class OnThisDayTimelineView: UIView {
     }
     
     open func setup() {
-        backgroundColor = .clear
     }
 
     public var shouldAnimateDots: Bool = false
+    public var minimizeUnanimatedDots: Bool = false
     
     public var pauseDotsAnimation: Bool = true {
         didSet {
@@ -26,46 +26,42 @@ class OnThisDayTimelineView: UIView {
     private let dotRadius:CGFloat = 9.0
     private let dotMinRadiusNormal:CGFloat = 0.4
     
-    public var topDotsY: CGFloat = 0 {
+    public var dotsY: CGFloat = 0 {
         didSet {
             guard shouldAnimateDots == false else {
                 return
             }
-            updateTopDotsRadii(to: 1.0, at: CGPoint(x: frame.midX, y: topDotsY))
+            updateDotsRadii(to: minimizeUnanimatedDots ? 0.0 : 1.0, at: CGPoint(x: bounds.midX, y: dotsY))
         }
     }
-
-    public var bottomDotY: CGFloat = 0 {
+    
+    override public func tintColorDidChange() {
+        super.tintColorDidChange()
+        outerDotShapeLayer.strokeColor = tintColor.cgColor
+        innerDotShapeLayer.fillColor = tintColor.cgColor
+        innerDotShapeLayer.strokeColor = tintColor.cgColor
+        setNeedsDisplay()
+    }
+    
+    override public var backgroundColor: UIColor? {
         didSet {
-            guard shouldAnimateDots == false else {
-                return
-            }
-            bottomDotShapeLayer.updateDotRadius(dotRadius * dotMinRadiusNormal, center: CGPoint(x: frame.midX, y: bottomDotY))
+            outerDotShapeLayer.fillColor = backgroundColor?.cgColor
         }
     }
 
-    private lazy var bottomDotShapeLayer: CAShapeLayer = {
+    private lazy var outerDotShapeLayer: CAShapeLayer = {
         let shape = CAShapeLayer()
         shape.fillColor = UIColor.white.cgColor
-        shape.strokeColor = UIColor.wmf_blue.cgColor
+        shape.strokeColor = UIColor.blue.cgColor
         shape.lineWidth = 1.0
         self.layer.addSublayer(shape)
         return shape
     }()
 
-    private lazy var topOuterDotShapeLayer: CAShapeLayer = {
+    private lazy var innerDotShapeLayer: CAShapeLayer = {
         let shape = CAShapeLayer()
-        shape.fillColor = UIColor.white.cgColor
-        shape.strokeColor = UIColor.wmf_blue.cgColor
-        shape.lineWidth = 1.0
-        self.layer.addSublayer(shape)
-        return shape
-    }()
-
-    private lazy var topInnerDotShapeLayer: CAShapeLayer = {
-        let shape = CAShapeLayer()
-        shape.fillColor = UIColor.wmf_blue.cgColor
-        shape.strokeColor = UIColor.wmf_blue.cgColor
+        shape.fillColor = UIColor.blue.cgColor
+        shape.strokeColor = UIColor.blue.cgColor
         shape.lineWidth = 1.0
         self.layer.addSublayer(shape)
         return shape
@@ -75,18 +71,18 @@ class OnThisDayTimelineView: UIView {
         guard self.shouldAnimateDots == true else {
             return nil
         }
-        let link = CADisplayLink(target: self, selector: #selector(maybeUpdateTopDotsRadii))
+        let link = CADisplayLink(target: self, selector: #selector(maybeUpdateDotsRadii))
         link.add(to: RunLoop.main, forMode: RunLoopMode.commonModes)
         return link
     }()
     
-    override func removeFromSuperview() {
+    override public func removeFromSuperview() {
         displayLink?.invalidate()
         displayLink = nil
         super.removeFromSuperview()
     }
 
-    override func draw(_ rect: CGRect) {
+    override public func draw(_ rect: CGRect) {
         super.draw(rect)
         guard let context = UIGraphicsGetCurrentContext() else {
             return
@@ -94,10 +90,19 @@ class OnThisDayTimelineView: UIView {
         drawVerticalLine(in: context, rect: rect)
     }
     
+    public var extendTimelineAboveDot: Bool = true {
+        didSet {
+            if oldValue != extendTimelineAboveDot {
+                setNeedsDisplay()
+            }
+        }
+    }
+    
     private func drawVerticalLine(in context: CGContext, rect: CGRect){
         context.setLineWidth(1.0)
-        context.setStrokeColor(UIColor.wmf_blue.cgColor)
-        context.move(to: CGPoint(x: rect.midX, y: rect.minY))
+        context.setStrokeColor(tintColor.cgColor)
+        let lineTopY = extendTimelineAboveDot ? rect.minY : dotsY
+        context.move(to: CGPoint(x: rect.midX, y: lineTopY))
         context.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
         context.strokePath()
     }
@@ -114,7 +119,7 @@ class OnThisDayTimelineView: UIView {
 
     private var lastDotRadiusNormal: CGFloat = -1.0 // -1.0 so dots with dotAnimationNormal of "0.0" are visible initially
     
-    @objc private func maybeUpdateTopDotsRadii() {
+    @objc private func maybeUpdateDotsRadii() {
         guard let containerView = window else {
             return
         }
@@ -122,7 +127,7 @@ class OnThisDayTimelineView: UIView {
         // Shift the "full-width dot" point up a bit - otherwise it's in the vertical center of screen.
         let yOffset = containerView.bounds.size.height * 0.15
 
-        var radiusNormal = dotRadiusNormal(with: topDotsY + yOffset, in: containerView)
+        var radiusNormal = dotRadiusNormal(with: dotsY + yOffset, in: containerView)
 
         // Reminder: can reduce precision to 1 (significant digit) to reduce how often dot radii are updated.
         let precision: CGFloat = 2
@@ -133,17 +138,17 @@ class OnThisDayTimelineView: UIView {
             return
         }
         
-        updateTopDotsRadii(to: radiusNormal, at: CGPoint(x: frame.midX, y: topDotsY))
+        updateDotsRadii(to: radiusNormal, at: CGPoint(x: bounds.midX, y: dotsY))
         
         // Progressively fade the inner dot when it gets tiny.
-        topInnerDotShapeLayer.opacity = easeInOutQuart(number: Float(radiusNormal))
+        innerDotShapeLayer.opacity = easeInOutQuart(number: Float(radiusNormal))
         
         lastDotRadiusNormal = radiusNormal
     }
     
-    private func updateTopDotsRadii(to radiusNormal: CGFloat, at center: CGPoint){
-        topOuterDotShapeLayer.updateDotRadius(dotRadius * max(radiusNormal, dotMinRadiusNormal), center: center)
-        topInnerDotShapeLayer.updateDotRadius(dotRadius * max((radiusNormal - dotMinRadiusNormal), 0.0), center: center)
+    private func updateDotsRadii(to radiusNormal: CGFloat, at center: CGPoint){
+        outerDotShapeLayer.updateDotRadius(dotRadius * max(radiusNormal, dotMinRadiusNormal), center: center)
+        innerDotShapeLayer.updateDotRadius(dotRadius * max((radiusNormal - dotMinRadiusNormal), 0.0), center: center)
     }
     
     private func easeInOutQuart(number:Float) -> Float {

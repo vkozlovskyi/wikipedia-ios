@@ -46,11 +46,14 @@ NSUInteger const WMFMaxRelatedSearchResultLimit = 20;
         AFHTTPSessionManager *manager = [AFHTTPSessionManager wmf_createDefaultManager];
         manager.requestSerializer = [WMFRelatedSearchRequestSerializer serializer];
         manager.responseSerializer =
-            [WMFMantleJSONResponseSerializer serializerForValuesInDictionaryOfType:[MWKSearchResult class]
-                                                                       fromKeypath:@"query.pages"];
+            [WMFMantleJSONResponseSerializer serializerForValuesInDictionaryOfType:[MWKSearchResult class] fromKeypath:@"query.pages" emptyValueForJSONKeypathAllowed:NO];
         self.operationManager = manager;
     }
     return self;
+}
+
+- (void)dealloc {
+    [self.operationManager invalidateSessionCancelingTasks:YES];
 }
 
 - (BOOL)isFetching {
@@ -127,6 +130,7 @@ NSUInteger const WMFMaxRelatedSearchResultLimit = 20;
         @"gsrprop": @"redirecttitle",
         @"gsroffset": @0,
         @"gsrlimit": numResults,
+        @"ppprop": @"displaytitle",
         // extracts
         @"exlimit": numResults,
         // pageimage

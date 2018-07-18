@@ -1,15 +1,12 @@
-#import "WMFFeedContentDisplaying.h"
-@import WMF.WMFContentGroup_CoreDataClass;
+#import <WMF/WMFContentGroup+Extensions.h>
+#import <WMF/WMFFeedContentDisplaying.h>
 
-@class WMFNewsViewController;
-@class MWKDataStore;
-@class WMFFeedNewsStory;
+@protocol WMFAnalyticsContentTypeProviding;
+@protocol WMFAnalyticsValueProviding;
 
 NS_ASSUME_NONNULL_BEGIN
 
 @interface WMFContentGroup (WMFContentManaging) <WMFFeedContentDisplaying>
-
-- (nullable UIViewController *)detailViewControllerWithDataStore:(MWKDataStore *)dataStore siteURL:(NSURL *)siteURL;
 
 @end
 

@@ -13,7 +13,7 @@
 
 - (void)setUp {
     [super setUp];
-    self.recordMode = [[NSUserDefaults wmf_userDefaults] wmf_visualTestBatchRecordMode];
+    self.recordMode = WMFIsVisualTestRecordModeEnabled;
     self.deviceAgnostic = YES;
 }
 
@@ -30,11 +30,11 @@
 }
 
 - (void)testTrimReference {
-    [self wmf_verifyMultilineLabelWithText:[self attrString] width:320.f];
+    [self wmf_verifyMultilineLabelWithText:[self attrString]];
 }
 
 - (void)testTrim {
-    [self wmf_verifyMultilineLabelWithText:[[self attrString] wmf_trim] width:320.f];
+    [self wmf_verifyMultilineLabelWithText:[[self attrString] wmf_trim]];
 }
 
 - (void)testAllWhiteSpaceString {

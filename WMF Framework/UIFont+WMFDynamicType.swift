@@ -1,176 +1,125 @@
 import UIKit
 
-@objc public enum WMFFontFamily: Int {
+@objc(WMFFontFamily) public enum FontFamily: Int {
     case system
-    case systemBlack
-    case systemMedium
-    case systemBold
     case georgia
 }
 
-let fontSizeTable: [WMFFontFamily:[UIFontTextStyle:[UIContentSizeCategory:CGFloat]]] = {
-    return [
-        .georgia:[
-            UIFontTextStyle.title1: [
-                .accessibilityExtraExtraExtraLarge: 28,
-                .accessibilityExtraExtraLarge: 28,
-                .accessibilityExtraLarge: 28,
-                .accessibilityLarge: 28,
-                .accessibilityMedium: 28,
-                .extraExtraExtraLarge: 26,
-                .extraExtraLarge: 24,
-                .extraLarge: 22,
-                .large: 21,
-                .medium: 20,
-                .small: 19,
-                .extraSmall: 18
-            ],
-            UIFontTextStyle.title2: [
-                .accessibilityExtraExtraExtraLarge: 24,
-                .accessibilityExtraExtraLarge: 24,
-                .accessibilityExtraLarge: 24,
-                .accessibilityLarge: 24,
-                .accessibilityMedium: 24,
-                .extraExtraExtraLarge: 22,
-                .extraExtraLarge: 20,
-                .extraLarge: 19,
-                .large: 18,
-                .medium: 17,
-                .small: 16,
-                .extraSmall: 15
-            ],
-            UIFontTextStyle.title3: [
-                .accessibilityExtraExtraExtraLarge: 23,
-                .accessibilityExtraExtraLarge: 23,
-                .accessibilityExtraLarge: 23,
-                .accessibilityLarge: 23,
-                .accessibilityMedium: 23,
-                .extraExtraExtraLarge: 21,
-                .extraExtraLarge: 19,
-                .extraLarge: 18,
-                .large: 17,
-                .medium: 16,
-                .small: 15,
-                .extraSmall: 14
-            ]
-        ],
-        .systemBlack: [
-            UIFontTextStyle.title1: [
-                .accessibilityExtraExtraExtraLarge: 38,
-                .accessibilityExtraExtraLarge: 38,
-                .accessibilityExtraLarge: 38,
-                .accessibilityLarge: 38,
-                .accessibilityMedium: 38,
-                .extraExtraExtraLarge: 37,
-                .extraExtraLarge: 36,
-                .extraLarge: 35,
-                .large: 34,
-                .medium: 33,
-                .small: 32,
-                .extraSmall: 31
-            ]
-        ],
-        .systemBold: [
-            UIFontTextStyle.subheadline: [
-                .accessibilityExtraExtraExtraLarge: 21,
-                .accessibilityExtraExtraLarge: 21,
-                .accessibilityExtraLarge: 21,
-                .accessibilityLarge: 21,
-                .accessibilityMedium: 21,
-                .extraExtraExtraLarge: 21,
-                .extraExtraLarge: 19,
-                .extraLarge: 17,
-                .large: 15,
-                .medium: 14,
-                .small: 13,
-                .extraSmall: 12
-            ],
-            UIFontTextStyle.footnote: [
-                .accessibilityExtraExtraExtraLarge: 19,
-                .accessibilityExtraExtraLarge: 19,
-                .accessibilityExtraLarge: 19,
-                .accessibilityLarge: 19,
-                .accessibilityMedium: 19,
-                .extraExtraExtraLarge: 19,
-                .extraExtraLarge: 17,
-                .extraLarge: 15,
-                .large: 13,
-                .medium: 12,
-                .small: 12,
-                .extraSmall: 12
-            ],
-            UIFontTextStyle.body: [
-                .accessibilityExtraExtraExtraLarge: 53,
-                .accessibilityExtraExtraLarge: 47,
-                .accessibilityExtraLarge: 40,
-                .accessibilityLarge: 33,
-                .accessibilityMedium: 28,
-                .extraExtraExtraLarge: 23,
-                .extraExtraLarge: 21,
-                .extraLarge: 19,
-                .large: 17,
-                .medium: 16,
-                .small: 15,
-                .extraSmall: 14
-            ]
-        ],
-        .systemMedium: [
-            UIFontTextStyle.subheadline: [ // Save for later button
-                .accessibilityExtraExtraExtraLarge: 21,
-                .accessibilityExtraExtraLarge: 21,
-                .accessibilityExtraLarge: 21,
-                .accessibilityLarge: 21,
-                .accessibilityMedium: 21,
-                .extraExtraExtraLarge: 21,
-                .extraExtraLarge: 19,
-                .extraLarge: 17,
-                .large: 15,
-                .medium: 14,
-                .small: 13,
-                .extraSmall: 12
-            ]
-        ]
-    ]
-}()
+@objc (WMFDynamicTextStyle) public class DynamicTextStyle: NSObject {
+    @objc public static let subheadline = DynamicTextStyle(.system, .subheadline)
+    @objc public static let semiboldSubheadline = DynamicTextStyle(.system, .subheadline, .semibold)
+    public static let mediumSubheadline = DynamicTextStyle(.system, .subheadline, .medium)
+    
+    public static let headline = DynamicTextStyle(.system, .headline)
+    public static let semiboldHeadline = DynamicTextStyle(.system, .headline, .semibold)
+    public static let heavyHeadline = DynamicTextStyle(.system, .headline, .heavy)
+
+    public static let footnote = DynamicTextStyle(.system, .footnote)
+    public static let mediumFootnote = DynamicTextStyle(.system, .footnote, .medium)
+    @objc public static let semiboldFootnote = DynamicTextStyle(.system, .footnote, .semibold)
+
+    public static let boldTitle1 = DynamicTextStyle(.system, .title1, .bold)
+
+    public static let boldTitle2 = DynamicTextStyle(.system, .title2, .bold)
+    
+    public static let title3 = DynamicTextStyle(.system, .title3)
+    
+    public static let body = DynamicTextStyle(.system, .body)
+    public static let semiboldBody = DynamicTextStyle(.system, .body, .semibold)
+    
+    public static let caption1 = DynamicTextStyle(.system, .caption1)
+    public static let caption2 = DynamicTextStyle(.system, .caption2)
+    public static let semiboldCaption2 = DynamicTextStyle(.system, .caption2, .semibold)
+    public static let italicCaption2 = DynamicTextStyle(.system, .caption2, .regular, [.traitItalic])
+
+    public static let georgiaTitle3 = DynamicTextStyle(.georgia, .title3)
+
+    let family: FontFamily
+    let style: UIFontTextStyle
+    let weight: UIFont.Weight
+    let traits: UIFontDescriptorSymbolicTraits
+    
+    init(_ family: FontFamily = .system, _ style: UIFontTextStyle, _ weight: UIFont.Weight = .regular, _ traits: UIFontDescriptorSymbolicTraits = []) {
+        self.family = family
+        self.weight = weight
+        self.traits = traits
+        self.style = style
+    }
+    
+    func with(weight: UIFont.Weight) -> DynamicTextStyle {
+        return DynamicTextStyle(family, style, weight, traits)
+    }
+    
+    func with(traits: UIFontDescriptorSymbolicTraits) -> DynamicTextStyle {
+        return DynamicTextStyle(family, style, weight, traits)
+    }
+    
+    func with(weight: UIFont.Weight, traits: UIFontDescriptorSymbolicTraits) -> DynamicTextStyle {
+        return DynamicTextStyle(family, style, weight, traits)
+    }
+}
+
+public extension UITraitCollection {
+    var wmf_preferredContentSizeCategory: UIContentSizeCategory {
+         return preferredContentSizeCategory
+    }
+}
+
+fileprivate var fontCache: [String: UIFont] = [:]
 
 public extension UIFont {
 
-    public class func wmf_preferredFontForFontFamily(_ fontFamily: WMFFontFamily, withTextStyle style: UIFontTextStyle) -> UIFont? {
-        return UIFont.wmf_preferredFontForFontFamily(fontFamily, withTextStyle: style, compatibleWithTraitCollection: UIScreen.main.traitCollection)
+    @objc(wmf_fontForDynamicTextStyle:) public class func wmf_font(_ dynamicTextStyle: DynamicTextStyle) -> UIFont {
+        return UIFont.wmf_font(dynamicTextStyle, compatibleWithTraitCollection: UIScreen.main.traitCollection)
     }
     
-    public class func wmf_preferredFontForFontFamily(_ fontFamily: WMFFontFamily, withTextStyle style: UIFontTextStyle, compatibleWithTraitCollection traitCollection: UITraitCollection) -> UIFont? {
-        
-        guard fontFamily != .system else {
-            if #available(iOSApplicationExtension 10.0, *) {
-                return UIFont.preferredFont(forTextStyle: style, compatibleWith: traitCollection)
-            } else {
-                return UIFont.preferredFont(forTextStyle: style)
-            }
+    @objc(wmf_fontForDynamicTextStyle:compatibleWithTraitCollection:) public class func wmf_font(_ dynamicTextStyle: DynamicTextStyle, compatibleWithTraitCollection traitCollection: UITraitCollection) -> UIFont {
+        let fontFamily = dynamicTextStyle.family
+        let weight = dynamicTextStyle.weight
+        let traits = dynamicTextStyle.traits
+        let style = dynamicTextStyle.style
+        guard fontFamily != .system || weight != .regular || traits != [] else {
+            return UIFont.preferredFont(forTextStyle: style, compatibleWith: traitCollection)
         }
-        
-        
-        var preferredContentSizeCategory = UIContentSizeCategory.medium
-        if #available(iOSApplicationExtension 10.0, *) {
-            preferredContentSizeCategory = traitCollection.preferredContentSizeCategory
-        }
-        
-        let familyTable: [UIFontTextStyle:[UIContentSizeCategory:CGFloat]]? = fontSizeTable[fontFamily]
-        let styleTable: [UIContentSizeCategory:CGFloat]? = familyTable?[style]
-        let size: CGFloat = styleTable?[preferredContentSizeCategory] ?? 21
+                
+        let size: CGFloat = UIFont.preferredFont(forTextStyle: style, compatibleWith: traitCollection).pointSize
 
+        let cacheKey = "\(fontFamily.rawValue)-\(weight.rawValue)-\(traits.rawValue)-\(size)"
+        if let font = fontCache[cacheKey] {
+            return font
+        }
+        
+        
+        var font: UIFont
         switch fontFamily {
         case .georgia:
-            return UIFont(descriptor: UIFontDescriptor(name: "Georgia", size: size), size: 0)
-        case .systemBlack:
-            return UIFont.systemFont(ofSize: size, weight: UIFontWeightBlack)
-        case .systemMedium:
-            return UIFont.systemFont(ofSize: size, weight: UIFontWeightMedium)
-        case .systemBold:
-            return UIFont.boldSystemFont(ofSize: size)
+            // using the standard .with(traits: doesn't seem to work for georgia
+            let isBold = weight > UIFont.Weight.regular
+            let isItalic = traits.contains(.traitItalic)
+            if isBold && isItalic {
+                font = UIFont(descriptor: UIFontDescriptor(name: "Georgia-BoldItalic", size: size), size: 0)
+            } else if isBold {
+                font = UIFont(descriptor: UIFontDescriptor(name: "Georgia-Bold", size: size), size: 0)
+            } else if isItalic {
+                font = UIFont(descriptor: UIFontDescriptor(name: "Georgia-Italic", size: size), size: 0)
+            } else {
+                font = UIFont(descriptor: UIFontDescriptor(name: "Georgia", size: size), size: 0)
+            }
         case .system:
-            assertionFailure("Should never reach this point. System font is guarded against at beginning of method.")
-            return nil
+            font = weight != .regular ? UIFont.systemFont(ofSize: size, weight: weight) : UIFont.preferredFont(forTextStyle: style, compatibleWith: traitCollection)
+            if traits != [] {
+                font = font.with(traits: traits)
+            }
         }
+        fontCache[cacheKey] = font
+        return font
+    }
+    
+    func with(traits: UIFontDescriptorSymbolicTraits) -> UIFont {
+        guard let descriptor = self.fontDescriptor.withSymbolicTraits(traits) else {
+            return self
+        }
+        
+        return UIFont(descriptor: descriptor, size: 0)
     }
 }

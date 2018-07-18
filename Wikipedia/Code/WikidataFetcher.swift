@@ -8,8 +8,8 @@ enum WikidataFetcherError: Error {
 
 class WikidataFetcher: NSObject {
     func wikidata(forArticleURL articleURL: URL, failure: @escaping (Error) -> Void, success: @escaping ([String: Any]) -> Void) {
-        guard let title = (articleURL as NSURL).wmf_title,
-            let language = (articleURL as NSURL).wmf_language else {
+        guard let title = articleURL.wmf_title,
+            let language = articleURL.wmf_language else {
                 failure(WikidataFetcherError.genericError)
                 return
         }
@@ -57,7 +57,7 @@ class WikidataFetcher: NSObject {
             
             let keys = ["P1332", "P1333", "P1334", "P1335"] //bounding coordinates
 
-            let coordinates = keys.flatMap({ (key) -> CLLocationCoordinate2D? in
+            let coordinates = keys.compactMap({ (key) -> CLLocationCoordinate2D? in
                 guard let values = claims[key] as? [Any] else {
                     return nil
                 }

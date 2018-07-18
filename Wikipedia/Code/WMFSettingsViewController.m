@@ -17,7 +17,6 @@
 #import <Tweaks/FBTweakViewController.h>
 #import <Tweaks/FBTweakStore.h>
 #endif
-#import "SSDataSources.h"
 
 // Other
 #import "UIBarButtonItem+WMFButtonConvenience.h"
@@ -26,6 +25,7 @@
 #import "UIViewController+WMFStoryboardUtilities.h"
 #import <WMF/MWKLanguageLinkController.h>
 #import "UIViewController+WMFOpenExternalUrl.h"
+#import "WMFDailyStatsLoggingFunnel.h"
 #import <WMF/NSBundle+WMFInfoUtils.h>
 #import "Wikipedia-Swift.h"
 
@@ -39,18 +39,18 @@ static NSString *const WMFSettingsURLZeroFAQ = @"https://m.wikimediafoundation.o
 static NSString *const WMFSettingsURLTerms = @"https://m.wikimediafoundation.org/wiki/Terms_of_Use";
 static NSString *const WMFSettingsURLRate = @"itms-apps://itunes.apple.com/app/id324715238";
 static NSString *const WMFSettingsURLDonation = @"https://donate.wikimedia.org/?utm_medium=WikipediaApp&utm_campaign=iOS&utm_source=<app-version>&uselang=<langcode>";
-static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafoundation.org/wiki/Privacy_policy";
 
 #if WMF_TWEAKS_ENABLED
-@interface WMFSettingsViewController () <UITableViewDelegate, WMFPreferredLanguagesViewControllerDelegate, FBTweakViewControllerDelegate>
+@interface WMFSettingsViewController () <UITableViewDelegate, UITableViewDataSource, WMFPreferredLanguagesViewControllerDelegate, FBTweakViewControllerDelegate>
 #else
-@interface WMFSettingsViewController () <UITableViewDelegate, WMFPreferredLanguagesViewControllerDelegate>
+@interface WMFSettingsViewController () <UITableViewDelegate, UITableViewDataSource, WMFPreferredLanguagesViewControllerDelegate>
 #endif
 
 @property (nonatomic, strong, readwrite) MWKDataStore *dataStore;
 
-@property (nonatomic, strong) SSSectionedDataSource *elementDataSource;
-@property (strong, nonatomic) IBOutlet UITableView *tableView;
+@property (nonatomic, strong) NSMutableArray *sections;
+@property (nonatomic, strong) IBOutlet UITableView *tableView;
+@property (nonatomic, strong) WMFTheme *theme;
 
 @property (nullable, nonatomic) WMFAuthenticationManager *authManager;
 
@@ -70,20 +70,30 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
 - (void)viewDidLoad {
     [super viewDidLoad];
 
+    [self.tableView setDelegate:self];
+    [self.tableView setDataSource:self];
+
     [self configureBackButton];
 
     [self.tableView registerNib:[WMFSettingsTableViewCell wmf_classNib] forCellReuseIdentifier:[WMFSettingsTableViewCell identifier]];
-
-    [self configureTableDataSource];
 
     self.tableView.estimatedRowHeight = 52.0;
     self.tableView.rowHeight = UITableViewAutomaticDimension;
 
     self.authManager = [WMFAuthenticationManager sharedInstance];
+
+    [self applyTheme:self.theme];
+    
+    if (@available(iOS 11.0, *)) {
+    } else {
+        // Before iOS 11
+        self.automaticallyAdjustsScrollViewInsets = NO;
+    }
 }
 
 - (void)dealloc {
     self.authManager = nil;
+    [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
 - (void)setAuthManager:(nullable WMFAuthenticationManager *)authManager {
@@ -106,12 +116,20 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
 - (void)viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     self.navigationController.toolbarHidden = YES;
-    [self reloadVisibleCellOfType:WMFSettingsMenuItemType_Login];
+    [self loadSections];
 }
 
 - (void)configureBackButton {
     UIBarButtonItem *xButton = [UIBarButtonItem wmf_buttonType:WMFButtonTypeX target:self action:@selector(closeButtonPressed)];
-    self.navigationItem.leftBarButtonItems = @[xButton];
+    self.navigationItem.rightBarButtonItem = xButton;
+}
+
+- (void)setShowCloseButton:(BOOL)showCloseButton {
+    if (showCloseButton) {
+        [self configureBackButton];
+    } else {
+        self.navigationItem.rightBarButtonItem = nil;
+    }
 }
 
 - (void)closeButtonPressed {
@@ -119,55 +137,67 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
 }
 
 - (nullable NSString *)title {
-    return WMFLocalizedStringWithDefaultValue(@"settings-title", nil, nil, @"Settings", @"Title of the view where app settings are displayed.\n{{Identical|Settings}}");
+    return [WMFCommonStrings settingsTitle];
 }
 
-- (void)configureTableDataSource {
-    self.elementDataSource = [[SSSectionedDataSource alloc] init];
-    self.elementDataSource.rowAnimation = UITableViewRowAnimationNone;
-    self.elementDataSource.tableView = self.tableView;
-    self.elementDataSource.cellClass = [WMFSettingsTableViewCell class];
-    self.elementDataSource.tableActionBlock = ^BOOL(SSCellActionType action, UITableView *tableView, NSIndexPath *indexPath) {
-        return NO;
-    };
+- (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(nonnull NSIndexPath *)indexPath {
+    WMFSettingsTableViewCell *cell = [self.tableView dequeueReusableCellWithIdentifier:WMFSettingsTableViewCell.identifier forIndexPath:indexPath];
 
-    @weakify(self)
-        self.elementDataSource.cellConfigureBlock = ^(WMFSettingsTableViewCell *cell, WMFSettingsMenuItem *menuItem, UITableView *tableView, NSIndexPath *indexPath) {
-        @strongify(self)
-            cell.title = menuItem.title;
-        cell.iconColor = menuItem.iconColor;
-        cell.iconName = menuItem.iconName;
-        cell.disclosureType = menuItem.disclosureType;
-        cell.disclosureText = menuItem.disclosureText;
-        [cell.disclosureSwitch setOn:menuItem.isSwitchOn];
-        cell.selectionStyle = (menuItem.disclosureType == WMFSettingsMenuItemDisclosureType_Switch) ? UITableViewCellSelectionStyleNone : UITableViewCellSelectionStyleDefault;
+    NSArray *menuItems = [self.sections[indexPath.section] getItems];
+    WMFSettingsMenuItem *menuItem = menuItems[indexPath.item];
 
-        if (menuItem.disclosureType != WMFSettingsMenuItemDisclosureType_Switch && menuItem.disclosureType != WMFSettingsMenuItemDisclosureType_None) {
-            cell.accessibilityTraits = UIAccessibilityTraitButton;
-        } else {
-            cell.accessibilityTraits = UIAccessibilityTraitStaticText;
-        }
+    cell.tag = menuItem.type;
+    cell.title = menuItem.title;
+    [cell applyTheme:self.theme];
+    if (!self.theme.colors.icon) {
+        cell.iconColor = [UIColor whiteColor];
+        cell.iconBackgroundColor = menuItem.iconColor;
+    }
+    cell.iconName = menuItem.iconName;
+    cell.disclosureType = menuItem.disclosureType;
+    cell.disclosureText = menuItem.disclosureText;
+    [cell.disclosureSwitch setOn:menuItem.isSwitchOn];
+    cell.selectionStyle = (menuItem.disclosureType == WMFSettingsMenuItemDisclosureType_Switch) ? UITableViewCellSelectionStyleNone : UITableViewCellSelectionStyleDefault;
 
-        [cell.disclosureSwitch removeTarget:self action:@selector(disclosureSwitchChanged:) forControlEvents:UIControlEventValueChanged];
-        cell.disclosureSwitch.tag = menuItem.type;
-        [cell.disclosureSwitch addTarget:self action:@selector(disclosureSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+    if (menuItem.disclosureType != WMFSettingsMenuItemDisclosureType_Switch && menuItem.disclosureType != WMFSettingsMenuItemDisclosureType_None) {
+        cell.accessibilityTraits = UIAccessibilityTraitButton;
+    } else {
+        cell.accessibilityTraits = UIAccessibilityTraitStaticText;
+    }
 
-    };
-    [self loadSections];
+    [cell.disclosureSwitch removeTarget:self action:@selector(disclosureSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+    cell.disclosureSwitch.tag = menuItem.type;
+    [cell.disclosureSwitch addTarget:self action:@selector(disclosureSwitchChanged:) forControlEvents:UIControlEventValueChanged];
+
+    return cell;
 }
 
 - (void)disclosureSwitchChanged:(UISwitch *)disclosureSwitch {
     WMFSettingsMenuItemType type = (WMFSettingsMenuItemType)disclosureSwitch.tag;
     [self updateStateForMenuItemType:type isSwitchOnValue:disclosureSwitch.isOn];
+    [self loadSections];
 }
 
 #pragma mark - Switch tap handling
 
 - (void)updateStateForMenuItemType:(WMFSettingsMenuItemType)type isSwitchOnValue:(BOOL)isOn {
     switch (type) {
-        case WMFSettingsMenuItemType_SendUsageReports:
-            [SessionSingleton sharedInstance].shouldSendUsageReports = isOn;
-            break;
+        case WMFSettingsMenuItemType_SendUsageReports: {
+            WMFEventLoggingService *eventLoggingService = [WMFEventLoggingService sharedInstance];
+            eventLoggingService.isEnabled = isOn;
+            if (isOn) {
+                [eventLoggingService reset];
+                [[WMFDailyStatsLoggingFunnel shared] logAppNumberOfDaysSinceInstall];
+                [[SessionsFunnel shared] logSessionStart];
+                [[UserHistoryFunnel shared] logStartingSnapshot];
+            } else {
+                [[SessionsFunnel shared] logSessionEnd];
+                [[UserHistoryFunnel shared] logSnapshot];
+                [eventLoggingService reset];
+            }
+            [[WMFSession shared] setShouldSendUsageReports:isOn];
+            [[QueuesSingleton sharedInstance] reset];
+        } break;
         case WMFSettingsMenuItemType_ZeroWarnWhenLeaving:
             [SessionSingleton sharedInstance].zeroConfigurationManager.warnWhenLeaving = isOn;
             break;
@@ -181,21 +211,37 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
 #pragma mark - Cell tap handling
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    switch ([(WMFSettingsMenuItem *)[self.elementDataSource itemAtIndexPath:indexPath] type]) {
+    UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+    switch (cell.tag) {
         case WMFSettingsMenuItemType_Login:
             [self showLoginOrLogout];
             break;
         case WMFSettingsMenuItemType_SearchLanguage:
             [self showLanguages];
             break;
+        case WMFSettingsMenuItemType_ExploreFeed:
+            [self showExploreFeedSettings];
+            break;
         case WMFSettingsMenuItemType_Notifications:
             [self showNotifications];
             break;
+        case WMFSettingsMenuItemType_Appearance: {
+            [self showAppearance];
+            break;
+        }
+        case WMFSettingsMenuItemType_StorageAndSyncing: {
+            [self showStorageAndSyncing];
+            break;
+        }
+        case WMFSettingsMenuItemType_StorageAndSyncingDebug: {
+            [self showStorageAndSyncingDebug];
+            break;
+        }
         case WMFSettingsMenuItemType_Support:
             [self wmf_openExternalUrl:[self donationURL] useSafari:YES];
             break;
         case WMFSettingsMenuItemType_PrivacyPolicy:
-            [self wmf_openExternalUrl:[NSURL URLWithString:WMFSettingsURLPrivacyPolicy]];
+            [self wmf_openExternalUrl:[NSURL URLWithString:[WMFCommonStrings privacyPolicyURLString]]];
             break;
         case WMFSettingsMenuItemType_Terms:
             [self wmf_openExternalUrl:[NSURL URLWithString:WMFSettingsURLTerms]];
@@ -208,13 +254,14 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
             break;
         case WMFSettingsMenuItemType_SendFeedback: {
             WMFHelpViewController *vc = [[WMFHelpViewController alloc] initWithDataStore:self.dataStore];
+            [vc applyTheme:self.theme];
             [self.navigationController pushViewController:vc animated:YES];
         } break;
-        case WMFSettingsMenuItemType_About:
-            [self presentViewController:[[UINavigationController alloc] initWithRootViewController:[AboutViewController wmf_initialViewControllerFromClassStoryboard]]
-                               animated:YES
-                             completion:nil];
+        case WMFSettingsMenuItemType_About: {
+            AboutViewController *vc = [[AboutViewController alloc] initWithTheme:self.theme];
+            [self.navigationController pushViewController:vc animated:YES];
             break;
+        }
         case WMFSettingsMenuItemType_ClearCache:
             [self showClearCacheActionSheet];
             break;
@@ -234,6 +281,15 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
     [self.tableView deselectRowAtIndexPath:indexPath animated:YES];
 }
 
+#if WMF_TWEAKS_ENABLED
+- (void)motionEnded:(UIEventSubtype)motion withEvent:(nullable UIEvent *)event {
+    if (motion == UIEventSubtypeMotionShake) {
+        DebugReadingListsViewController *vc = [[DebugReadingListsViewController alloc] initWithNibName:@"DebugReadingListsViewController" bundle:nil];
+        [self.navigationController pushViewController:vc animated:YES];
+    }
+}
+#endif
+
 #pragma mark - Dynamic URLs
 
 - (NSURL *)donationURL {
@@ -251,6 +307,13 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
     return [NSURL URLWithString:url];
 }
 
+#pragma mark - Presentation
+
+- (void)presentViewControllerWrappedInNavigationController:(UIViewController *)viewController {
+    WMFThemeableNavigationController *themeableNavController = [[WMFThemeableNavigationController alloc] initWithRootViewController:viewController theme:self.theme];
+    [self presentViewController:themeableNavController animated:YES completion:nil];
+}
+
 #pragma mark - Log in and out
 
 - (void)showLoginOrLogout {
@@ -258,9 +321,10 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
     if (userName) {
         [self showLogoutActionSheet];
     } else {
-        [self presentViewController:[[UINavigationController alloc] initWithRootViewController:[WMFLoginViewController wmf_initialViewControllerFromClassStoryboard]]
-                           animated:YES
-                         completion:nil];
+        WMFLoginViewController *loginVC = [WMFLoginViewController wmf_initialViewControllerFromClassStoryboard];
+        [loginVC applyTheme:self.theme];
+        [self presentViewControllerWrappedInNavigationController:loginVC];
+        [[LoginFunnel shared] logLoginStartInSettings];
     }
 }
 
@@ -272,7 +336,7 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
                                                 handler:^(UIAlertAction *_Nonnull action) {
                                                     @strongify(self)
                                                         [self logout];
-                                                    [self reloadVisibleCellOfType:WMFSettingsMenuItemType_Login];
+                                                    [self loadSections];
                                                 }]];
     [sheet addAction:[UIAlertAction actionWithTitle:WMFLocalizedStringWithDefaultValue(@"main-menu-account-logout-cancel", nil, nil, @"Cancel", @"Button text for hiding the log out menu.\n{{Identical|Cancel}}") style:UIAlertActionStyleCancel handler:NULL]];
 
@@ -290,14 +354,7 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
     [sheet addAction:[UIAlertAction actionWithTitle:WMFLocalizedStringWithDefaultValue(@"settings-clear-cache-ok", nil, nil, @"Clear cache", @"Confirm action to clear cached data")
                                               style:UIAlertActionStyleDestructive
                                             handler:^(UIAlertAction *_Nonnull action) {
-                                                [[WMFImageController sharedInstance] deleteTemporaryCache];
-                                                [[WMFImageController sharedInstance] removeLegacyCache];
-                                                [self.dataStore removeUnreferencedArticlesFromDiskCacheWithFailure:^(NSError *error) {
-                                                    DDLogError(@"Error removing unreferenced articles: %@", error);
-                                                }
-                                                    success:^{
-                                                        DDLogDebug(@"Successfully removed unreferenced articles");
-                                                    }];
+                                                [self.dataStore clearCachesForUnsavedArticles];
                                             }]];
     [sheet addAction:[UIAlertAction actionWithTitle:WMFLocalizedStringWithDefaultValue(@"settings-clear-cache-cancel", nil, nil, @"Cancel", @"Cancel action to clear cached data\n{{Identical|Cancel}}") style:UIAlertActionStyleCancel handler:NULL]];
 
@@ -305,10 +362,13 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
 }
 
 - (void)logout {
-    [[WMFAuthenticationManager sharedInstance] logoutWithSuccess:WMFIgnoreSuccessHandler
-                                                         failure:^(NSError *error) {
-                                                             [[WMFAlertManager sharedInstance] showErrorAlert:error sticky:NO dismissPreviousAlerts:YES tapCallBack:NULL];
-                                                         }];
+    [self wmf_showKeepSavedArticlesOnDevicePanelIfNecessaryWithTriggeredBy:KeepSavedArticlesTriggerLogout
+                                                                     theme:self.theme
+                                                                completion:^{
+                                                                    [[WMFAuthenticationManager sharedInstance] logoutWithCompletion:^{
+                                                                        [[LoginFunnel shared] logLogoutInSettings];
+                                                                    }];
+                                                                }];
 }
 
 #pragma mark - Languages
@@ -316,9 +376,8 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
 - (void)showLanguages {
     WMFPreferredLanguagesViewController *languagesVC = [WMFPreferredLanguagesViewController preferredLanguagesViewController];
     languagesVC.delegate = self;
-    [self presentViewController:[[UINavigationController alloc] initWithRootViewController:languagesVC]
-                       animated:YES
-                     completion:nil];
+    [languagesVC applyTheme:self.theme];
+    [self presentViewControllerWrappedInNavigationController:languagesVC];
 }
 
 - (void)languagesController:(WMFPreferredLanguagesViewController *)controller didUpdatePreferredLanguages:(NSArray<MWKLanguageLink *> *)languages {
@@ -328,15 +387,48 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
         [[NSUserDefaults wmf_userDefaults] wmf_setShowSearchLanguageBar:NO];
     }
 
-    [self reloadVisibleCellOfType:WMFSettingsMenuItemType_SearchLanguage];
-    [self reloadVisibleCellOfType:WMFSettingsMenuItemType_SearchLanguageBarVisibility];
+    [self loadSections];
+}
+
+#pragma mark - Feed
+
+- (void)showExploreFeedSettings {
+    WMFExploreFeedSettingsViewController *feedSettingsVC = [[WMFExploreFeedSettingsViewController alloc] init];
+    feedSettingsVC.dataStore = self.dataStore;
+    [feedSettingsVC applyTheme:self.theme];
+    [self.navigationController pushViewController:feedSettingsVC animated:YES];
 }
 
 #pragma mark - Notifications
 
 - (void)showNotifications {
-    NotificationSettingsViewController *notificationSettingsVC = [[NotificationSettingsViewController alloc] initWithNibName:@"NotificationSettingsViewController" bundle:nil];
+    WMFNotificationSettingsViewController *notificationSettingsVC = [[WMFNotificationSettingsViewController alloc] initWithNibName:@"NotificationSettingsViewController" bundle:nil];
+    [notificationSettingsVC applyTheme:self.theme];
     [self.navigationController pushViewController:notificationSettingsVC animated:YES];
+}
+
+#pragma mark - Appearance
+
+- (void)showAppearance {
+    WMFAppearanceSettingsViewController *appearanceSettingsVC = [[WMFAppearanceSettingsViewController alloc] initWithNibName:@"AppearanceSettingsViewController" bundle:nil];
+    [appearanceSettingsVC applyTheme:self.theme];
+    [self.navigationController pushViewController:appearanceSettingsVC animated:YES];
+}
+
+#pragma mark - Storage and syncing
+
+- (void)showStorageAndSyncing {
+    WMFStorageAndSyncingSettingsViewController *storageAndSyncingSettingsVC = [[WMFStorageAndSyncingSettingsViewController alloc] initWithNibName:@"StorageAndSyncingSettingsViewController" bundle:nil];
+    [storageAndSyncingSettingsVC applyTheme:self.theme];
+    storageAndSyncingSettingsVC.dataStore = self.dataStore;
+    [self.navigationController pushViewController:storageAndSyncingSettingsVC animated:YES];
+}
+
+- (void)showStorageAndSyncingDebug {
+#if DEBUG
+    DebugReadingListsViewController *vc = [[DebugReadingListsViewController alloc] initWithNibName:@"DebugReadingListsViewController" bundle:nil];
+    [self.navigationController pushViewController:vc animated:YES];
+#endif
 }
 
 #pragma mark - Debugging
@@ -361,122 +453,144 @@ static NSString *const WMFSettingsURLPrivacyPolicy = @"https://m.wikimediafounda
 
 - (nullable NSIndexPath *)indexPathForVisibleCellOfType:(WMFSettingsMenuItemType)type {
     return [self.tableView.indexPathsForVisibleRows wmf_match:^BOOL(NSIndexPath *indexPath) {
-        return ((WMFSettingsMenuItem *)[self.elementDataSource itemAtIndexPath:indexPath]).type == type;
+        return ([self.tableView cellForRowAtIndexPath:indexPath].tag == type);
     }];
-}
-
-- (void)reloadVisibleCellOfType:(WMFSettingsMenuItemType)type {
-    NSIndexPath *indexPath = [self indexPathForVisibleCellOfType:type];
-    if (indexPath) {
-        [self.elementDataSource replaceItemAtIndexPath:indexPath withItem:[WMFSettingsMenuItem itemForType:type]];
-    }
 }
 
 #pragma mark - Sections structure
 
-- (void)loadSections {
-    NSMutableArray *sections = [[NSMutableArray alloc] init];
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
+    return self.sections.count;
+}
 
-    [sections addObject:[self section_1]];
-    [sections addObject:[self section_2]];
-    [sections addObject:[self section_3]];
-    [sections addObject:[self section_4]];
-    [sections addObject:[self section_5]];
-    SSSection *section6 = [self section_6];
+- (NSInteger)tableView:(UITableView *)tableView
+    numberOfRowsInSection:(NSInteger)section {
+    NSArray *items = [self.sections[section] getItems];
+    return items.count;
+}
+
+- (nullable NSString *)tableView:(UITableView *)tableView
+         titleForHeaderInSection:(NSInteger)section {
+    NSString *header = [self.sections[section] getHeaderTitle];
+    if (header != nil) {
+        return header;
+    }
+    return nil;
+}
+
+- (void)loadSections {
+    self.sections = [[NSMutableArray alloc] init];
+
+    [self.sections addObject:[self section_1]];
+    [self.sections addObject:[self section_2]];
+    [self.sections addObject:[self section_3]];
+    [self.sections addObject:[self section_4]];
+    [self.sections addObject:[self section_5]];
+    WMFSettingsTableViewSection *section6 = [self section_6];
     if (section6) {
-        [sections addObject:section6];
+        [self.sections addObject:section6];
     }
 
-    [self.elementDataSource.sections setArray:sections];
-    [self.elementDataSource.tableView reloadData];
+    [self.tableView reloadData];
 }
 
 #pragma mark - Section structure
 
-- (SSSection *)section_1 {
-    SSSection *section =
-        [SSSection sectionWithItems:@[
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_Login],
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_Support]
-        ]];
-    section.header = nil;
-    section.footer = nil;
+- (WMFSettingsTableViewSection *)section_1 {
+    NSArray *items = @[[WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_Login],
+                       [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_Support]];
+    WMFSettingsTableViewSection *section = [[WMFSettingsTableViewSection alloc] initWithItems:items
+                                                                                  headerTitle:nil
+                                                                                   footerText:nil];
     return section;
 }
 
-- (SSSection *)section_2 {
+- (WMFSettingsTableViewSection *)section_2 {
     NSArray *commonItems = @[[WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_SearchLanguage],
                              [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_SearchLanguageBarVisibility]];
     NSMutableArray *items = [NSMutableArray arrayWithArray:commonItems];
+    [items addObject:[WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_ExploreFeed]];
     if ([[NSProcessInfo processInfo] wmf_isOperatingSystemMajorVersionAtLeast:10]) {
         [items addObject:[WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_Notifications]];
     }
+    [items addObject:[WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_Appearance]];
+    [items addObject:[WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_StorageAndSyncing]];
+#if DEBUG
+    [items addObject:[WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_StorageAndSyncingDebug]];
+#endif
     [items addObject:[WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_ClearCache]];
-    SSSection *section = [SSSection sectionWithItems:items];
-    section.header = nil;
-    section.footer = nil;
+    WMFSettingsTableViewSection *section = [[WMFSettingsTableViewSection alloc] initWithItems:items headerTitle:nil footerText:nil];
     return section;
 }
 
-- (SSSection *)section_3 {
-    SSSection *section =
-        [SSSection sectionWithItems:@[
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_PrivacyPolicy],
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_Terms],
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_SendUsageReports]
-        ]];
-    section.header = WMFLocalizedStringWithDefaultValue(@"main-menu-heading-legal", nil, nil, @"Privacy and Terms", @"Header text for the legal section of the menu. Consider using something informal, but feel free to use a more literal translation of \"Legal info\" if it seems more appropriate.");
-    section.footer = WMFLocalizedStringWithDefaultValue(@"preference-summary-eventlogging-opt-in", nil, nil, @"Allow Wikimedia Foundation to collect information about how you use the app to make the app better", @"Description of preference that when checked enables data collection of user behavior.");
+- (WMFSettingsTableViewSection *)section_3 {
+    WMFSettingsTableViewSection *section = [[WMFSettingsTableViewSection alloc] initWithItems:@[
+        [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_PrivacyPolicy],
+        [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_Terms],
+        [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_SendUsageReports]
+    ]
+                                                                                  headerTitle:WMFLocalizedStringWithDefaultValue(@"main-menu-heading-legal", nil, nil, @"Privacy and Terms", @"Header text for the legal section of the menu. Consider using something informal, but feel free to use a more literal translation of \"Legal info\" if it seems more appropriate.")
+                                                                                   footerText:WMFLocalizedStringWithDefaultValue(@"preference-summary-eventlogging-opt-in", nil, nil, @"Allow Wikimedia Foundation to collect information about how you use the app to make the app better", @"Description of preference that when checked enables data collection of user behavior.")];
+
     return section;
 }
 
-- (SSSection *)section_4 {
-    SSSection *section =
-        [SSSection sectionWithItems:@[
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_ZeroWarnWhenLeaving],
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_ZeroFAQ]
-        ]];
-    section.header = WMFLocalizedStringWithDefaultValue(@"main-menu-heading-zero", nil, nil, @"Wikipedia Zero", @"Header text for the Wikipedia Zero section of the menu. ([http://wikimediafoundation.org/wiki/Wikipedia_Zero More information]).\n{{Identical|Wikipedia Zero}}");
-    section.footer = nil;
+- (WMFSettingsTableViewSection *)section_4 {
+    WMFSettingsTableViewSection *section = [[WMFSettingsTableViewSection alloc] initWithItems:@[
+        [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_ZeroWarnWhenLeaving],
+        [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_ZeroFAQ]
+    ]
+                                                                                  headerTitle:WMFLocalizedStringWithDefaultValue(@"main-menu-heading-zero", nil, nil, @"Wikipedia Zero", @"Header text for the Wikipedia Zero section of the menu. ([https://wikimediafoundation.org/wiki/Wikipedia_Zero More information]).\n{{Identical|Wikipedia Zero}}")
+                                                                                   footerText:nil];
     return section;
 }
 
-- (SSSection *)section_5 {
-    SSSection *section =
-        [SSSection sectionWithItems:@[
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_RateApp],
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_SendFeedback],
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_About]
-        ]];
-    section.header = nil;
-    section.footer = nil;
+- (WMFSettingsTableViewSection *)section_5 {
+    WMFSettingsTableViewSection *section = [[WMFSettingsTableViewSection alloc] initWithItems:@[
+        [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_RateApp],
+        [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_SendFeedback],
+        [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_About]
+    ]
+                                                                                  headerTitle:nil
+                                                                                   footerText:nil];
     return section;
 }
 
-- (nullable SSSection *)section_6 {
+- (nullable WMFSettingsTableViewSection *)section_6 {
 #if WMF_TWEAKS_ENABLED
-    SSSection *section =
-        [SSSection sectionWithItems:@[
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_DebugCrash],
-            [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_DevSettings]
-        ]];
-    section.header = WMFLocalizedStringWithDefaultValue(@"main-menu-heading-debug", nil, nil, @"Debug", @"Header text for the debug section of the menu. The debug menu is conditionally shown if in Xcode debug mode.\n{{Identical|Debug}}");
-    section.footer = nil;
+    WMFSettingsTableViewSection *section = [[WMFSettingsTableViewSection alloc] initWithItems:@[
+        [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_DebugCrash],
+        [WMFSettingsMenuItem itemForType:WMFSettingsMenuItemType_DevSettings]
+    ]
+                                                                                  headerTitle:WMFLocalizedStringWithDefaultValue(@"main-menu-heading-debug", nil, nil, @"Debug", @"Header text for the debug section of the menu. The debug menu is conditionally shown if in Xcode debug mode.\n{{Identical|Debug}}")
+                                                                                   footerText:nil];
     return section;
 #else
     return nil;
 #endif
 }
 
-#pragma - KVO
+#pragma mark - KVO
 
 - (void)observeValueForKeyPath:(nullable NSString *)keyPath ofObject:(nullable id)object change:(nullable NSDictionary<NSKeyValueChangeKey, id> *)change context:(nullable void *)context {
     if (context == &kvo_WMFSettingsViewController_authManager_loggedInUsername) {
-        [self reloadVisibleCellOfType:WMFSettingsMenuItemType_Login];
+        [self loadSections];
     } else {
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
     }
 }
+
+#pragma mark - WMFThemeable
+
+- (void)applyTheme:(WMFTheme *)theme {
+    self.theme = theme;
+    self.tableView.backgroundColor = theme.colors.baseBackground;
+    self.tableView.indicatorStyle = theme.scrollIndicatorStyle;
+    self.view.backgroundColor = theme.colors.baseBackground;
+    [self loadSections];
+    [self.tableView wmf_applyThemeToHeadersAndFooters:theme];
+}
+
 @end
 
 NS_ASSUME_NONNULL_END

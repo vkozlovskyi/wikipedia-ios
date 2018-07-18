@@ -11,6 +11,8 @@
  */
 + (NSDateFormatter *)wmf_iso8601Formatter;
 
++ (NSISO8601DateFormatter *)wmf_rfc3339LocalTimeZoneFormatter;
+
 /**
  * Formatter which can be used to present a short time string for a given date.
  *
@@ -49,6 +51,8 @@
 + (instancetype)wmf_dayNameMonthNameDayOfMonthNumberDateFormatter;
 
 + (instancetype)wmf_utcDayNameMonthNameDayOfMonthNumberDateFormatter;
+
++ (instancetype)wmf_utcMonthNameDayOfMonthNumberDateFormatter;
 
 + (instancetype)wmf_englishUTCSlashDelimitedYearMonthDayFormatter;
 

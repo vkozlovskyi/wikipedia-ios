@@ -11,7 +11,7 @@ extension NSError {
         }
     }
     
-    public func alertType() -> TSMessageNotificationType {
+    public func alertType() -> RMessageType {
         if(self.wmf_isNetworkConnectionError()){
             return .warning
         }else{
@@ -22,157 +22,113 @@ extension NSError {
 }
 
 
-open class WMFAlertManager: NSObject, TSMessageViewProtocol, MFMailComposeViewControllerDelegate {
+open class WMFAlertManager: NSObject, RMessageProtocol, MFMailComposeViewControllerDelegate, Themeable {
     
-    open static let sharedInstance = WMFAlertManager()
+    @objc static let sharedInstance = WMFAlertManager()
+
+    var theme = Theme.standard
+    public func apply(theme: Theme) {
+        self.theme = theme
+    }
 
     override init() {
         super.init()
-        TSMessage.addCustomDesignFromFile(withName: "AlertDesign.json")
-        TSMessage.shared().delegate = self
+        RMessage.shared().delegate = self
     }
     
     
-    open func showInTheNewsAlert(_ message: String?, sticky:Bool, dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
+    @objc func showInTheNewsAlert(_ message: String?, sticky:Bool, dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
         
         if (message ?? "").isEmpty {
             return
         }
-        self.showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
-            TSMessage.showNotification(in: nil,
-                title: WMFLocalizedString("in-the-news-title", value:"In the news", comment:"Title for the 'In the news' notification & feed section"),
-                subtitle: message,
-                image: UIImage(named:"trending-notification-icon"),
-                type: .message,
-                duration: sticky ? -1 : 2,
-                callback: tapCallBack,
-                buttonTitle: nil,
-                buttonCallback: {},
-                at: .top,
-                canBeDismissedByUser: true)
+        showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
+            let title = CommonStrings.inTheNewsTitle
+            RMessage.showNotification(in: nil, title: title, subtitle: message, iconImage: UIImage(named:"trending-notification-icon"), type: .normal, customTypeName: nil, duration: sticky ? -1 : 2, callback: tapCallBack, buttonTitle: nil, buttonCallback: nil, at: .top, canBeDismissedByUser: true)
         })
     }
     
 
-    open func showAlert(_ message: String?, sticky:Bool, dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
+    @objc func showAlert(_ message: String?, sticky: Bool, dismissPreviousAlerts: Bool, tapCallBack: (() -> Void)?) {
+        showAlert(message, sticky: sticky, canBeDismissedByUser: true, dismissPreviousAlerts: dismissPreviousAlerts, tapCallBack: tapCallBack)
+    }
+    
+    
+    public func showAlert(_ message: String?, sticky: Bool, canBeDismissedByUser: Bool, dismissPreviousAlerts: Bool, tapCallBack: (() -> Void)?) {
     
          if (message ?? "").isEmpty {
              return
          }
-         self.showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
-            TSMessage.showNotification(in: nil,
-                title: message,
-                subtitle: nil,
-                image: nil,
-                type: .message,
-                duration: sticky ? -1 : 2,
-                callback: tapCallBack,
-                buttonTitle: nil,
-                buttonCallback: {},
-                at: .top,
-                canBeDismissedByUser: true)
+         showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
+            RMessage.showNotification(in: nil, title: message, subtitle: nil, iconImage: nil, type: .normal, customTypeName: nil, duration: sticky ? -1 : 2, callback: tapCallBack, buttonTitle: nil, buttonCallback: nil, at: .top, canBeDismissedByUser: canBeDismissedByUser)
         })
     }
 
-    open func showSuccessAlert(_ message: String, sticky:Bool,dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
+    @objc func showSuccessAlert(_ message: String, sticky:Bool,dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
         
-        self.showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
-            TSMessage.showNotification(in: nil,
-                title: message,
-                subtitle: nil,
-                image: nil,
-                type: .success,
-                duration: sticky ? -1 : 2,
-                callback: tapCallBack,
-                buttonTitle: nil,
-                buttonCallback: {},
-                at: .top,
-                canBeDismissedByUser: true)
+        showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
+            RMessage.showNotification(in: nil, title: message, subtitle: nil, iconImage: nil, type: .success, customTypeName: nil, duration: sticky ? -1 : 2, callback: tapCallBack, buttonTitle: nil, buttonCallback: nil, at: .top, canBeDismissedByUser: true)
 
         })
     }
 
-    open func showWarningAlert(_ message: String, sticky:Bool,dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
+    @objc func showWarningAlert(_ message: String, sticky:Bool,dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
         
-        self.showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
-            TSMessage.showNotification(in: nil,
-                title: message,
-                subtitle: nil,
-                image: nil,
-                type: .warning,
-                duration: sticky ? -1 : 2,
-                callback: tapCallBack,
-                buttonTitle: nil,
-                buttonCallback: {},
-                at: .top,
-                canBeDismissedByUser: true)
+        showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
+            RMessage.showNotification(in: nil, title: message, subtitle: nil, iconImage: nil, type: .warning, customTypeName: nil, duration: sticky ? -1 : 2, callback: tapCallBack, buttonTitle: nil, buttonCallback: nil, at: .top, canBeDismissedByUser: true)
         })
     }
 
-    open func showErrorAlert(_ error: NSError, sticky:Bool,dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
+    @objc func showErrorAlert(_ error: NSError, sticky:Bool,dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
         
-        self.showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
-            TSMessage.showNotification(in: nil,
-                title: error.alertMessage(),
-                subtitle: nil,
-                image: nil,
-                type: error.alertType(),
-                duration: sticky ? -1 : 2,
-                callback: tapCallBack,
-                buttonTitle: nil,
-                buttonCallback: {},
-                at: .top,
-                canBeDismissedByUser: true)
+        showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
+            RMessage.showNotification(in: nil, title: error.alertMessage(), subtitle: nil, iconImage: nil, type: .error, customTypeName: nil, duration: sticky ? -1 : 2, callback: tapCallBack, buttonTitle: nil, buttonCallback: nil, at: .top, canBeDismissedByUser: true)
         })
     }
     
-    open func showErrorAlertWithMessage(_ message: String, sticky:Bool,dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
+    @objc func showErrorAlertWithMessage(_ message: String, sticky:Bool,dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
         
-        self.showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
-            TSMessage.showNotification(in: nil,
-                title: message,
-                subtitle: nil,
-                image: nil,
-                type: .error,
-                duration: sticky ? -1 : 2,
-                callback: tapCallBack,
-                buttonTitle: nil,
-                buttonCallback: {},
-                at: .top,
-                canBeDismissedByUser: true)
+        showAlert(dismissPreviousAlerts, alertBlock: { () -> Void in
+            RMessage.showNotification(in: nil, title: message, subtitle: nil, iconImage: nil, type: .error, customTypeName: nil, duration: sticky ? -1 : 2, callback: tapCallBack, buttonTitle: nil, buttonCallback: nil, at: .top, canBeDismissedByUser: true)
         })
     }
 
-    func showAlert(_ dismissPreviousAlerts:Bool, alertBlock: @escaping ()->()){
+    @objc func showAlert(_ dismissPreviousAlerts:Bool, alertBlock: @escaping ()->()){
         
-        if(dismissPreviousAlerts){
-            TSMessage.dismissAllNotifications(completion: { () -> Void in
+        if dismissPreviousAlerts {
+            dismissAllAlerts {
                 alertBlock()
-            })
-        }else{
+            }
+        } else {
             alertBlock()
         }
     }
     
-    open func dismissAlert() {
-        
-        TSMessage.dismissActiveNotification()
+    @objc func dismissAlert() {
+        RMessage.dismissActiveNotification()
     }
 
-    open func dismissAllAlerts() {
-        
-        TSMessage.dismissAllNotifications()
+    @objc func dismissAllAlerts(_ completion: @escaping () -> Void = {}) {
+        RMessage.dismissAllNotifications(completion: completion)
     }
 
-    open func customize(_ messageView: TSMessageView!) {
-        
-        if(messageView.notificationType == .message){
-         messageView.contentFont = UIFont.systemFont(ofSize: 14, weight: UIFontWeightSemibold)
-            messageView.titleFont = UIFont.systemFont(ofSize: 12)
+    @objc public func customize(_ messageView: RMessageView!) {
+        messageView.backgroundColor = theme.colors.popoverBackground
+        messageView.closeIconColor = theme.colors.primaryText
+        messageView.subtitleTextColor = theme.colors.secondaryText
+        switch messageView.messageType {
+        case .error:
+            messageView.titleTextColor = theme.colors.error
+        case .warning:
+            messageView.titleTextColor = theme.colors.warning
+        case .success:
+            messageView.titleTextColor = theme.colors.accent
+        default:
+            messageView.titleTextColor = theme.colors.link
         }
     }
     
-    open func showEmailFeedbackAlertViewWithError(_ error: NSError) {
+    @objc func showEmailFeedbackAlertViewWithError(_ error: NSError) {
        let message = WMFLocalizedString("request-feedback-on-error", value:"The app has encountered a problem that our developers would like to know more about. Please tap here to send us an email with the error details.", comment:"Displayed to beta users when they encounter an error we'd like feedback on")
         showErrorAlertWithMessage(message, sticky: true, dismissPreviousAlerts: true) {
             self.dismissAllAlerts()
@@ -194,7 +150,7 @@ open class WMFAlertManager: NSObject, TSMessageViewProtocol, MFMailComposeViewCo
         }
     }
     
-    open func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
+    @objc public func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
         controller.dismiss(animated: true, completion: nil)
     }
 }

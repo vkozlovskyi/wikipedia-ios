@@ -31,7 +31,6 @@
 }
 
 - (void)removeAllContentInManagedObjectContext:(NSManagedObjectContext *)moc {
-    
 }
 
 - (void)loadNewContentInManagedObjectContext:(NSManagedObjectContext *)moc force:(BOOL)force completion:(nullable dispatch_block_t)completion {
@@ -83,8 +82,10 @@
                                                             ofKind:WMFContentGroupKindAnnouncement
                                                            forDate:[NSDate date]
                                                        withSiteURL:self.siteURL
-                                                 associatedContent:@[obj]
-                                                customizationBlock:NULL];
+                                                 associatedContent:nil
+                                                customizationBlock:^(WMFContentGroup *_Nonnull group) {
+                                                    group.contentPreview = obj;
+                                                }];
             [group updateVisibility];
         }];
 
@@ -98,27 +99,27 @@
     if ([[NSProcessInfo processInfo] wmf_isOperatingSystemMajorVersionLessThan:10]) {
         return;
     }
-    
-    NSURL *URL = [WMFContentGroup notificationContentGroupURL];
     NSUserDefaults *userDefaults = [NSUserDefaults wmf_userDefaults];
-    WMFContentGroup *group = [moc contentGroupForURL:URL];
-    if (![userDefaults wmf_inTheNewsNotificationsEnabled] && ![userDefaults wmf_didShowNewsNotificationCardInFeed]) {
-        if (!group) {
-            [moc fetchOrCreateGroupForURL:URL ofKind:WMFContentGroupKindNotification forDate:[NSDate date] withSiteURL:self.siteURL associatedContent:@[@""] customizationBlock:NULL];
-        }
-        [userDefaults wmf_setDidShowNewsNotificationCardInFeed:YES];
-    } else if (shouldAddNewContent) { // shoulAddNewContent represents a user-initiated refresh
-        if (group) {
-           [moc deleteObject:group];
-        }
-    } else {
-        group.date = [NSDate date];
+
+    if (!userDefaults.wmf_didShowThemeCardInFeed) {
+        NSURL *themeContentGroupURL = [WMFContentGroup themeContentGroupURL];
+        [moc fetchOrCreateGroupForURL:themeContentGroupURL ofKind:WMFContentGroupKindTheme forDate:[NSDate date] withSiteURL:self.siteURL associatedContent:nil customizationBlock:NULL];
+        userDefaults.wmf_didShowThemeCardInFeed = YES;
+    }
+
+    
+    if (moc.wmf_isSyncRemotelyEnabled && !userDefaults.wmf_didShowReadingListCardInFeed) {
+        NSURL *readingListContentGroupURL = [WMFContentGroup readingListContentGroupURL];
+        [moc fetchOrCreateGroupForURL:readingListContentGroupURL ofKind:WMFContentGroupKindReadingList forDate:[NSDate date] withSiteURL:self.siteURL associatedContent:nil customizationBlock:NULL];
+        userDefaults.wmf_didShowReadingListCardInFeed = YES;
+    } else if (!moc.wmf_isSyncRemotelyEnabled) {
+        [moc removeAllContentGroupsOfKind:WMFContentGroupKindReadingList];
     }
 }
 
 - (void)updateVisibilityOfAnnouncementsInManagedObjectContext:(NSManagedObjectContext *)moc addNewContent:(BOOL)shouldAddNewContent {
     [self updateVisibilityOfNotificationAnnouncementsInManagedObjectContext:moc addNewContent:shouldAddNewContent];
-    
+
     //Only make these visible for previous users of the app
     //Meaning a new install will only see these after they close the app and reopen
     if ([[NSUserDefaults wmf_userDefaults] wmf_appResignActiveDate] == nil) {

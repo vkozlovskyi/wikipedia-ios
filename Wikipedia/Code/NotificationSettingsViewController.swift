@@ -22,10 +22,12 @@ struct NotificationSettingsSection {
     let items: [NotificationSettingsItem]
 }
 
-class NotificationSettingsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, AnalyticsContextProviding, AnalyticsContentTypeProviding {
+@objc(WMFNotificationSettingsViewController)
+class NotificationSettingsViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, AnalyticsContextProviding, AnalyticsContentTypeProviding, Themeable {
 
     @IBOutlet weak var tableView: UITableView!
     
+    fileprivate var theme = Theme.standard
     
     var sections = [NotificationSettingsSection]()
     var observationToken: NSObjectProtocol?
@@ -33,12 +35,14 @@ class NotificationSettingsViewController: UIViewController, UITableViewDataSourc
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.contentInset = UIEdgeInsets(top: 10, left: 0, bottom: 0, right: 0);
-        tableView.register(WMFSettingsTableViewCell.wmf_classNib(), forCellReuseIdentifier: WMFSettingsTableViewCell.identifier())
+        tableView.register(WMFSettingsTableViewCell.wmf_classNib(), forCellReuseIdentifier: WMFSettingsTableViewCell.identifier)
         tableView.delegate = self
         tableView.dataSource = self
+        tableView.separatorStyle = .none
         observationToken = NotificationCenter.default.addObserver(forName: NSNotification.Name.UIApplicationDidBecomeActive, object: nil, queue: OperationQueue.main) { [weak self] (note) in
             self?.updateSections()
         }
+        apply(theme: self.theme)
     }
     
     deinit {
@@ -67,7 +71,7 @@ class NotificationSettingsViewController: UIViewController, UITableViewDataSourc
             let title = WMFLocalizedString("welcome-notifications-tell-me-more-title", value:"More about notifications", comment:"Title for detailed notification explanation")
             let message = "\(WMFLocalizedString("welcome-notifications-tell-me-more-storage", value:"Notification preferences are stored on device and not based on personal information or activity.", comment:"An explanation of how notifications are stored"))\n\n\(WMFLocalizedString("welcome-notifications-tell-me-more-creation", value:"Notifications are created and delivered on your device by the app, not from our (or third party) servers.", comment:"An explanation of how notifications are created"))"
             let alertController = UIAlertController(title: title, message: message, preferredStyle: UIAlertControllerStyle.alert)
-            alertController.addAction(UIAlertAction(title: WMFLocalizedString("welcome-explore-tell-me-more-done-button", value:"Got it", comment:"Text for button dismissing detailed explanation of new features"), style: UIAlertActionStyle.default, handler: { (action) in
+            alertController.addAction(UIAlertAction(title: CommonStrings.gotItButtonTitle, style: UIAlertActionStyle.default, handler: { (action) in
             }))
             self?.present(alertController, animated: true, completion: nil)
         })]
@@ -77,26 +81,18 @@ class NotificationSettingsViewController: UIViewController, UITableViewDataSourc
         
         let notificationSettingsItems: [NotificationSettingsItem] = [NotificationSettingsSwitchItem(title: WMFLocalizedString("settings-notifications-trending", value:"Trending current events", comment:"Title for the setting for trending notifications"), switchChecker: { () -> Bool in
             return UserDefaults.wmf_userDefaults().wmf_inTheNewsNotificationsEnabled()
-            }, switchAction: { (isOn) in
+            }, switchAction: { [weak self] (isOn) in
                 //This (and everything else that references UNUserNotificationCenter in this class) should be moved into WMFNotificationsController
-                if #available(iOS 10.0, *) {
-                    if (isOn) {
-                        WMFNotificationsController.shared().requestAuthenticationIfNecessary(completionHandler: { (granted, error) in
-                            if let error = error as NSError? {
-                                self.wmf_showAlertWithError(error)
-                            }
-                        })
-                    } else {
-                        UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
-                    }
+                if (isOn) {
+                    WMFNotificationsController.shared().requestAuthenticationIfNecessary(completionHandler: { [weak self] (granted, error) in
+                        if let error = error as NSError? {
+                            self?.wmf_showAlertWithError(error)
+                        }
+                    })
+                } else {
+                    UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
                 }
-                
-                if isOn {
-                    PiwikTracker.sharedInstance()?.wmf_logActionEnable(inContext: self, contentType: self)
-                }else{
-                    PiwikTracker.sharedInstance()?.wmf_logActionDisable(inContext: self, contentType: self)
-                }
-            UserDefaults.wmf_userDefaults().wmf_setInTheNewsNotificationsEnabled(isOn)
+                UserDefaults.wmf_userDefaults().wmf_setInTheNewsNotificationsEnabled(isOn)
         })]
         let notificationSettingsSection = NotificationSettingsSection(headerTitle: WMFLocalizedString("settings-notifications-push-notifications", value:"Push notifications", comment:"A title for a list of Push notifications"), items: notificationSettingsItems)
         
@@ -109,29 +105,27 @@ class NotificationSettingsViewController: UIViewController, UITableViewDataSourc
             guard let URL = URL(string: UIApplicationOpenSettingsURLString) else {
                 return
             }
-            UIApplication.shared.openURL(URL)
+            UIApplication.shared.open(URL, options: [:], completionHandler: nil)
         })]
         return [NotificationSettingsSection(headerTitle: WMFLocalizedString("settings-notifications-info", value:"Be alerted to trending and top read articles on Wikipedia with our push notifications. All provided with respect to privacy and up to the minute data.", comment:"A short description of notifications shown in settings"), items: unauthorizedItems)]
     }
     
     func updateSections() {
         tableView.reloadData()
-        if #available(iOS 10.0, *) {
-            UNUserNotificationCenter.current().getNotificationSettings { (settings) in
-                DispatchQueue.main.async(execute: { 
-                    switch settings.authorizationStatus {
-                    case .authorized:
-                        fallthrough
-                    case .notDetermined:
-                        self.sections = self.sectionsForSystemSettingsAuthorized()
-                        break
-                    case .denied:
-                        self.sections = self.sectionsForSystemSettingsUnauthorized()
-                        break
-                    }
-                    self.tableView.reloadData()
-                })
-            }
+        UNUserNotificationCenter.current().getNotificationSettings { (settings) in
+            DispatchQueue.main.async(execute: {
+                switch settings.authorizationStatus {
+                case .authorized:
+                    fallthrough
+                case .notDetermined:
+                    self.sections = self.sectionsForSystemSettingsAuthorized()
+                    break
+                case .denied:
+                    self.sections = self.sectionsForSystemSettingsUnauthorized()
+                    break
+                }
+                self.tableView.reloadData()
+            })
         }
     }
     
@@ -144,13 +138,17 @@ class NotificationSettingsViewController: UIViewController, UITableViewDataSourc
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let cell = tableView.dequeueReusableCell(withIdentifier: WMFSettingsTableViewCell.identifier(), for: indexPath) as? WMFSettingsTableViewCell else {
+        guard let cell = tableView.dequeueReusableCell(withIdentifier: WMFSettingsTableViewCell.identifier, for: indexPath) as? WMFSettingsTableViewCell else {
             return UITableViewCell()
         }
         
         let item = sections[indexPath.section].items[indexPath.item]
         cell.title = item.title
         cell.iconName = nil
+        
+        if let tc = cell as Themeable? {
+            tc.apply(theme: theme)
+        }
         
         if let switchItem = item as? NotificationSettingsSwitchItem {
             cell.disclosureType = .switch
@@ -164,7 +162,7 @@ class NotificationSettingsViewController: UIViewController, UITableViewDataSourc
         return cell
     }
     
-    func handleSwitchValueChange(_ sender: UISwitch) {
+    @objc func handleSwitchValueChange(_ sender: UISwitch) {
         // FIXME: hardcoded item below
         let item = sections[1].items[0]
         if let switchItem = item as? NotificationSettingsSwitchItem {
@@ -173,15 +171,22 @@ class NotificationSettingsViewController: UIViewController, UITableViewDataSourc
     }
 
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
-        let header = WMFTableHeaderLabelView.wmf_viewFromClassNib()
-        header?.text = sections[section].headerTitle
+        guard let header = WMFTableHeaderFooterLabelView.wmf_viewFromClassNib() else {
+            return nil
+        }
+        if let th = header as Themeable? {
+            th.apply(theme: theme)
+        }
+        header.text = sections[section].headerTitle
         return header;
     }
     
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
-        let header = WMFTableHeaderLabelView.wmf_viewFromClassNib()
-        header?.text = sections[section].headerTitle
-        return header!.height(withExpectedWidth: self.view.frame.width)
+        guard let header = WMFTableHeaderFooterLabelView.wmf_viewFromClassNib() else {
+            return 0
+        }
+        header.text = sections[section].headerTitle
+        return header.height(withExpectedWidth: self.view.frame.width)
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
@@ -196,5 +201,15 @@ class NotificationSettingsViewController: UIViewController, UITableViewDataSourc
     
     func tableView(_ tableView: UITableView, shouldHighlightRowAt indexPath: IndexPath) -> Bool {
         return sections[indexPath.section].items[indexPath.item] as? NotificationSettingsSwitchItem == nil
+    }
+    
+    func apply(theme: Theme) {
+        self.theme = theme
+        guard viewIfLoaded != nil else {
+            return
+        }
+        
+        tableView.backgroundColor = theme.colors.baseBackground
+        tableView.reloadData()
     }
 }

@@ -12,6 +12,7 @@
 @property (strong, nonatomic) IBOutlet UILabel *actionLabel;
 @property (strong, nonatomic) IBOutlet UIView *actionLine;
 @property (strong, nonatomic) CAShapeLayer *actionLineLayer;
+@property (nonatomic, strong) WMFTheme *theme;
 
 @end
 
@@ -19,7 +20,11 @@
 
 - (void)awakeFromNib {
     [super awakeFromNib];
+    if (!self.theme) {
+        self.theme = [WMFTheme standard];
+    }
     [self wmf_configureSubviewsForDynamicType];
+    [self applyTheme:self.theme];
 }
 
 + (instancetype)emptyView {
@@ -79,15 +84,48 @@
     return view;
 }
 
++ (instancetype)noSavedPagesInReadingListEmptyView {
+    WMFEmptyView *view = [[self class] emptyView];
+    view.imageView.image = [UIImage imageNamed:@"saved-blank"];
+    view.titleLabel.text = WMFLocalizedStringWithDefaultValue(@"empty-no-saved-pages-in-reading-list-title", nil, nil, @"No pages saved to this list", @"Title of a blank screen shown when a user has no saved pages in a reading list");
+    view.messageLabel.text = WMFLocalizedStringWithDefaultValue(@"empty-no-saved-pages-in-reading-list-message", nil, nil, @"Save pages to this list to see them appear here", @"Message of a blank screen shown when a user has no saved pages in a reading list");
+
+    [view.actionLabel removeFromSuperview];
+    [view.actionLine removeFromSuperview];
+    return view;
+}
+
++ (instancetype)noReadingListsEmptyView {
+    WMFEmptyView *view = [[self class] emptyView];
+    view.imageView.image = [UIImage imageNamed:@"reading-lists-empty-state"];
+    view.titleLabel.text = WMFLocalizedStringWithDefaultValue(@"empty-no-reading-lists-title", nil, nil, @"Organize saved articles with reading lists", @"Title of a blank screen shown when a user has no reading lists");
+    view.messageLabel.text = WMFLocalizedStringWithDefaultValue(@"empty-no-reading-lists-message", nil, nil, @"Tap on the blue ‘+’ to create reading lists for places to travel to, favorite topics and much more", @"Message of a blank screen shown when a user has no reading lists");
+
+    [view.actionLabel removeFromSuperview];
+    [view.actionLine removeFromSuperview];
+    return view;
+}
+
 + (instancetype)noHistoryEmptyView {
     WMFEmptyView *view = [[self class] emptyView];
-    view.imageView.image = [UIImage imageNamed:@"recent-blank"];
+    view.imageView.image = [UIImage imageNamed:@"history-blank"];
     view.titleLabel.text = WMFLocalizedStringWithDefaultValue(@"empty-no-history-title", nil, nil, @"No history to show", @"Title of a blank screen shown when a user has no history");
     view.messageLabel.text = WMFLocalizedStringWithDefaultValue(@"empty-no-history-message", nil, nil, @"Keep track of what you've been reading here", @"Message of a blank screen shown when a user has no history");
 
     [view.actionLabel removeFromSuperview];
     [view.actionLine removeFromSuperview];
     return view;
+}
+
+- (void)traitCollectionDidChange:(nullable UITraitCollection *)previousTraitCollection {
+    [super traitCollectionDidChange:previousTraitCollection];
+
+    if (![self.imageView superview]) {
+        return;
+    }
+    BOOL isCompactVertical = (self.traitCollection.verticalSizeClass == UIUserInterfaceSizeClassCompact);
+    self.imageView.alpha = isCompactVertical ? 0.0 : 1.0;
+    self.imageView.hidden = isCompactVertical;
 }
 
 - (void)layoutSubviews {
@@ -107,13 +145,23 @@
 
     CAShapeLayer *shapelayer = [CAShapeLayer layer];
     shapelayer.frame = self.actionLine.bounds;
-    shapelayer.strokeColor = [UIColor wmf_emptyGrayText].CGColor;
+    shapelayer.strokeColor = self.theme.colors.tertiaryText.CGColor;
     shapelayer.lineWidth = 1.0;
     shapelayer.lineJoin = kCALineJoinMiter;
     shapelayer.lineDashPattern = [NSArray arrayWithObjects:[NSNumber numberWithInt:5], [NSNumber numberWithInt:2], nil];
     shapelayer.path = path.CGPath;
     [self.actionLine.layer addSublayer:shapelayer];
     self.actionLineLayer = shapelayer;
+}
+
+- (void)applyTheme:(WMFTheme *)theme {
+    self.theme = theme;
+    self.imageView.tintColor = theme.colors.tertiaryText;
+    self.titleLabel.textColor = theme.colors.primaryText;
+    self.messageLabel.textColor = theme.colors.secondaryText;
+    self.actionLabel.textColor = theme.colors.secondaryText;
+    self.backgroundColor = theme.colors.paperBackground;
+    [self setNeedsLayout];
 }
 
 @end

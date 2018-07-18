@@ -1,16 +1,18 @@
 @import UIKit;
-@class MWKSection, MWKArticle, WMFPeekHTMLElement, WKWebView;
+@import WMF.Swift;
+@import WebKit;
+
+@class MWKSection, MWKArticle, WMFPeekHTMLElement, WKWebView, WMFNavigationBar;
 
 typedef NS_ENUM(NSInteger, WMFArticleFooterMenuItem);
 
 @protocol WMFWebViewControllerDelegate;
 
+extern const CGFloat WebViewControllerHeaderImageHeight;
+
 NS_ASSUME_NONNULL_BEGIN
 
-@interface WebViewController : UIViewController <UIWebViewDelegate,
-                                                 UIScrollViewDelegate,
-                                                 UIGestureRecognizerDelegate,
-                                                 UIAlertViewDelegate>
+@interface WebViewController : UIViewController <UIWebViewDelegate, UIScrollViewDelegate, UIGestureRecognizerDelegate, UIAlertViewDelegate, WMFThemeable>
 
 @property (nonatomic, strong, nullable, readonly) MWKArticle *article;
 @property (nonatomic, strong, nullable, readonly) NSURL *articleURL;
@@ -21,6 +23,13 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic) CGFloat contentWidthPercentage;
 @property (nonatomic, readonly) CGFloat marginWidth;
+
+@property (nonatomic, readonly) WMFTheme *theme;
+
+#if DEBUG || TEST
+@property (nonatomic, copy, nullable) void (^wkUserContentControllerTestingConfigurationBlock)(WKUserContentController *);
+- (void)applyTheme:(WMFTheme *)theme;
+#endif
 
 - (void)setArticle:(MWKArticle *_Nullable)article articleURL:(NSURL *)articleURL;
 
@@ -57,6 +66,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 @protocol WMFWebViewControllerDelegate <NSObject>
 
+@property (nonatomic, readonly) WMFNavigationBar *navigationBar;
+
 - (void)webViewController:(WebViewController *)controller didLoadArticle:(MWKArticle *)article;
 - (void)webViewController:(WebViewController *)controller didTapEditForSection:(MWKSection *)section;
 - (void)webViewController:(WebViewController *)controller didTapOnLinkForArticleURL:(NSURL *)url;
@@ -64,8 +75,14 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)webViewController:(WebViewController *)controller didTapShareWithSelectedText:(NSString *)text;
 - (void)webViewController:(WebViewController *)controller didTapImageWithSourceURL:(NSURL *)imageSourceURL;
 - (void)webViewController:(WebViewController *)controller scrollViewDidScroll:(UIScrollView *)scrollView;
+- (void)webViewController:(WebViewController *)controller scrollViewWillBeginDragging:(UIScrollView *)scrollView;
+- (void)webViewController:(WebViewController *)controller scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)targetContentOffset;
+- (void)webViewController:(WebViewController *)controller scrollViewDidEndDecelerating:(UIScrollView *)scrollView;
+- (void)webViewController:(WebViewController *)controller scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView;
 - (void)webViewController:(WebViewController *)controller scrollViewDidScrollToTop:(UIScrollView *)scrollView;
-- (void)webViewController:(WebViewController *)controller didTapFooterMenuItem:(WMFArticleFooterMenuItem)item;
+- (BOOL)webViewController:(WebViewController *)controller scrollViewShouldScrollToTop:(UIScrollView *)scrollView;
+- (void)webViewController:(WebViewController *)controller didTapFooterMenuItem:(WMFArticleFooterMenuItem)item payload:(NSArray *)payload;
+- (void)webViewController:(WebViewController *)controller didTapFooterReadMoreSaveForLaterForArticleURL:(NSURL *)url didSave:(BOOL)didSave;
 
 @end
 

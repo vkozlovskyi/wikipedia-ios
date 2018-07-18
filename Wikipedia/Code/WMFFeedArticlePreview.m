@@ -1,15 +1,23 @@
 #import <WMF/WMFFeedArticlePreview.h>
 #import <WMF/WMFComparison.h>
 #import <WMF/NSURL+WMFExtras.h>
+#import <WMF/NSString+WMFExtras.h>
 #import <WMF/NSURL+WMFLinkParsing.h>
 #import <WMF/NSString+WMFHTMLParsing.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
 @implementation WMFFeedArticlePreview
+@synthesize displayTitleHTML = _displayTitleHTML;
+@synthesize displayTitle = _displayTitle;
+
++ (NSUInteger)modelVersion {
+    return 3;
+}
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
     return @{ WMF_SAFE_KEYPATH(WMFFeedArticlePreview.new, displayTitle): @"normalizedtitle",
+              WMF_SAFE_KEYPATH(WMFFeedArticlePreview.new, displayTitleHTML): @[@"displaytitle", @"normalizedtitle"],
               WMF_SAFE_KEYPATH(WMFFeedArticlePreview.new, thumbnailURL): @"thumbnail.source",
               WMF_SAFE_KEYPATH(WMFFeedArticlePreview.new, imageURLString): @"originalimage.source",
               WMF_SAFE_KEYPATH(WMFFeedArticlePreview.new, imageWidth): @"originalimage.width",
@@ -47,8 +55,8 @@ NS_ASSUME_NONNULL_BEGIN
         reverseBlock:^NSDictionary *(NSURL *articleURL,
                                      BOOL *success,
                                      NSError *__autoreleasing *error) {
-            NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{ @"lang": @"",
-                                                                                         @"normalizedtitle": @"" }];
+            NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{@"lang": @"",
+                                                                                        @"normalizedtitle": @""}];
             NSString *lang = articleURL.wmf_language;
             if (lang) {
                 dict[@"lang"] = lang;
@@ -59,6 +67,28 @@ NS_ASSUME_NONNULL_BEGIN
             }
             return dict;
         }];
+}
+
++ (NSValueTransformer *)displayTitleHTMLJSONTransformer {
+    return [MTLValueTransformer
+            transformerUsingForwardBlock:^NSURL *(NSDictionary *value,
+                                                  BOOL *success,
+                                                  NSError *__autoreleasing *error) {
+                return value[@"displaytitle"] ?: value[@"normalizedtitle"];
+            }
+            reverseBlock:^NSDictionary *(NSString *displayTitleHTML,
+                                         BOOL *success,
+                                         NSError *__autoreleasing *error) {
+                NSMutableDictionary *dict = [NSMutableDictionary dictionaryWithDictionary:@{@"displaytitle": @""}];
+                if (displayTitleHTML) {
+                    dict[@"displaytitle"] = displayTitleHTML;
+                }
+                return dict;
+            }];
+}
+
+- (NSString *)displayTitleHTML {
+    return _displayTitleHTML && ![_displayTitleHTML isEqualToString:@""] ? _displayTitleHTML : _displayTitle;
 }
 
 + (NSValueTransformer *)snippetJSONTransformer {
@@ -81,7 +111,8 @@ NS_ASSUME_NONNULL_BEGIN
     dispatch_once(&onceToken, ^{
         nonNullKeys = @{ @"articleURL": @YES,
                          @"language": @YES,
-                         @"displayTitle": @YES };
+                         @"displayTitle": @YES,
+                         @"displayTitleHTML": @YES };
     });
 
     if (nonNullKeys[inKey]) {
@@ -99,8 +130,8 @@ NS_ASSUME_NONNULL_BEGIN
 @implementation WMFFeedTopReadArticlePreview
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
-    return [[super JSONKeyPathsByPropertyKey] mtl_dictionaryByAddingEntriesFromDictionary:@{ WMF_SAFE_KEYPATH(WMFFeedTopReadArticlePreview.new, numberOfViews): @"views",
-                                                                                             WMF_SAFE_KEYPATH(WMFFeedTopReadArticlePreview.new, rank): @"rank" }];
+    return [[super JSONKeyPathsByPropertyKey] mtl_dictionaryByAddingEntriesFromDictionary:@{WMF_SAFE_KEYPATH(WMFFeedTopReadArticlePreview.new, numberOfViews): @"views",
+                                                                                            WMF_SAFE_KEYPATH(WMFFeedTopReadArticlePreview.new, rank): @"rank"}];
 }
 
 @end

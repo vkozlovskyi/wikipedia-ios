@@ -34,6 +34,10 @@ NSUInteger const WMFMaxSearchResultLimit = 24;
     return self;
 }
 
+- (void)dealloc {
+    [self.operationManager invalidateSessionCancelingTasks:YES];
+}
+
 - (void)fetchArticlesForSearchTerm:(NSString *)searchTerm
                            siteURL:(NSURL *)siteURL
                        resultLimit:(NSUInteger)resultLimit
@@ -60,7 +64,15 @@ NSUInteger const WMFMaxSearchResultLimit = 24;
                      useDesktopURL:(BOOL)useDeskTopURL
                            failure:(WMFErrorHandler)failure
                            success:(WMFSearchResultsHandler)success {
-    NSParameterAssert(siteURL);
+    if (!siteURL) {
+        siteURL = [NSURL wmf_URLWithDefaultSiteAndCurrentLocale];
+    }
+
+    if (!siteURL) {
+        failure([NSError wmf_errorWithType:WMFErrorTypeInvalidRequestParameters userInfo:nil]);
+        return;
+    }
+
     NSURL *url = useDeskTopURL ? [NSURL wmf_desktopAPIURLForURL:siteURL] : [NSURL wmf_mobileAPIURLForURL:siteURL];
 
     WMFSearchRequestParameters *params = [WMFSearchRequestParameters new];
@@ -132,14 +144,14 @@ NSUInteger const WMFMaxSearchResultLimit = 24;
             @"gpssearch": params.searchTerm,
             @"gpsnamespace": @0,
             @"gpslimit": numResults,
-            @"prop": @"pageterms|pageimages|revisions|coordinates",
+            @"prop": @"description|pageprops|pageimages|revisions|coordinates",
             @"coprop": @"type|dim",
             @"piprop": @"thumbnail",
             //@"pilicense": @"any",
-            @"wbptterms": @"description",
+            @"ppprop": @"displaytitle|disambiguation",
             @"pithumbsize": [[UIScreen mainScreen] wmf_listThumbnailWidthForScale],
             @"pilimit": numResults,
-            @"rrvlimit": @(1),
+            //@"rrvlimit": @(1),
             @"rvprop": @"ids",
             // -- Parameters causing prefix search to efficiently return suggestion.
             @"list": @"search",
@@ -158,9 +170,9 @@ NSUInteger const WMFMaxSearchResultLimit = 24;
     } else {
         return @{
             @"action": @"query",
-            @"prop": @"pageterms|pageimages|revisions|coordinates",
+            @"prop": @"description|pageprops|pageimages|revisions|coordinates",
             @"coprop": @"type|dim",
-            @"wbptterms": @"description",
+            @"ppprop": @"displaytitle|disambiguation",
             @"generator": @"search",
             @"gsrsearch": params.searchTerm,
             @"gsrnamespace": @0,
@@ -173,7 +185,7 @@ NSUInteger const WMFMaxSearchResultLimit = 24;
             //@"pilicense": @"any",
             @"pithumbsize": [[UIScreen mainScreen] wmf_listThumbnailWidthForScale],
             @"pilimit": numResults,
-            @"rrvlimit": @(1),
+            //@"rrvlimit": @(1),
             @"rvprop": @"ids",
             @"continue": @"",
             @"format": @"json",

@@ -11,10 +11,10 @@ NS_ASSUME_NONNULL_BEGIN
 @implementation WMFFeedNewsStory
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
-    return @{ WMF_SAFE_KEYPATH(WMFFeedNewsStory.new, midnightUTCMonthAndDay): @"story",
-              WMF_SAFE_KEYPATH(WMFFeedNewsStory.new, storyHTML): @"story",
-              WMF_SAFE_KEYPATH(WMFFeedNewsStory.new, articlePreviews): @"links",
-              WMF_SAFE_KEYPATH(WMFFeedNewsStory.new, featuredArticlePreview): @"featuredArticlePreview" };
+    return @{WMF_SAFE_KEYPATH(WMFFeedNewsStory.new, midnightUTCMonthAndDay): @"story",
+             WMF_SAFE_KEYPATH(WMFFeedNewsStory.new, storyHTML): @"story",
+             WMF_SAFE_KEYPATH(WMFFeedNewsStory.new, articlePreviews): @"links",
+             WMF_SAFE_KEYPATH(WMFFeedNewsStory.new, featuredArticlePreview): @"featuredArticlePreview"};
 }
 
 + (NSValueTransformer *)articlePreviewsJSONTransformer {
@@ -67,7 +67,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 + (nullable NSString *)semanticFeaturedArticleTitleFromStoryHTML:(NSString *)storyHTML siteURL:(NSURL *)siteURL {
-    NSString *pictured = WMFLocalizedStringWithDefaultValue(@"pictured", siteURL, nil, @"pictured", @"Indicates the person or item is pictured (as in a news story).");
+    NSString *pictured = WMFLocalizedStringWithDefaultValue(@"pictured", siteURL.wmf_language, nil, @"pictured", @"Indicates the person or item is pictured (as in a news story).");
     NSRange range = [storyHTML rangeOfString:pictured options:NSCaseInsensitiveSearch];
     if (range.length == 0) {
         return nil;

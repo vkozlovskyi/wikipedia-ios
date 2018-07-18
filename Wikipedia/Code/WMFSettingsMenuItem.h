@@ -6,14 +6,18 @@ typedef NS_ENUM(NSUInteger, WMFSettingsMenuItemDisclosureType) {
     WMFSettingsMenuItemDisclosureType_ViewController,
     WMFSettingsMenuItemDisclosureType_ViewControllerWithDisclosureText,
     WMFSettingsMenuItemDisclosureType_ExternalLink,
-    WMFSettingsMenuItemDisclosureType_Switch
+    WMFSettingsMenuItemDisclosureType_Switch,
+    WMFSettingsMenuItemDisclosureType_TitleButton
 };
 
 typedef NS_ENUM(NSUInteger, WMFSettingsMenuItemType) {
     WMFSettingsMenuItemType_Login,
+    WMFSettingsMenuItemType_StorageAndSyncing,
+    WMFSettingsMenuItemType_StorageAndSyncingDebug,
     WMFSettingsMenuItemType_Support,
     WMFSettingsMenuItemType_SearchLanguage,
     WMFSettingsMenuItemType_SearchLanguageBarVisibility,
+    WMFSettingsMenuItemType_ExploreFeed,
     WMFSettingsMenuItemType_Notifications,
     WMFSettingsMenuItemType_PrivacyPolicy,
     WMFSettingsMenuItemType_Terms,
@@ -26,6 +30,7 @@ typedef NS_ENUM(NSUInteger, WMFSettingsMenuItemType) {
     WMFSettingsMenuItemType_ClearCache,
     WMFSettingsMenuItemType_DebugCrash,
     WMFSettingsMenuItemType_DevSettings,
+    WMFSettingsMenuItemType_Appearance
 };
 
 @interface WMFSettingsMenuItem : MTLModel

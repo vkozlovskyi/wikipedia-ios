@@ -20,10 +20,13 @@
     if (self) {
         self.operationManager = [[AFHTTPSessionManager alloc] init];
         self.operationManager.responseSerializer =
-            [WMFMantleJSONResponseSerializer serializerForInstancesOf:[WMFZeroConfiguration class]
-                                                          fromKeypath:nil];
+            [WMFMantleJSONResponseSerializer serializerForInstancesOf:[WMFZeroConfiguration class] fromKeypath:nil emptyValueForJSONKeypathAllowed:NO];
     }
     return self;
+}
+
+- (void)dealloc {
+    [self.operationManager invalidateSessionCancelingTasks:YES];
 }
 
 - (void)fetchZeroConfigurationForSiteURL:(NSURL *)siteURL failure:(WMFErrorHandler)failure success:(WMFSuccessIdHandler)success {

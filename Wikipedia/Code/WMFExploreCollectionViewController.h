@@ -9,7 +9,7 @@ extern const NSInteger WMFExploreFeedMaximumNumberOfDays;
 
 NS_ASSUME_NONNULL_BEGIN
 
-@interface WMFExploreCollectionViewController : UICollectionViewController <WMFAnalyticsViewNameProviding, WMFAnalyticsContextProviding>
+@interface WMFExploreCollectionViewController : UICollectionViewController <WMFAnalyticsViewNameProviding, WMFAnalyticsContextProviding, WMFThemeable>
 
 @property (nonatomic, strong) MWKDataStore *userStore;
 
@@ -34,11 +34,19 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)exploreCollectionViewController:(WMFExploreCollectionViewController *)collectionVC willBeginScrolling:(UIScrollView *)scrollView;
 
 @optional
+- (void)exploreCollectionViewController:(WMFExploreCollectionViewController *)collectionVC willEndDragging:(UIScrollView *)scrollView velocity:(CGPoint)velocity;
+
+@optional
 - (void)exploreCollectionViewController:(WMFExploreCollectionViewController *)collectionVC didScroll:(UIScrollView *)scrollView;
+
+@optional
+- (BOOL)exploreCollectionViewController:(WMFExploreCollectionViewController *)collectionVC shouldScrollToTop:(UIScrollView *)scrollView;
 
 @optional
 - (void)exploreCollectionViewController:(WMFExploreCollectionViewController *)collectionVC didScrollToTop:(UIScrollView *)scrollView;
 
+@optional
+- (void)exploreCollectionViewController:(WMFExploreCollectionViewController *)collectionVC didSave:(BOOL)didSave article:(WMFArticle *)article;
 @end
 
 NS_ASSUME_NONNULL_END

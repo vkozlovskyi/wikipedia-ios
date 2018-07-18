@@ -1,7 +1,7 @@
 
 import XCTest
 
-class WMFArticleListTableViewCellBLA: XCTestCase {
+class WMFArticleCollectionViewCell: XCTestCase {
     
     override func setUp() {
         super.setUp()
@@ -20,30 +20,28 @@ class WMFArticleListTableViewCellBLA: XCTestCase {
         // Note: We can't just use the default "UIFontTextStyle.body" and the bold "UIFontTextStyle.headline" because their sizes diverge
         // at the larger dynamic type sizes.
         
-        if #available(iOS 10.0, *) {
-            let sizeCategories: [UIContentSizeCategory] = [
-                .extraSmall,
-                .small,
-                .medium,
-                .large,
-                .extraLarge,
-                .extraExtraLarge,
-                .extraExtraExtraLarge,
-                .accessibilityMedium,
-                .accessibilityLarge,
-                .accessibilityExtraLarge,
-                .accessibilityExtraExtraLarge,
-                .accessibilityExtraExtraExtraLarge
-            ]
-            
-            for sizeCategory in sizeCategories {
-                let traitsForSizeCategory = UITraitCollection(preferredContentSizeCategory:sizeCategory)
-                
-                let bodyFontForSizeCategory = UIFont.preferredFont(forTextStyle:UIFontTextStyle.body, compatibleWith:traitsForSizeCategory)
-                let systemBoldFontForSizeCategory = UIFont.wmf_preferredFontForFontFamily(.systemBold, withTextStyle: UIFontTextStyle.body, compatibleWithTraitCollection: traitsForSizeCategory)
-                
-                XCTAssertTrue(bodyFontForSizeCategory.pointSize == systemBoldFontForSizeCategory?.pointSize)
-            }
+        let sizeCategories: [UIContentSizeCategory] = [
+            .extraSmall,
+            .small,
+            .medium,
+            .large,
+            .extraLarge,
+            .extraExtraLarge,
+            .extraExtraExtraLarge,
+            .accessibilityMedium,
+            .accessibilityLarge,
+            .accessibilityExtraLarge,
+            .accessibilityExtraExtraLarge,
+            .accessibilityExtraExtraExtraLarge
+        ]
+
+        for sizeCategory in sizeCategories {
+            let traitsForSizeCategory = UITraitCollection(preferredContentSizeCategory:sizeCategory)
+
+            let bodyFontForSizeCategory = UIFont.preferredFont(forTextStyle:UIFontTextStyle.body, compatibleWith:traitsForSizeCategory)
+            let systemBoldFontForSizeCategory = UIFont.wmf_font(.semiboldBody, compatibleWithTraitCollection: traitsForSizeCategory)
+
+            XCTAssertTrue(bodyFontForSizeCategory.pointSize == systemBoldFontForSizeCategory.pointSize)
         }
     }
 }

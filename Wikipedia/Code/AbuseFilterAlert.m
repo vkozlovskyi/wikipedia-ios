@@ -47,11 +47,11 @@ typedef NS_ENUM(NSInteger, ViewType) {
 - (void)addTopMask {
     // Prevents white bar from appearing above the icon view if user pulls down.
     UIView *topMask = [[UIView alloc] init];
-    topMask.backgroundColor = [UIColor wmf_settingsBackground];
+    topMask.backgroundColor = [UIColor whiteColor];
     topMask.translatesAutoresizingMaskIntoConstraints = NO;
     [self addSubview:topMask];
 
-    NSDictionary *views = @{ @"topMask": topMask };
+    NSDictionary *views = @{@"topMask": topMask};
 
     [self addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[topMask]|"
                                                                  options:0
@@ -86,55 +86,55 @@ typedef NS_ENUM(NSInteger, ViewType) {
                           }
                               .mutableCopy];
 
-    UIColor *grayColor = [UIColor wmf_999999];
+    UIColor *grayColor = [UIColor wmf_lightGray];
 
     switch (self.alertType) {
         case ABUSE_FILTER_WARNING:
 
             [self.subViewData addObjectsFromArray:
                                   @[
-                                     @{
-                                         @"type": @(VIEW_TYPE_HEADING),
-                                         @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-heading", nil, nil, @"This looks like an unconstructive edit, are you sure you want to publish it?", @"Header text for unconstructive edit warning"),
-                                         @"backgroundColor": [UIColor whiteColor],
-                                         @"fontColor": [UIColor darkGrayColor]
-                                     }
-                                         .mutableCopy,
-                                     @{
-                                         @"type": @(VIEW_TYPE_SUBHEADING),
-                                         @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-subheading", nil, nil, @"Your edit may contain one or more of the following:", @"Subheading text for potentially unconstructive edit warning"),
-                                         @"backgroundColor": [UIColor whiteColor],
-                                         @"fontColor": grayColor
-                                     }
-                                         .mutableCopy,
-                                     @{
-                                         @"type": @(VIEW_TYPE_ITEM),
-                                         @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-caps", nil, nil, @"Typing in ALL CAPS", @"Label text for typing in all capitals"),
-                                         @"backgroundColor": [UIColor whiteColor],
-                                         @"fontColor": grayColor
-                                     }
-                                         .mutableCopy,
-                                     @{
-                                         @"type": @(VIEW_TYPE_ITEM),
-                                         @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-blanking", nil, nil, @"Blanking articles or spamming", @"Label text for blanking articles or spamming"),
-                                         @"backgroundColor": [UIColor whiteColor],
-                                         @"fontColor": grayColor
-                                     }
-                                         .mutableCopy,
-                                     @{
-                                         @"type": @(VIEW_TYPE_ITEM),
-                                         @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-irrelevant", nil, nil, @"Irrelevant external links or images", @"Label text for irrelevant external links and images"),
-                                         @"backgroundColor": [UIColor whiteColor],
-                                         @"fontColor": grayColor
-                                     }
-                                         .mutableCopy,
-                                     @{
-                                         @"type": @(VIEW_TYPE_ITEM),
-                                         @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-repeat", nil, nil, @"Repeeeeating characters", @"Label text for repeating characters"),
-                                         @"backgroundColor": [UIColor whiteColor],
-                                         @"fontColor": grayColor
-                                     }
-                                         .mutableCopy
+                                      @{
+                                          @"type": @(VIEW_TYPE_HEADING),
+                                          @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-heading", nil, nil, @"This looks like an unconstructive edit, are you sure you want to publish it?", @"Header text for unconstructive edit warning"),
+                                          @"backgroundColor": [UIColor whiteColor],
+                                          @"fontColor": [UIColor darkGrayColor]
+                                      }
+                                          .mutableCopy,
+                                      @{
+                                          @"type": @(VIEW_TYPE_SUBHEADING),
+                                          @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-subheading", nil, nil, @"Your edit may contain one or more of the following:", @"Subheading text for potentially unconstructive edit warning"),
+                                          @"backgroundColor": [UIColor whiteColor],
+                                          @"fontColor": grayColor
+                                      }
+                                          .mutableCopy,
+                                      @{
+                                          @"type": @(VIEW_TYPE_ITEM),
+                                          @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-caps", nil, nil, @"Typing in ALL CAPS", @"Label text for typing in all capitals"),
+                                          @"backgroundColor": [UIColor whiteColor],
+                                          @"fontColor": grayColor
+                                      }
+                                          .mutableCopy,
+                                      @{
+                                          @"type": @(VIEW_TYPE_ITEM),
+                                          @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-blanking", nil, nil, @"Blanking articles or spamming", @"Label text for blanking articles or spamming"),
+                                          @"backgroundColor": [UIColor whiteColor],
+                                          @"fontColor": grayColor
+                                      }
+                                          .mutableCopy,
+                                      @{
+                                          @"type": @(VIEW_TYPE_ITEM),
+                                          @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-irrelevant", nil, nil, @"Irrelevant external links or images", @"Label text for irrelevant external links and images"),
+                                          @"backgroundColor": [UIColor whiteColor],
+                                          @"fontColor": grayColor
+                                      }
+                                          .mutableCopy,
+                                      @{
+                                          @"type": @(VIEW_TYPE_ITEM),
+                                          @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-warning-repeat", nil, nil, @"Repeeeeating characters", @"Label text for repeating characters"),
+                                          @"backgroundColor": [UIColor whiteColor],
+                                          @"fontColor": grayColor
+                                      }
+                                          .mutableCopy
                                   ]];
 
             break;
@@ -142,27 +142,27 @@ typedef NS_ENUM(NSInteger, ViewType) {
 
             [self.subViewData addObjectsFromArray:
                                   @[
-                                     @{
-                                         @"type": @(VIEW_TYPE_HEADING),
-                                         @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-disallow-heading", nil, nil, @"You cannot publish this edit. Please go back and change it.", @"Header text for disallowed edit warning."),
-                                         @"backgroundColor": [UIColor whiteColor],
-                                         @"fontColor": [UIColor darkGrayColor]
-                                     }
-                                         .mutableCopy,
-                                     @{
-                                         @"type": @(VIEW_TYPE_ITEM),
-                                         @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-disallow-unconstructive", nil, nil, @"An automated filter has identified this edit as potentially unconstructive or a vandalism attempt.", @"Label text for unconstructive edit description"),
-                                         @"backgroundColor": [UIColor whiteColor],
-                                         @"fontColor": grayColor
-                                     }
-                                         .mutableCopy,
-                                     @{
-                                         @"type": @(VIEW_TYPE_ITEM),
-                                         @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-disallow-notable", nil, nil, @"Wikipedia is an encyclopedia and only neutral, notable content belongs here.", @"Label text for notable content description"),
-                                         @"backgroundColor": [UIColor whiteColor],
-                                         @"fontColor": grayColor
-                                     }
-                                         .mutableCopy
+                                      @{
+                                          @"type": @(VIEW_TYPE_HEADING),
+                                          @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-disallow-heading", nil, nil, @"You cannot publish this edit. Please go back and change it.", @"Header text for disallowed edit warning."),
+                                          @"backgroundColor": [UIColor whiteColor],
+                                          @"fontColor": [UIColor darkGrayColor]
+                                      }
+                                          .mutableCopy,
+                                      @{
+                                          @"type": @(VIEW_TYPE_ITEM),
+                                          @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-disallow-unconstructive", nil, nil, @"An automated filter has identified this edit as potentially unconstructive or a vandalism attempt.", @"Label text for unconstructive edit description"),
+                                          @"backgroundColor": [UIColor whiteColor],
+                                          @"fontColor": grayColor
+                                      }
+                                          .mutableCopy,
+                                      @{
+                                          @"type": @(VIEW_TYPE_ITEM),
+                                          @"string": WMFLocalizedStringWithDefaultValue(@"abuse-filter-disallow-notable", nil, nil, @"Wikipedia is an encyclopedia and only neutral, notable content belongs here.", @"Label text for notable content description"),
+                                          @"backgroundColor": [UIColor whiteColor],
+                                          @"fontColor": grayColor
+                                      }
+                                          .mutableCopy
                                   ]];
 
             break;
@@ -222,7 +222,7 @@ typedef NS_ENUM(NSInteger, ViewType) {
         switch (type.integerValue) {
             case VIEW_TYPE_ICON: {
                 UIView *view = [[UIView alloc] init];
-                view.backgroundColor = [UIColor wmf_settingsBackground];
+                view.backgroundColor = [UIColor whiteColor];
 
                 WikiGlyphLabel *label = [[WikiGlyphLabel alloc] init];
                 label.translatesAutoresizingMaskIntoConstraints = NO;
@@ -244,8 +244,8 @@ typedef NS_ENUM(NSInteger, ViewType) {
 
                 [view addSubview:label];
 
-                NSDictionary *views = @{ @"label": label,
-                                         @"v1": view };
+                NSDictionary *views = @{@"label": label,
+                                        @"v1": view};
                 NSDictionary *metrics = @{
                     @"iconHeight": @(iconHeight),
                     @"topBarHeight": @(topBarHeight)
@@ -331,10 +331,10 @@ typedef NS_ENUM(NSInteger, ViewType) {
 
     NSDictionary *attributes =
         @{
-           NSFontAttributeName: font,
-           NSForegroundColorAttributeName: color,
-           NSKernAttributeName: kearning,
-           NSParagraphStyleAttributeName: paragraphStyle
+            NSFontAttributeName: font,
+            NSForegroundColorAttributeName: color,
+            NSKernAttributeName: kearning,
+            NSParagraphStyleAttributeName: paragraphStyle
         };
 
     label.attributedText =

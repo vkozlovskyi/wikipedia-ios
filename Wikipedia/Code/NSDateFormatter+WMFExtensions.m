@@ -18,6 +18,17 @@ static NSString *const WMF_ISO8601_FORMAT = @"yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'";
     return iso8601Formatter;
 }
 
++ (NSISO8601DateFormatter *)wmf_rfc3339LocalTimeZoneFormatter {
+    static NSISO8601DateFormatter *wmf_rfc3339LocalTimeZoneFormatter = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        wmf_rfc3339LocalTimeZoneFormatter = [NSISO8601DateFormatter new];
+        wmf_rfc3339LocalTimeZoneFormatter.timeZone = [NSTimeZone localTimeZone];
+        wmf_rfc3339LocalTimeZoneFormatter.formatOptions = NSISO8601DateFormatWithInternetDateTime;
+    });
+    return wmf_rfc3339LocalTimeZoneFormatter;
+}
+
 + (NSDateFormatter *)wmf_shortTimeFormatter {
     NSParameterAssert([NSThread isMainThread]);
     static NSDateFormatter *shortTimeFormatter = nil;
@@ -149,6 +160,26 @@ static NSString *const WMF_ISO8601_FORMAT = @"yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'";
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         _dateFormatter = [[self wmf_dayNameMonthNameDayOfMonthNumberDateFormatter] copy];
+        _dateFormatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+    });
+    return _dateFormatter;
+}
+
++ (instancetype)wmf_monthNameDayOfMonthNumberDateFormatter {
+    static NSDateFormatter *_dateFormatter;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _dateFormatter = [[NSDateFormatter alloc] init];
+        [_dateFormatter setLocalizedDateFormatFromTemplate:@"MMMMd"];
+    });
+    return _dateFormatter;
+}
+
++ (instancetype)wmf_utcMonthNameDayOfMonthNumberDateFormatter {
+    static NSDateFormatter *_dateFormatter;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        _dateFormatter = [[self wmf_monthNameDayOfMonthNumberDateFormatter] copy];
         _dateFormatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
     });
     return _dateFormatter;
