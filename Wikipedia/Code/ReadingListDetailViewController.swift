@@ -4,7 +4,7 @@ enum ReadingListDetailDisplayType {
     case modal, pushed
 }
 
-class ReadingListDetailViewController: ColumnarCollectionViewController, EditableCollection, SearchableCollection, SortableCollection, ArticleURLProvider {
+class ReadingListDetailViewController: ColumnarCollectionViewController, EditableCollection, SearchableCollection, SortableCollection, ArticleURLProvider, EditControllerUpdater {
     let dataStore: MWKDataStore
     let readingList: ReadingList
     
@@ -26,7 +26,6 @@ class ReadingListDetailViewController: ColumnarCollectionViewController, Editabl
     private var cellLayoutEstimate: ColumnarCollectionViewLayoutHeightEstimate?
     private let reuseIdentifier = "ReadingListDetailCollectionViewCell"
     var editController: CollectionViewEditController!
-    var updater: ArticleURLProviderEditControllerUpdater?
     private let readingListDetailUnderBarViewController: ReadingListDetailUnderBarViewController
     private var searchBarExtendedViewController: SearchBarExtendedViewController?
     private var displayType: ReadingListDetailDisplayType = .pushed
@@ -99,7 +98,11 @@ class ReadingListDetailViewController: ColumnarCollectionViewController, Editabl
 
         wmf_add(childController:savedProgressViewController, andConstrainToEdgesOfContainerView: progressContainerView)
         
-        updater = ArticleURLProviderEditControllerUpdater(articleURLProvider: self, collectionView: collectionView, editController: editController)
+        registerForArticleUpdates()
+    }
+
+    deinit {
+        unregisterForArticleUpdates()
     }
     
     private func addExtendedView() {

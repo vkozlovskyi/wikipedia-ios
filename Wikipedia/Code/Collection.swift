@@ -1,5 +1,5 @@
 protocol Collection: class {
-    var collectionView: UICollectionView { get set }
+    var collectionView: UICollectionView { get }
 }
 
 protocol UpdatableCollection: Collection, CollectionViewUpdaterDelegate {
@@ -148,7 +148,6 @@ extension SortableCollection where Self: UIViewController {
 protocol EditableCollection: Collection {
     var editController: CollectionViewEditController! { get set }
     var shouldShowEditButtonsForEmptyState: Bool { get }
-    func setupEditController()
 }
 
 extension EditableCollection where Self: ActionDelegate {

@@ -1,10 +1,9 @@
 import UIKit
 
-class ArticleURLListViewController: ArticleCollectionViewController, ArticleURLProvider {
+class ArticleURLListViewController: ArticleCollectionViewController, EditControllerUpdater {
     let articleURLs: [URL]
     private let contentGroup: WMFContentGroup?
-    private var updater: ArticleURLProviderEditControllerUpdater?
-    
+
     required init(articleURLs: [URL], dataStore: MWKDataStore, contentGroup: WMFContentGroup? = nil, theme: Theme) {
         self.articleURLs = articleURLs
         self.contentGroup = contentGroup
@@ -34,7 +33,11 @@ class ArticleURLListViewController: ArticleCollectionViewController, ArticleURLP
     override func viewDidLoad() {
         super.viewDidLoad()
         collectionView.reloadData()
-        updater = ArticleURLProviderEditControllerUpdater(articleURLProvider: self, collectionView: collectionView, editController: editController)
+        registerForArticleUpdates()
+    }
+
+    deinit {
+        unregisterForArticleUpdates()
     }
     
     override var eventLoggingCategory: EventLoggingCategory {

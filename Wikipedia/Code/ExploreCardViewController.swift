@@ -6,7 +6,8 @@ protocol ExploreCardViewControllerDelegate {
     func exploreCardViewController(_ exploreCardViewController: ExploreCardViewController, didSelectItemAtIndexPath: IndexPath)
 }
 
-class ExploreCardViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, CardContent, ColumnarCollectionViewLayoutDelegate, ArticleURLProvider {
+class ExploreCardViewController: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, CardContent, ColumnarCollectionViewLayoutDelegate, EditControllerUpdater {
+
     weak var delegate: (ExploreCardViewControllerDelegate & UIViewController)?
     
     lazy var layoutManager: ColumnarCollectionViewLayoutManager = {
@@ -23,7 +24,7 @@ class ExploreCardViewController: UIViewController, UICollectionViewDataSource, U
         return lm
     }()
     
-    lazy var editController: CollectionViewEditController = {
+    lazy var editController: CollectionViewEditController! = {
         let editController = CollectionViewEditController(collectionView: collectionView)
         editController.delegate = self
         return editController
@@ -32,9 +33,7 @@ class ExploreCardViewController: UIViewController, UICollectionViewDataSource, U
     var collectionView: UICollectionView {
         return view as! UICollectionView
     }
-    
-    var updater: ArticleURLProviderEditControllerUpdater?
-    
+
     var theme: Theme = Theme.standard
     
     var dataStore: MWKDataStore!
@@ -62,7 +61,11 @@ class ExploreCardViewController: UIViewController, UICollectionViewDataSource, U
         layoutManager.register(ImageCollectionViewCell.self, forCellWithReuseIdentifier: ImageCollectionViewCell.identifier, addPlaceholder: true)
         collectionView.isOpaque = true
         view.isOpaque = true
-        updater = ArticleURLProviderEditControllerUpdater(articleURLProvider: self, collectionView: collectionView, editController: editController)
+        registerForArticleUpdates()
+    }
+
+    deinit {
+        unregisterForArticleUpdates()
     }
     
     override func viewWillAppear(_ animated: Bool) {
