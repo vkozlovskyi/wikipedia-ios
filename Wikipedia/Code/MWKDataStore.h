@@ -259,6 +259,11 @@ extern NSString *const WMFArticleUpdatedNotification;
 
 - (NSArray *)legacyImageURLsForArticle:(MWKArticle *)article;
 
+// Data recovery
+
+- (NSArray<NSURL *> *)fileURLsAvailableForDataRecovery;
+- (BOOL)isFileURLRestoreable:(NSURL *)fileURL;
+
 @end
 
 NS_ASSUME_NONNULL_END

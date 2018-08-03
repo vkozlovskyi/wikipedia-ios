@@ -1496,6 +1496,30 @@ static uint64_t bundleHash() {
     return @[];
 }
 
+- (NSArray<NSURL *> *)fileURLsAvailableForDataRecovery {
+    NSEnumerator *enumerator =  [[NSFileManager defaultManager] enumeratorAtURL:self.containerURL includingPropertiesForKeys:@[NSURLFileSizeKey] options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^BOOL(NSURL * _Nonnull url, NSError * _Nonnull error) {
+        DDLogError(@"Error getting enumerator: %@", error);
+        return YES;
+    }];
+    NSMutableArray<NSURL *> *fileURLs = [NSMutableArray arrayWithCapacity:5];
+    for (NSURL *fileURL in enumerator) {
+        NSString *pathExtension = fileURL.pathExtension.lowercaseString;
+        if (![pathExtension isEqualToString:@"sqlite"]) {
+            continue;
+        }
+        NSString *lastPathComponent = fileURL.lastPathComponent.lowercaseString;
+        if ([lastPathComponent isEqualToString:@"wikipediayap.sqlite"]) {
+            continue;
+        }
+        [fileURLs addObject:fileURL];
+    }
+    return fileURLs;
+}
+
+- (BOOL)isFileURLRestoreable:(NSURL *)fileURL {
+    return ![fileURL.lastPathComponent.lowercaseString isEqualToString:@"wikipedia.sqlite"];
+}
+
 #pragma mark - Deletion
 
 - (NSError *)removeFolderAtBasePath {

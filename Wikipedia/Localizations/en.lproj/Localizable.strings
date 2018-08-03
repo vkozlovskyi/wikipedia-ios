@@ -105,6 +105,11 @@
 "compass-direction" = "at $1 o'clock";
 "continue-reading-empty-description" = "Explore Wikipedia for more articles to read";
 "continue-reading-empty-title" = "No recently read articles";
+"data-recovery-button" = "Data recovery";
+"data-recovery-empty" = "No files available";
+"data-recovery-instructions" = "Select a file from the list to restore or send in for support";
+"data-recovery-restore" = "Restore";
+"data-recovery-send" = "Send to support";
 "dim-images" = "Dim images";
 "edit-summary-choice-fixed-grammar" = "Fixed grammar";
 "edit-summary-choice-fixed-typos" = "Fixed typo";

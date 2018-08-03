@@ -16,6 +16,7 @@ static NSString *const WMFSettingsEmailSubject = @"Bug:";
 @interface WMFHelpViewController () <MFMailComposeViewControllerDelegate>
 
 @property (nonatomic, strong) UIBarButtonItem *sendEmailToolbarItem;
+@property (nonatomic, strong) UIBarButtonItem *dataRecoveryToolbarItem;
 
 @end
 
@@ -53,10 +54,19 @@ static NSString *const WMFSettingsEmailSubject = @"Bug:";
     return _sendEmailToolbarItem;
 }
 
+- (UIBarButtonItem *)dataRecoveryToolbarItem {
+    if (!_dataRecoveryToolbarItem) {
+        _dataRecoveryToolbarItem = [[UIBarButtonItem alloc] initWithTitle:WMFLocalizedStringWithDefaultValue(@"data-recovery-button", nil, nil, @"Data recovery", @"Button text for going to the data recovery screen") style:UIBarButtonItemStylePlain target:self action:@selector(presentDataRecovery)];
+        return _dataRecoveryToolbarItem;
+    }
+    return _dataRecoveryToolbarItem;
+}
+
 - (NSArray<UIBarButtonItem *> *)articleToolBarItems {
     return @[
         self.showTableOfContentsToolbarItem,
         [UIBarButtonItem flexibleSpaceToolbarItem],
+        self.dataRecoveryToolbarItem,
         self.sendEmailToolbarItem,
         [UIBarButtonItem wmf_barButtonItemOfFixedWidth:8]
     ];
@@ -77,6 +87,18 @@ static NSString *const WMFSettingsEmailSubject = @"Bug:";
     } else {
         [[WMFAlertManager sharedInstance] showErrorAlertWithMessage:WMFLocalizedStringWithDefaultValue(@"no-email-account-alert", nil, nil, @"Please setup an email account on your device and try again.", @"Displayed to the user when they try to send a feedback email, but they have never set up an account on their device") sticky:NO dismissPreviousAlerts:NO tapCallBack:NULL];
     }
+}
+
+- (void)presentDataRecovery {
+    MWKDataStore *dataStore = self.dataStore;
+    if (!dataStore) {
+        return;
+    }
+    DataRecoveryViewController *vc = [[DataRecoveryViewController alloc] initWithNibName:@"DataRecoveryViewController" bundle:nil];
+    vc.title = self.dataRecoveryToolbarItem.title;
+    [vc applyTheme:self.theme];
+    vc.dataStore = dataStore;
+    [self.navigationController pushViewController:vc animated:YES];
 }
 
 #pragma mark - MFMailComposeViewControllerDelegate

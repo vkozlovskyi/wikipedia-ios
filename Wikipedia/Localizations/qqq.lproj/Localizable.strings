@@ -105,6 +105,11 @@
 "compass-direction" = "Spoken description of compass direction, e.g. \"at 3 o'clock\" means \"to the right\", \"at 11 o'clock\" means \"slightly to the left\", etc. $1 is the hour.";
 "continue-reading-empty-description" = "Explore Wikipedia for more articles to read";
 "continue-reading-empty-title" = "No recently read articles";
+"data-recovery-button" = "Button text for going to the data recovery screen";
+"data-recovery-empty" = "Label for the empty state showing that no files are available for recovery";
+"data-recovery-instructions" = "Instructs the user to select a file from the list to attempt to recover or send in for spport";
+"data-recovery-restore" = "Title for the button that will attempt to restore the selected file";
+"data-recovery-send" = "Title for the button that will send the selected file to support";
 "dim-images" = "Label for image dimming setting";
 "edit-summary-choice-fixed-grammar" = "Button text for quick 'improved grammar' edit summary selection";
 "edit-summary-choice-fixed-typos" = "Button text for quick 'fixed typos' edit summary selection";
