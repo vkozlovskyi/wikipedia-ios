@@ -3,6 +3,8 @@
 #import <WMF/NSURLComponents+WMFLinkParsing.h>
 #import <WMF/NSURL+WMFExtras.h>
 
+NSString *const WMFSupportEmailAddress = @"mobile-ios-wikipedia@wikimedia.org";
+
 #if WMF_USE_BETA_CLUSTER
 NSString *const WMFDefaultSiteDomain = @"wikipedia.beta.wmflabs.org";
 NSString *const WMFDefaultSiteMainDomain = @"wikipedia.org";

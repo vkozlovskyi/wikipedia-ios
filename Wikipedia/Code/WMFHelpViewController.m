@@ -10,7 +10,6 @@
 NS_ASSUME_NONNULL_BEGIN
 
 static NSString *const WMFSettingsURLFAQ = @"https://m.mediawiki.org/wiki/Wikimedia_Apps/iOS_FAQ";
-static NSString *const WMFSettingsEmailAddress = @"mobile-ios-wikipedia@wikimedia.org";
 static NSString *const WMFSettingsEmailSubject = @"Bug:";
 
 @interface WMFHelpViewController () <MFMailComposeViewControllerDelegate>
@@ -76,7 +75,7 @@ static NSString *const WMFSettingsEmailSubject = @"Bug:";
     if ([MFMailComposeViewController canSendMail]) {
         MFMailComposeViewController *vc = [[MFMailComposeViewController alloc] init];
         [vc setSubject:[WMFSettingsEmailSubject stringByAppendingString:[WikipediaAppUtils versionedUserAgent]]];
-        [vc setToRecipients:@[WMFSettingsEmailAddress]];
+        [vc setToRecipients:@[WMFSupportEmailAddress]];
         [vc setMessageBody:[NSString stringWithFormat:@"\n\n\n\nVersion: %@", [WikipediaAppUtils versionedUserAgent]] isHTML:NO];
         NSData *data = [[DDLog wmf_currentLogFile] dataUsingEncoding:NSUTF8StringEncoding];
         if (data) {
@@ -85,7 +84,7 @@ static NSString *const WMFSettingsEmailSubject = @"Bug:";
         vc.mailComposeDelegate = self;
         [self presentViewController:vc animated:YES completion:NULL];
     } else {
-        [[WMFAlertManager sharedInstance] showErrorAlertWithMessage:WMFLocalizedStringWithDefaultValue(@"no-email-account-alert", nil, nil, @"Please setup an email account on your device and try again.", @"Displayed to the user when they try to send a feedback email, but they have never set up an account on their device") sticky:NO dismissPreviousAlerts:NO tapCallBack:NULL];
+        [[WMFAlertManager sharedInstance] showNoEmailAccountAlert];
     }
 }
 

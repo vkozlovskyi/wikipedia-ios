@@ -110,6 +110,7 @@
 "data-recovery-instructions" = "Select a file from the list to restore or send in for support";
 "data-recovery-restore" = "Restore";
 "data-recovery-send" = "Send to support";
+"data-recovery-unable-to-read-file" = "Unable to read the file. Please try again or try a different file";
 "dim-images" = "Dim images";
 "edit-summary-choice-fixed-grammar" = "Fixed grammar";
 "edit-summary-choice-fixed-typos" = "Fixed typo";

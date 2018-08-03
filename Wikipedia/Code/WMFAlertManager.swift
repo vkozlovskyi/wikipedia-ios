@@ -36,6 +36,10 @@ open class WMFAlertManager: NSObject, RMessageProtocol, MFMailComposeViewControl
         RMessage.shared().delegate = self
     }
     
+    @objc func showNoEmailAccountAlert() {
+        let message = WMFLocalizedString("no-email-account-alert", value: "Please setup an email account on your device and try again.", comment: "Displayed to the user when they try to send a feedback email, but they have never set up an account on their device")
+        showErrorAlertWithMessage(message, sticky: false, dismissPreviousAlerts: false, tapCallBack: nil)
+    }
     
     @objc func showInTheNewsAlert(_ message: String?, sticky:Bool, dismissPreviousAlerts:Bool, tapCallBack: (() -> Void)?) {
         
