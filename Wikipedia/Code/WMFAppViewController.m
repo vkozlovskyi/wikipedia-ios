@@ -253,7 +253,6 @@ static const NSString *kvo_SavedArticlesFetcher_progress = @"kvo_SavedArticlesFe
     NSArray<WMFArticleNavigationController *> *navigationControllers = @[exploreNavC, placesNavC, savedNavC, historyNavC, searchNavC];
     for (WMFArticleNavigationController *navC in navigationControllers) {
         navC.extendedLayoutIncludesOpaqueBars = YES;
-        navC.automaticallyAdjustsScrollViewInsets = NO;
         [navC setNavigationBarHidden:YES animated:NO];
     }
     [self setViewControllers:navigationControllers animated:NO];
@@ -1697,7 +1696,7 @@ static NSString *const WMFDidShowOnboarding = @"DidShowOnboarding5.3";
         return;
     }
 
-    UIViewController *vc = [[WMFNewsViewController alloc] initWithStories:@[feedNewsStory] dataStore:self.dataStore theme:self.theme];
+    UIViewController *vc = [[WMFNewsViewController alloc] initWithStories:@[feedNewsStory] dataStore:self.dataStore contentGroup:nil theme:self.theme];
     if (!vc) {
         return;
     }
