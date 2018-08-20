@@ -59,7 +59,6 @@ class ArticleLocationCollectionViewController: ColumnarCollectionViewController,
         guard let placeholderCell = layoutManager.placeholder(forCellWithReuseIdentifier: ArticleLocationCollectionViewCell.identifier) as? ArticleLocationCollectionViewCell else {
             return estimate
         }
-        placeholderCell.layoutMargins = layout.itemLayoutMargins
         configure(cell: placeholderCell, forItemAt: indexPath, layoutOnly: true)
         estimate.height = placeholderCell.sizeThatFits(CGSize(width: columnWidth, height: UIViewNoIntrinsicMetric), apply: false).height
         estimate.precalculated = true
@@ -96,6 +95,8 @@ extension ArticleLocationCollectionViewController {
             return
         }
         
+        cell.layoutMargins = layout.itemLayoutMargins
+
         let url = articleURL(at: indexPath)
         guard let article = dataStore.fetchArticle(with: url) else {
             return
