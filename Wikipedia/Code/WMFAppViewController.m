@@ -20,7 +20,6 @@
 #import "WMFFirstRandomViewController.h"
 #import "WMFRandomArticleViewController.h"
 #import "UIViewController+WMFArticlePresentation.h"
-#import "UINavigationController+WMFHideEmptyToolbar.h"
 
 #import "AppDelegate.h"
 
@@ -1549,7 +1548,6 @@ static NSString *const WMFDidShowOnboarding = @"DidShowOnboarding5.3";
       willShowViewController:(UIViewController *)viewController
                     animated:(BOOL)animated {
     navigationController.interactivePopGestureRecognizer.delegate = self;
-    [navigationController wmf_hideToolbarIfViewControllerHasNoToolbarItems:viewController];
     if ([viewController conformsToProtocol:@protocol(WMFSearchButtonProviding)] && viewController.navigationItem.rightBarButtonItem == nil) {
         WMFSearchButton *searchButton = [[WMFSearchButton alloc] initWithTarget:self action:@selector(showSearchInCurrentNavigationController)];
         viewController.navigationItem.rightBarButtonItem = searchButton;

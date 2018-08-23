@@ -4,6 +4,7 @@
 
 @interface WMFViewController () <WMFEmptyViewContainer>
 @property (nonatomic, strong) WMFNavigationBar *navigationBar;
+@property (nonatomic, strong) WMFToolbar *toolbar;
 @property (nonatomic, strong) WMFNavigationBarHider *navigationBarHider;
 @property (nonatomic) BOOL showsNavigationBar;
 @end
@@ -153,6 +154,7 @@
     if (self.viewIfLoaded == nil) {
         return;
     }
+    [self.toolbar applyTheme:theme];
     [self.navigationBar applyTheme:theme];
 }
 
@@ -169,6 +171,39 @@
     } else {
         [self.view addSubview:emptyView];
     }
+}
+
+#pragma mark - Toolbar
+
+- (NSArray<__kindof UIBarButtonItem *> *)toolbarItems {
+    WMFAssertMainThread(@"toolbar can only be accessed on the main thread");
+    return self.toolbar.items;
+}
+
+- (void)setToolbarItems:(NSArray<__kindof UIBarButtonItem *> *)toolbarItems {
+    WMFAssertMainThread(@"toolbar can only be accessed on the main thread");
+    [self setToolbarItems:toolbarItems animated:NO];
+}
+
+- (void)setToolbarItems:(NSArray<UIBarButtonItem *> *)toolbarItems animated:(BOOL)animated {
+    WMFAssertMainThread(@"toolbar can only be accessed on the main thread");
+    if (toolbarItems.count > 0 && self.toolbar == nil) {
+        WMFToolbar *toolbar = [[WMFToolbar alloc] init];
+        toolbar.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.view addSubview:toolbar];
+        NSLayoutConstraint *leadingConstraint = [self.view.leadingAnchor constraintEqualToAnchor:toolbar.leadingAnchor];
+        NSLayoutConstraint *trailingConstraint = [toolbar.trailingAnchor constraintEqualToAnchor:self.view.trailingAnchor];
+        NSLayoutConstraint *bottomConstraint = [toolbar.bottomAnchor constraintEqualToAnchor:self.view.bottomAnchor];
+        [self.view addConstraints:@[leadingConstraint, trailingConstraint, bottomConstraint]];
+        [toolbar applyTheme:self.theme];
+        self.toolbar = toolbar;
+    }
+    
+    self.toolbar.items = toolbarItems;
+}
+
+- (void)setToolbarHidden:(BOOL)hidden animated:(BOOL)animated {
+    
 }
 
 @end
