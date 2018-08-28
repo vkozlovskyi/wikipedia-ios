@@ -21,29 +21,23 @@ class AutoLayoutSafeMultiLineButton: UIButton {
     }
     
     override var intrinsicContentSize: CGSize {
+        let superSize = super.intrinsicContentSize
         guard let titleLabel = titleLabel else {
-            return super.intrinsicContentSize
+            return superSize
         }
-        return sizeByAddingInsets(to: titleLabel.intrinsicContentSize)
-    }
-    
-    override func sizeThatFits(_ size: CGSize) -> CGSize {
-        guard let titleLabel = titleLabel else {
-            return super.sizeThatFits(size)
+        var additionalWidth = contentEdgeInsets.left + contentEdgeInsets.right + titleEdgeInsets.left + titleEdgeInsets.right
+        let additionalHeight = contentEdgeInsets.top + contentEdgeInsets.bottom + titleEdgeInsets.top + titleEdgeInsets.bottom
+        var imageHeight: CGFloat = 0
+        if let image = image(for: .normal) {
+            additionalWidth += image.size.width + imageEdgeInsets.left + imageEdgeInsets.right
+            imageHeight = image.size.height + imageEdgeInsets.top + imageEdgeInsets.bottom + contentEdgeInsets.top + contentEdgeInsets.bottom
         }
-        return sizeByAddingInsets(to: titleLabel.sizeThatFits(size))
+        let titleLabelAvailableWidth = superSize.width - additionalWidth
+        titleLabel.preferredMaxLayoutWidth = titleLabelAvailableWidth
+        let labelIntrinsicSize = titleLabel.intrinsicContentSize
+        var totalSize = CGSize(width: labelIntrinsicSize.width + additionalWidth, height: labelIntrinsicSize.height + additionalHeight)
+        totalSize.height = max(imageHeight, totalSize.height)
+        return totalSize
     }
-    
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        guard let titleLabel = titleLabel else { return }
-        titleLabel.preferredMaxLayoutWidth = titleLabel.frame.width
-    }
-    
-    private func sizeByAddingInsets(to size: CGSize) -> CGSize {
-        return CGSize(
-            width: size.width + titleEdgeInsets.left + titleEdgeInsets.right,
-            height: size.height + titleEdgeInsets.top + titleEdgeInsets.bottom
-        )
-    }
+
 }
