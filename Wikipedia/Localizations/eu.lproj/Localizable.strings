@@ -352,6 +352,7 @@
 "places-filter-saved-articles" = "Gordetako artikuluak";
 "places-filter-top-articles" = "Irakurrienak";
 "places-filter-top-articles-count" = "{{PLURAL:$1|artikulu $1|$1 artikulu}}";
+"places-filter-top-read-articles" = "Irakurritako artikulu gorenak";
 "places-location-enabled" = "Kokapena gaitua";
 "places-no-saved-articles-have-location" = "Zure gordetako artikuluetatik batek ere ez du kokapenari buruzko informazioa";
 "places-search-articles-that-match" = "$1 “$2”(r)ekin dator bat";
@@ -372,6 +373,7 @@
 "preference-title-eventlogging-opt-in" = "Bidali erabilpen iruzkina";
 "rank-accessibility-label" = "$1 zenbakia";
 "readers-accessibility-label" = "$1 irakurle";
+"reading-list-add-generic-hint-title" = "Artikulu hau gehitu irakurtze zerrendara?";
 "reading-list-add-hint-title" = "Gehitu $1 irakurketa zerrendara?";
 "reading-list-add-saved-button-title" = "Bai, gehitu itzazu nire irakurketa zerrendetara";
 "reading-list-add-saved-subtitle" = "Zure Wikipedia aplikazioan irakurketa zerrendako artikuluak gorde dira. Zure kontuarekin sinkronizatutako irakurketen zerrendak gorde eta bateratu nahi dituzu?";
@@ -496,6 +498,7 @@
 "settings-notifications-system-turn-on" = "Jakinarazpenak piztu";
 "settings-notifications-trending" = "Modan dauden gaurko gertakariak";
 "settings-primary-language" = "Primarioa";
+// Fuzzy
 "settings-primary-language-details" = "Zerrenda honetan erabilitako lehenengo hizkuntza aplikazio honetarako ere erabiltzen den hizkuntza da. Hizkuntza hau aldatzerakoan, eguneroko edukia ere aldatuko da (adibidez, Nabarmendutako Artikulua) Arakatzailean agertzen dena.";
 "settings-search-open-app-on-search" = "Zabaldu aplikazioa Bilaketa leihoan";
 "settings-storage-and-syncing-enable-sync-footer-text" = "Baimendu Wikimediari zure gordetako artikuluak eta irakurketa-zerrendak zure kontuko lehentasunetan gordetzen saioa sinkronizatzeko hasten duzunean.";
