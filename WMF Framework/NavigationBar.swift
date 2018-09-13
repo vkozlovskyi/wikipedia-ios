@@ -88,9 +88,18 @@ public class NavigationBar: SetupView, FakeProgressReceiving, FakeProgressDelega
     private var cachedTitleViewItem: UIBarButtonItem?
     private var titleView: UIView?
     
+    private lazy var leadingFixedSpace: UIBarButtonItem = {
+        return UIBarButtonItem(barButtonSystemItem: .fixedSpace, target: nil, action: nil)
+    }()
+    
+    private lazy var trailingFixedSpace: UIBarButtonItem = {
+        return UIBarButtonItem(barButtonSystemItem: .fixedSpace, target: nil, action: nil)
+    }()
+    
     private func configureTitleBar(with navigationItem: UINavigationItem) {
         var titleBarItems: [UIBarButtonItem] = []
         titleView = nil
+        titleBarItems.append(leadingFixedSpace)
         if let titleView = navigationItem.titleView {
             if let cachedTitleViewItem = cachedTitleViewItem {
                 titleBarItems.append(cachedTitleViewItem)
@@ -120,6 +129,7 @@ public class NavigationBar: SetupView, FakeProgressReceiving, FakeProgressDelega
             let rightBarButtonItem = barButtonItem(from: item)
             titleBarItems.append(rightBarButtonItem)
         }
+        titleBarItems.append(trailingFixedSpace)
         titleBar.setItems(titleBarItems, animated: false)
     }
     
@@ -175,6 +185,8 @@ public class NavigationBar: SetupView, FakeProgressReceiving, FakeProgressDelega
         progressView.alpha = 0
         shadow.translatesAutoresizingMaskIntoConstraints = false
         titleBar.translatesAutoresizingMaskIntoConstraints = false
+        titleBar.insetsLayoutMarginsFromSafeArea = false
+        titleBar.preservesSuperviewLayoutMargins = false
         
         addSubview(backgroundView)
         addSubview(extendedView)
@@ -435,8 +447,27 @@ public class NavigationBar: SetupView, FakeProgressReceiving, FakeProgressDelega
         return topSpacingHideableHeight + barHideableHeight + underBarViewHideableHeight + extendedViewHideableHeight
     }
     
+    private func updateMargins() {
+        let isRTL = effectiveUserInterfaceLayoutDirection == .rightToLeft
+        let leadingMargin = isRTL ? layoutMargins.right : layoutMargins.left
+        let trailingMargin = isRTL ? layoutMargins.left : layoutMargins.right
+        let readableFrame = readableContentGuide.layoutFrame
+        let leftReadableMargin = readableFrame.minX
+        let rightReadableMargin = bounds.size.width - readableFrame.maxX
+        let leadingReadableMargin = isRTL ? rightReadableMargin : leftReadableMargin
+        let trailingReadableMargin = isRTL ? leftReadableMargin : rightReadableMargin
+        leadingFixedSpace.width = leadingReadableMargin - leadingMargin
+        trailingFixedSpace.width = trailingReadableMargin - trailingMargin
+    }
+    
+    public override func layoutMarginsDidChange() {
+        super.layoutMarginsDidChange()
+        updateMargins()
+    }
+    
     public override func layoutSubviews() {
         super.layoutSubviews()
+
         let navigationBarPercentHidden = _navigationBarPercentHidden
         let extendedViewPercentHidden = _extendedViewPercentHidden
         let underBarViewPercentHidden = _underBarViewPercentHidden
