@@ -529,35 +529,6 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
             articleFetchedResultsController.delegate = self
         }
     }
-    
-    func isDistanceSignificant(betweenRegion searchRegion: MKCoordinateRegion, andRegion visibleRegion: MKCoordinateRegion) -> Bool {
-        let distance = CLLocation(latitude: visibleRegion.center.latitude, longitude: visibleRegion.center.longitude).distance(from: CLLocation(latitude: searchRegion.center.latitude, longitude: searchRegion.center.longitude))
-        
-        let searchWidth = searchRegion.width
-        let searchHeight = searchRegion.height
-        let searchRegionMinDimension = min(searchWidth, searchHeight)
-        
-        guard searchRegionMinDimension > 0 else {
-            return distance > 1000
-        }
-       
-        let isDistanceSignificant = distance/searchRegionMinDimension > 0.33
-        guard !isDistanceSignificant else {
-            return true
-        }
-        
-        let visibleWidth = visibleRegion.width
-        let visibleHeight = visibleRegion.height
-        
-        guard searchWidth > 0, visibleWidth > 0, visibleHeight > 0, searchHeight > 0 else {
-            return false
-        }
-        
-        let widthRatio = visibleWidth/searchWidth
-        let heightRatio = visibleHeight/searchHeight
-        let ratio = min(widthRatio, heightRatio)
-        return ratio > 1.33 || ratio < 0.67
-    }
 
     func updateViewIfMapMovedSignificantly(forVisibleRegion visibleRegion: MKCoordinateRegion) {
         guard let searchRegion = currentSearchRegion else {
@@ -566,7 +537,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
         }
         
         let regionThatFits = region(thatFits: searchRegion)
-        let movedSignificantly = isDistanceSignificant(betweenRegion: regionThatFits, andRegion: visibleRegion)
+        let movedSignificantly = regionThatFits.isDistanceSignificant(to: visibleRegion)
         DDLogDebug("movedSignificantly=\(movedSignificantly)")
         
         // Update Redo Search Button
@@ -619,7 +590,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
             }
         }
         
-        if let currentMapRegion = mapRegion, isDistanceSignificant(betweenRegion: region, andRegion: currentMapRegion) {
+        if let currentMapRegion = mapRegion, region.isDistanceSignificant(to: currentMapRegion) {
             mapRegion = region
         } else if mapRegion == nil {
             mapRegion = region
@@ -1801,115 +1772,17 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
             break
         }
     }
-    
-    enum PopoverLocation {
-        case top
-        case bottom
-        case left
-        case right
-    }
-    
-    func adjustLayout(ofPopover articleVC: ArticlePopoverViewController, withSize popoverSize: CGSize, viewSize: CGSize, forAnnotationView annotationView: MapAnnotationView) {
-        var preferredLocations = [PopoverLocation]()
-        
-        
-        let annotationSize = annotationView.frame.size
-        let spacing: CGFloat = 5
-        let annotationCenter = view.convert(annotationView.center, from: mapView)
-        
-        if isViewModeOverlay {
-            if UIApplication.shared.wmf_isRTL {
-                if annotationCenter.x >= listAndSearchOverlayContainerView.frame.minX {
-                    preferredLocations = [.bottom, .left, .right, .top]
-                } else {
-                    preferredLocations = [.left, .bottom, .top, .right]
-                }
-            } else {
-                if annotationCenter.x <= listAndSearchOverlayContainerView.frame.maxX {
-                    preferredLocations = [.bottom, .right, .left, .top]
-                } else {
-                    preferredLocations = [.right, .bottom, .top, .left]
-                }
-            }
-        }
-    
-        let viewCenter = CGPoint(x: view.bounds.midX, y: view.bounds.midY)
-        let navBarHeight = extendedNavBarView.frame.height
-    
-        let popoverDistanceFromAnnotationCenterY = 0.5 * annotationSize.height + spacing
-        let totalHeight = popoverDistanceFromAnnotationCenterY + popoverSize.height + spacing
-        let top = totalHeight - annotationCenter.y
-        let bottom = annotationCenter.y + totalHeight - viewSize.height
-        
-        let popoverDistanceFromAnnotationCenterX = 0.5 * annotationSize.width + spacing
-        let totalWidth = popoverDistanceFromAnnotationCenterX + popoverSize.width + spacing
-        let left = totalWidth - annotationCenter.x
-        let right = annotationCenter.x + totalWidth - viewSize.width
-        
-        var x = annotationCenter.x > viewCenter.x ? viewSize.width - popoverSize.width - spacing : spacing
-        var y = annotationCenter.y > viewCenter.y ? viewSize.height - popoverSize.height - spacing : spacing + navBarHeight
 
-        let canFitTopOrBottom = viewSize.width - annotationCenter.x > 0.5*popoverSize.width && annotationCenter.x > 0.5*popoverSize.width
-        let fitsTop = top < -navBarHeight && canFitTopOrBottom
-        let fitsBottom = bottom < 0 && canFitTopOrBottom
-        
-        let canFitLeftOrRight = viewSize.height - annotationCenter.y > 0.5*popoverSize.height && annotationCenter.y - navBarHeight > 0.5*popoverSize.height
-        let fitsLeft = left < 0 && canFitLeftOrRight
-        let fitsRight = right < 0 && canFitLeftOrRight
-        
-        var didFitPreferredLocation = false
-        for preferredLocation in preferredLocations {
-            didFitPreferredLocation = true
-            if preferredLocation == .top && fitsTop {
-                x = annotationCenter.x - 0.5 * popoverSize.width
-                y = annotationCenter.y - popoverDistanceFromAnnotationCenterY - popoverSize.height
-            } else if preferredLocation == .bottom && fitsBottom {
-                x = annotationCenter.x - 0.5 * popoverSize.width
-                y = annotationCenter.y + popoverDistanceFromAnnotationCenterY
-            } else if preferredLocation == .left && fitsLeft {
-                x = annotationCenter.x - popoverDistanceFromAnnotationCenterX - popoverSize.width
-                y = annotationCenter.y - 0.5 * popoverSize.height
-            } else if preferredLocation == .right && fitsRight {
-                x = annotationCenter.x + popoverDistanceFromAnnotationCenterX
-                y = annotationCenter.y - 0.5 * popoverSize.height
-            } else if preferredLocation == .top && top < -navBarHeight {
-                y = annotationCenter.y - popoverDistanceFromAnnotationCenterY - popoverSize.height
-            } else if preferredLocation == .bottom && bottom < 0 {
-                y = annotationCenter.y + popoverDistanceFromAnnotationCenterY
-            } else if preferredLocation == .left && left < 0 {
-                x = annotationCenter.x - popoverDistanceFromAnnotationCenterX - popoverSize.width
-            } else if preferredLocation == .right && right < 0 {
-                x = annotationCenter.x + popoverDistanceFromAnnotationCenterX
-            } else {
-                didFitPreferredLocation = false
-            }
-            
-            if didFitPreferredLocation {
-                break
-            }
-        }
-        
-        if (!didFitPreferredLocation) {
-            if (fitsTop || fitsBottom) {
-                x = annotationCenter.x - 0.5 * popoverSize.width
-                y = annotationCenter.y + (top < bottom ? 0 - popoverDistanceFromAnnotationCenterY - popoverSize.height : popoverDistanceFromAnnotationCenterY)
-            } else if (fitsLeft || fitsRight) {
-                x = annotationCenter.x + (left < right ? 0 - popoverDistanceFromAnnotationCenterX - popoverSize.width : popoverDistanceFromAnnotationCenterX)
-                y = annotationCenter.y - 0.5 * popoverSize.height
-            } else if (top < -navBarHeight) {
-                y = annotationCenter.y - popoverDistanceFromAnnotationCenterY - popoverSize.height
-            } else if (bottom < 0) {
-                y = annotationCenter.y + popoverDistanceFromAnnotationCenterY
-            } else if (left < 0) {
-                x = annotationCenter.x - popoverDistanceFromAnnotationCenterX - popoverSize.width
-            } else if (right < 0) {
-                x = annotationCenter.x + popoverDistanceFromAnnotationCenterX
-            }
-        }
-       
-        articleVC.view.frame = CGRect(origin: CGPoint(x: x, y: y), size: popoverSize)
+    func adjustLayout(ofPopover articleVC: ArticlePopoverViewController, withSize popoverSize: CGSize, viewSize: CGSize, forAnnotationView annotationView: MapAnnotationView) {
+        let annotationViewFrame = view.convert(annotationView.frame, from: mapView)
+        let overlayFrame = isViewModeOverlay ? listAndSearchOverlayContainerView.frame : nil
+        articleVC.view.frame = computeLayout(for: popoverSize,
+                                             viewSize: viewSize,
+                                             forAnnotationView: annotationViewFrame,
+                                             extendedNavBarHeight: extendedNavBarView.frame.height,
+                                             overlayFrame: overlayFrame)
     }
-    
+
     // MARK: - Search Filter Dropdown
     
     var isSearchFilterDropDownShowing: Bool = false {
@@ -2378,7 +2251,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
     func zoomAndPanMapView(toLocation location: CLLocation) {
         let region = [location.coordinate].wmf_boundingRegion(with: 10000)
         mapRegion = region
-        if let searchRegion = currentSearchRegion, isDistanceSignificant(betweenRegion: searchRegion, andRegion: region) {
+        if let searchRegion = currentSearchRegion, searchRegion.isDistanceSignificant(to: region) {
             performDefaultSearch(withRegion: mapRegion)
         } else {
             performDefaultSearchIfNecessary(withRegion: region)

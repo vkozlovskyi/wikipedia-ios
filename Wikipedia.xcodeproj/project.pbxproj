@@ -2107,7 +2107,6 @@
 		D8CE25211E698E2400DAE2E0 /* UIView+WMFSnapshotting.m in Sources */ = {isa = PBXBuildFile; fileRef = B0E803901C0CDABE0065EBC0 /* UIView+WMFSnapshotting.m */; };
 		D8CE25221E698E2400DAE2E0 /* UIViewController+WMFStoryboardUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = B0E803E51C0CDD450065EBC0 /* UIViewController+WMFStoryboardUtilities.m */; };
 		D8CE25231E698E2400DAE2E0 /* UIVIewController+WMFCommonRotationSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ED2E9F91CB2B3B300D1C844 /* UIVIewController+WMFCommonRotationSupport.swift */; };
-		D8CE25241E698E2400DAE2E0 /* (null) in Sources */ = {isa = PBXBuildFile; };
 		D8CE25251E698E2400DAE2E0 /* PageHistoryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = B0E806CE1C0CEB6E0065EBC0 /* PageHistoryViewController.m */; };
 		D8CE25261E698E2400DAE2E0 /* WMFTitleInsetRespectingButton.m in Sources */ = {isa = PBXBuildFile; fileRef = B0E803CB1C0CDC9B0065EBC0 /* WMFTitleInsetRespectingButton.m */; };
 		D8CE25271E698E2400DAE2E0 /* WMFChangePasswordViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0C6BE561E4526A40033BD6E /* WMFChangePasswordViewController.swift */; };
@@ -2485,7 +2484,6 @@
 		D8EC3E181E9BDA35006712EB /* UIView+WMFSnapshotting.m in Sources */ = {isa = PBXBuildFile; fileRef = B0E803901C0CDABE0065EBC0 /* UIView+WMFSnapshotting.m */; };
 		D8EC3E191E9BDA35006712EB /* UIViewController+WMFStoryboardUtilities.m in Sources */ = {isa = PBXBuildFile; fileRef = B0E803E51C0CDD450065EBC0 /* UIViewController+WMFStoryboardUtilities.m */; };
 		D8EC3E1A1E9BDA35006712EB /* UIVIewController+WMFCommonRotationSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0ED2E9F91CB2B3B300D1C844 /* UIVIewController+WMFCommonRotationSupport.swift */; };
-		D8EC3E1B1E9BDA35006712EB /* (null) in Sources */ = {isa = PBXBuildFile; };
 		D8EC3E1C1E9BDA35006712EB /* PageHistoryViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = B0E806CE1C0CEB6E0065EBC0 /* PageHistoryViewController.m */; };
 		D8EC3E1D1E9BDA35006712EB /* WMFTitleInsetRespectingButton.m in Sources */ = {isa = PBXBuildFile; fileRef = B0E803CB1C0CDC9B0065EBC0 /* WMFTitleInsetRespectingButton.m */; };
 		D8EC3E1E1E9BDA35006712EB /* WMFChangePasswordViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B0C6BE561E4526A40033BD6E /* WMFChangePasswordViewController.swift */; };
@@ -2834,6 +2832,16 @@
 		D8FA19161E1BE069009675C3 /* WMFArticlePreviewViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = D8D2703A1D75ED5000D093A8 /* WMFArticlePreviewViewController.xib */; };
 		D8FAC7DD1D6F88AB00C2A6BC /* WMF.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D844D96C1D6CB2600042D692 /* WMF.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		D8FEECCD1DE3729400B883F0 /* WMFChange.m in Sources */ = {isa = PBXBuildFile; fileRef = D8FEECCC1DE3729400B883F0 /* WMFChange.m */; };
+		DE2451384F6E0A10F544D964 /* UIKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */; };
+		DE245212006A45C7DF60491C /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
+		DE245397F4BC69BBB8AA52FC /* UIKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */; };
+		DE24539FDF9FCB5BBE01F2C1 /* UIKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */; };
+		DE24548ED7D5603F3D7D6B0A /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
+		DE2458C6D3474FF0B9B9E0E6 /* UIKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */; };
+		DE245AC78463A2AC3F63B736 /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
+		DE245D1BB9013A67A4207A78 /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
+		DE245D9FCA0E841F6E1FADA8 /* UIKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */; };
+		DE245EE71ECAF98A77E4E15E /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -4711,6 +4719,8 @@
 		D8FFF6922031CB3D00A028E0 /* my */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = my; path = my.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
 		D8FFF6932031CB3E00A028E0 /* cy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = cy; path = cy.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
 		D8FFF6942031CB4000A028E0 /* tcy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = tcy; path = tcy.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
+		DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UIKitHelpers.swift; sourceTree = "<group>"; };
+		DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapKitHelpers.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -7967,6 +7977,8 @@
 				B3D889431E9E8F8400F08F53 /* PlaceSearchFilterListController.swift */,
 				B34B0ED81E9EBD0400716D75 /* TouchOutsideOverlayView.swift */,
 				B3F21D0E1EB0EBB4000ED0BB /* PlaceSearchService.swift */,
+				DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */,
+				DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */,
 			);
 			name = Places;
 			sourceTree = "<group>";
@@ -10251,6 +10263,8 @@
 				B0E8058D1C0CE2C60065EBC0 /* CreateAccountFunnel.m in Sources */,
 				83927D811F705B7B00051890 /* SearchResultsViewController.swift in Sources */,
 				B0E8059D1C0CE2F50065EBC0 /* WMFShareFunnel.m in Sources */,
+				DE245EE71ECAF98A77E4E15E /* MapKitHelpers.swift in Sources */,
+				DE2451384F6E0A10F544D964 /* UIKitHelpers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10572,6 +10586,8 @@
 				D80ED3AF1EE57F4800CE8C50 /* WikiTextSectionFetcher.m in Sources */,
 				D80ED3B01EE57F4800CE8C50 /* CreateAccountFunnel.m in Sources */,
 				D80ED3B21EE57F4800CE8C50 /* WMFShareFunnel.m in Sources */,
+				DE24548ED7D5603F3D7D6B0A /* MapKitHelpers.swift in Sources */,
+				DE2458C6D3474FF0B9B9E0E6 /* UIKitHelpers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11225,6 +11241,8 @@
 				BAC6EECA1F1E519B00228AD0 /* AppearanceSettingsViewController.swift in Sources */,
 				83927D841F705B7B00051890 /* SearchResultsViewController.swift in Sources */,
 				D8A42B9A1E815A9C00D8E281 /* WMFShareFunnel.m in Sources */,
+				DE245212006A45C7DF60491C /* MapKitHelpers.swift in Sources */,
+				DE24539FDF9FCB5BBE01F2C1 /* UIKitHelpers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11298,7 +11316,6 @@
 				D8CE25211E698E2400DAE2E0 /* UIView+WMFSnapshotting.m in Sources */,
 				D8CE25221E698E2400DAE2E0 /* UIViewController+WMFStoryboardUtilities.m in Sources */,
 				D8CE25231E698E2400DAE2E0 /* UIVIewController+WMFCommonRotationSupport.swift in Sources */,
-				D8CE25241E698E2400DAE2E0 /* (null) in Sources */,
 				D818D3821ED7254D0076110D /* ColumnarCollectionViewController.swift in Sources */,
 				D8CE25251E698E2400DAE2E0 /* PageHistoryViewController.m in Sources */,
 				D8CE25261E698E2400DAE2E0 /* WMFTitleInsetRespectingButton.m in Sources */,
@@ -11546,6 +11563,8 @@
 				B025D8CA1EAF00EC00716CED /* WKScriptMessage+WMFScriptMessage.swift in Sources */,
 				D8CE261B1E698E2400DAE2E0 /* CreateAccountFunnel.m in Sources */,
 				D8CE261D1E698E2400DAE2E0 /* WMFShareFunnel.m in Sources */,
+				DE245D1BB9013A67A4207A78 /* MapKitHelpers.swift in Sources */,
+				DE245397F4BC69BBB8AA52FC /* UIKitHelpers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11621,7 +11640,6 @@
 				D8EC3E191E9BDA35006712EB /* UIViewController+WMFStoryboardUtilities.m in Sources */,
 				D84DAA181EEEF527008E4B18 /* SWStepSlider.swift in Sources */,
 				D8EC3E1A1E9BDA35006712EB /* UIVIewController+WMFCommonRotationSupport.swift in Sources */,
-				D8EC3E1B1E9BDA35006712EB /* (null) in Sources */,
 				B0C7A0851F710EB1008415E7 /* WMFWelcomeAnalyticsAnimationBackgroundView.swift in Sources */,
 				D8EC3E1C1E9BDA35006712EB /* PageHistoryViewController.m in Sources */,
 				D8EC3E1D1E9BDA35006712EB /* WMFTitleInsetRespectingButton.m in Sources */,
@@ -11867,6 +11885,8 @@
 				B025D8CB1EAF00EC00716CED /* WKScriptMessage+WMFScriptMessage.swift in Sources */,
 				D8EC3F1A1E9BDA35006712EB /* CreateAccountFunnel.m in Sources */,
 				D8EC3F1C1E9BDA35006712EB /* WMFShareFunnel.m in Sources */,
+				DE245AC78463A2AC3F63B736 /* MapKitHelpers.swift in Sources */,
+				DE245D9FCA0E841F6E1FADA8 /* UIKitHelpers.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
