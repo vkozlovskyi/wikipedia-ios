@@ -2833,14 +2833,19 @@
 		D8FAC7DD1D6F88AB00C2A6BC /* WMF.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = D844D96C1D6CB2600042D692 /* WMF.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		D8FEECCD1DE3729400B883F0 /* WMFChange.m in Sources */ = {isa = PBXBuildFile; fileRef = D8FEECCC1DE3729400B883F0 /* WMFChange.m */; };
 		DE2451384F6E0A10F544D964 /* UIKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */; };
+		DE245182FC995EDE03692DF9 /* SearchHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2457F9501C560DEC717BB5 /* SearchHistory.swift */; };
 		DE245212006A45C7DF60491C /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
 		DE245397F4BC69BBB8AA52FC /* UIKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */; };
 		DE24539FDF9FCB5BBE01F2C1 /* UIKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */; };
 		DE24548ED7D5603F3D7D6B0A /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
+		DE2456B05BD2FA115B6000D9 /* SearchHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2457F9501C560DEC717BB5 /* SearchHistory.swift */; };
+		DE2458A37149EE3FEE6E02F5 /* SearchHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2457F9501C560DEC717BB5 /* SearchHistory.swift */; };
 		DE2458C6D3474FF0B9B9E0E6 /* UIKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */; };
+		DE245A6B9C0373B3B3730FDF /* SearchHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2457F9501C560DEC717BB5 /* SearchHistory.swift */; };
 		DE245AC78463A2AC3F63B736 /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
 		DE245D1BB9013A67A4207A78 /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
 		DE245D9FCA0E841F6E1FADA8 /* UIKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */; };
+		DE245E79DC6C3C420743A96A /* SearchHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2457F9501C560DEC717BB5 /* SearchHistory.swift */; };
 		DE245EE71ECAF98A77E4E15E /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
 /* End PBXBuildFile section */
 
@@ -4719,6 +4724,7 @@
 		D8FFF6922031CB3D00A028E0 /* my */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = my; path = my.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
 		D8FFF6932031CB3E00A028E0 /* cy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = cy; path = cy.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
 		D8FFF6942031CB4000A028E0 /* tcy */ = {isa = PBXFileReference; lastKnownFileType = text.plist.stringsdict; name = tcy; path = tcy.lproj/Localizable.stringsdict; sourceTree = "<group>"; };
+		DE2457F9501C560DEC717BB5 /* SearchHistory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SearchHistory.swift; sourceTree = "<group>"; };
 		DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UIKitHelpers.swift; sourceTree = "<group>"; };
 		DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapKitHelpers.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -7979,6 +7985,7 @@
 				B3F21D0E1EB0EBB4000ED0BB /* PlaceSearchService.swift */,
 				DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */,
 				DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */,
+				DE2457F9501C560DEC717BB5 /* SearchHistory.swift */,
 			);
 			name = Places;
 			sourceTree = "<group>";
@@ -10265,6 +10272,7 @@
 				B0E8059D1C0CE2F50065EBC0 /* WMFShareFunnel.m in Sources */,
 				DE245EE71ECAF98A77E4E15E /* MapKitHelpers.swift in Sources */,
 				DE2451384F6E0A10F544D964 /* UIKitHelpers.swift in Sources */,
+				DE245A6B9C0373B3B3730FDF /* SearchHistory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -10588,6 +10596,7 @@
 				D80ED3B21EE57F4800CE8C50 /* WMFShareFunnel.m in Sources */,
 				DE24548ED7D5603F3D7D6B0A /* MapKitHelpers.swift in Sources */,
 				DE2458C6D3474FF0B9B9E0E6 /* UIKitHelpers.swift in Sources */,
+				DE2456B05BD2FA115B6000D9 /* SearchHistory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11243,6 +11252,7 @@
 				D8A42B9A1E815A9C00D8E281 /* WMFShareFunnel.m in Sources */,
 				DE245212006A45C7DF60491C /* MapKitHelpers.swift in Sources */,
 				DE24539FDF9FCB5BBE01F2C1 /* UIKitHelpers.swift in Sources */,
+				DE245E79DC6C3C420743A96A /* SearchHistory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11565,6 +11575,7 @@
 				D8CE261D1E698E2400DAE2E0 /* WMFShareFunnel.m in Sources */,
 				DE245D1BB9013A67A4207A78 /* MapKitHelpers.swift in Sources */,
 				DE245397F4BC69BBB8AA52FC /* UIKitHelpers.swift in Sources */,
+				DE245182FC995EDE03692DF9 /* SearchHistory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -11887,6 +11898,7 @@
 				D8EC3F1C1E9BDA35006712EB /* WMFShareFunnel.m in Sources */,
 				DE245AC78463A2AC3F63B736 /* MapKitHelpers.swift in Sources */,
 				DE245D9FCA0E841F6E1FADA8 /* UIKitHelpers.swift in Sources */,
+				DE2458A37149EE3FEE6E02F5 /* SearchHistory.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

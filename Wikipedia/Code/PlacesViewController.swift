@@ -60,7 +60,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
     fileprivate let animationDuration = 0.6
     fileprivate let animationScale = CGFloat(0.6)
     fileprivate let popoverFadeDuration = 0.25
-    fileprivate let searchHistoryCountLimit = 15
+    fileprivate var searchSuggestionController: PlaceSearchSuggestionController!
     fileprivate var searchSuggestionController: PlaceSearchSuggestionController!
     fileprivate var searchBar: UISearchBar? {
         didSet {
@@ -1226,67 +1226,14 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
 
     // MARK: - Search History
     
-    fileprivate func searchHistoryGroup(forFilter: PlaceFilterType) -> String {
-        let searchHistoryGroup = "PlaceSearch"
-        return "\(searchHistoryGroup).\(forFilter.stringValue)"
-    }
-    
-    fileprivate func currentSearchHistoryGroup() -> String {
-        return searchHistoryGroup(forFilter: currentSearchFilter)
-    }
-    
     func saveToHistory(search: PlaceSearch) {
-        guard search.origin == .user else {
-            DDLogDebug("not saving system search to history")
-            return
-        }
-        
-        do {
-            let moc = dataStore.viewContext
-            if let keyValue = keyValue(forPlaceSearch: search, inManagedObjectContext: moc) {
-                keyValue.date = Date()
-            } else if let entity = NSEntityDescription.entity(forEntityName: "WMFKeyValue", in: moc) {
-                let keyValue =  WMFKeyValue(entity: entity, insertInto: moc)
-                keyValue.key = search.key
-                keyValue.group = currentSearchHistoryGroup()
-                keyValue.date = Date()
-                keyValue.value = search.dictionaryValue as NSCoding
-            }
-            try moc.save()
-        } catch let error {
-            DDLogError("error saving to place search history: \(error.localizedDescription)")
-        }
+        let moc = dataStore.viewContext
+        moc.saveToHistory(search)
     }
     
     func clearSearchHistory() {
-        do {
-            let moc = dataStore.viewContext
-            let request = WMFKeyValue.fetchRequest()
-            request.predicate = NSPredicate(format: "group == %@", currentSearchHistoryGroup())
-            request.sortDescriptors = [NSSortDescriptor(keyPath: \WMFKeyValue.date, ascending: false)]
-            let results = try moc.fetch(request)
-            for result in results {
-                moc.delete(result)
-            }
-            try moc.save()
-        } catch let error {
-            DDLogError("Error clearing recent place searches: \(error)")
-        }
-    }
-    
-    func keyValue(forPlaceSearch placeSearch: PlaceSearch, inManagedObjectContext moc: NSManagedObjectContext) -> WMFKeyValue? {
-        var keyValue: WMFKeyValue?
-        do {
-            let key = placeSearch.key
-            let request = WMFKeyValue.fetchRequest()
-            request.predicate = NSPredicate(format: "key == %@ && group == %@", key, currentSearchHistoryGroup())
-            request.fetchLimit = 1
-            let results = try moc.fetch(request)
-            keyValue = results.first
-        } catch let error {
-            DDLogError("Error fetching place search key value: \(error.localizedDescription)")
-        }
-        return keyValue
+        let moc = dataStore.viewContext
+        moc.clearSearchHistory(for: currentSearchFilter)
     }
     
     // MARK: - Location Access
@@ -1969,29 +1916,9 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
                 defaultSuggestions.append(PlaceSearch(filter: .saved, type: .location, origin: .system, sortStyle: .links, string: nil, region: nil, localizedDescription: WMFLocalizedString("places-search-saved-articles", value:"All saved articles", comment:"A search suggestion for saved articles"), searchResult: nil))
             }
 
-            var recentSearches: [PlaceSearch] = []
-            do {
-                let moc = dataStore.viewContext
-                let request = WMFKeyValue.fetchRequest()
-                request.predicate = NSPredicate(format: "group == %@", currentSearchHistoryGroup())
-                request.sortDescriptors = [NSSortDescriptor(keyPath: \WMFKeyValue.date, ascending: false)]
-                let results = try moc.fetch(request)
-                let count = results.count
-                if count > searchHistoryCountLimit {
-                    for result in results[searchHistoryCountLimit..<count] {
-                        moc.delete(result)
-                    }
-                }
-                let limit = min(count, searchHistoryCountLimit)
-                recentSearches = try results[0..<limit].map({ (kv) -> PlaceSearch in
-                    guard let ps = PlaceSearch(object: kv.value) else {
-                            throw PlaceSearchError.deserialization(object: kv.value)
-                    }
-                    return ps
-                })
-            } catch let error {
-                DDLogError("Error fetching recent place searches: \(error)")
-            }
+            let moc = dataStore.viewContext
+            let recentSearches = moc.recentSearches(for: currentSearchFilter)
+
             searchSuggestionController.siteURL = siteURL
             searchSuggestionController.searches = [defaultSuggestions, recentSearches, [], []]
             
@@ -2226,15 +2153,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
     
     func placeSearchSuggestionController(_ controller: PlaceSearchSuggestionController, didDeleteSearch search: PlaceSearch) {
         let moc = dataStore.viewContext
-        guard let kv = keyValue(forPlaceSearch: search, inManagedObjectContext: moc) else {
-            return
-        }
-        moc.delete(kv)
-        do {
-            try moc.save()
-        } catch let error {
-            DDLogError("Error removing kv: \(error.localizedDescription)")
-        }
+        moc.delete(search)
         updateSearchSuggestions(withCompletions: [], isSearchDone: false)
     }
     
