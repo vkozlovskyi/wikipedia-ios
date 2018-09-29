@@ -6,6 +6,12 @@ import Mapbox
 
 import MapKit
 
+enum Environment {
+  static var siteURL: URL {
+    return MWKLanguageLinkController.sharedInstance().appLanguage?.siteURL() ?? NSURL.wmf_URLWithDefaultSiteAndCurrentLocale()!
+  }
+}
+
 @objc(WMFPlacesViewController)
 class PlacesViewController: PreviewingViewController, UISearchBarDelegate, ArticlePopoverViewControllerDelegate, PlaceSearchSuggestionControllerDelegate, WMFLocationManagerDelegate, NSFetchedResultsControllerDelegate, UIPopoverPresentationControllerDelegate, ArticlePlaceViewDelegate, AnalyticsViewNameProviding, UIGestureRecognizerDelegate, TouchOutsideOverlayDelegate, PlaceSearchFilterListDelegate {
 
@@ -53,14 +59,12 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
     
     @objc public var dataStore: MWKDataStore!
 
-    fileprivate let locationSearchFetcher = WMFLocationSearchFetcher()
-    fileprivate let searchFetcher = WMFSearchFetcher()
+    fileprivate let suggestionsFetcher = SuggestionsFetcher()
     fileprivate let wikidataFetcher = WikidataFetcher()
     fileprivate let locationManager = WMFLocationManager.fine()
     fileprivate let animationDuration = 0.6
     fileprivate let animationScale = CGFloat(0.6)
     fileprivate let popoverFadeDuration = 0.25
-    fileprivate var searchSuggestionController: PlaceSearchSuggestionController!
     fileprivate var searchSuggestionController: PlaceSearchSuggestionController!
     fileprivate var searchBar: UISearchBar? {
         didSet {
@@ -69,11 +73,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
             searchBar?.delegate = self
         }
     }
-    
-    fileprivate var siteURL: URL {
-        return MWKLanguageLinkController.sharedInstance().appLanguage?.siteURL() ?? NSURL.wmf_URLWithDefaultSiteAndCurrentLocale()!
-    }
-    
+
     fileprivate var currentGroupingPrecision: QuadKeyPrecision = 1
     fileprivate var selectedArticlePopover: ArticlePopoverViewController?
     fileprivate var selectedArticleAnnotationView: MapAnnotationView?
@@ -574,7 +574,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
         updateSavedPlacesCountInCurrentMapRegionIfNecessary()
         hideDidYouMeanButton()
         
-        let siteURL = search.siteURL ?? self.siteURL
+        let siteURL = search.siteURL ?? Environment.siteURL
         var searchTerm: String? = nil
         let sortStyle = search.sortStyle
         let region = search.region ?? mapRegion ?? mapView.region
@@ -704,7 +704,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
                 self.currentSearch = newSearch
             })
         }
-        guard let articleURL = search.searchResult?.articleURL(forSiteURL: siteURL) else {
+        guard let articleURL = search.searchResult?.articleURL(forSiteURL: Environment.siteURL) else {
             fail()
             return
         }
@@ -724,7 +724,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
     }
     
     func updatePlaces(withSearchResults searchResults: [MWKSearchResult]) {
-        if let searchSuggestionArticleURL = currentSearch?.searchResult?.articleURL(forSiteURL: siteURL),
+        if let searchSuggestionArticleURL = currentSearch?.searchResult?.articleURL(forSiteURL: Environment.siteURL),
             let searchSuggestionArticleKey = searchSuggestionArticleURL.wmf_articleDatabaseKey { // the user tapped an article in the search suggestions list, so we should select that
             articleKeyToSelect = searchSuggestionArticleKey
         } else if currentSearch?.filter == .top {
@@ -742,10 +742,10 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
                         resultToSelect = result
                     }
                 }
-                let resultURL = resultToSelect?.articleURL(forSiteURL: siteURL)
+                let resultURL = resultToSelect?.articleURL(forSiteURL: Environment.siteURL)
                 articleKeyToSelect = resultURL?.wmf_articleDatabaseKey
             } else {
-                let firstResultURL = searchResults.first?.articleURL(forSiteURL: siteURL)
+                let firstResultURL = searchResults.first?.articleURL(forSiteURL: Environment.siteURL)
                 articleKeyToSelect = firstResultURL?.wmf_articleDatabaseKey
             }
         }
@@ -754,7 +754,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
         var keysToFetch: [String] = []
         var sort = 1
         for result in searchResults {
-            guard let articleURL = result.articleURL(forSiteURL: siteURL),
+            guard let articleURL = result.articleURL(forSiteURL: Environment.siteURL),
                 let article = self.dataStore.viewContext.fetchOrCreateArticle(with: articleURL, updatedWith: result),
                 let _ = article.quadKey,
                 let articleKey = article.key else {
@@ -800,7 +800,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
             var tempSearch = PlaceSearch(filter: .top, type: currentSearch.type, origin: .system, sortStyle: currentSearch.sortStyle, string: nil, region: mapView.region, localizedDescription: nil, searchResult: nil)
             tempSearch.needsWikidataQuery = false
             
-            placeSearchService.performSearch(tempSearch, defaultSiteURL: siteURL, region: mapView.region, completion: { (searchResult) in
+            placeSearchService.performSearch(tempSearch, defaultSiteURL: Environment.siteURL, region: mapView.region, completion: { (searchResult) in
                 guard let locationResults = searchResult.locationResults else {
                     return
                 }
@@ -1919,7 +1919,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
             let moc = dataStore.viewContext
             let recentSearches = moc.recentSearches(for: currentSearchFilter)
 
-            searchSuggestionController.siteURL = siteURL
+            searchSuggestionController.siteURL = Environment.siteURL
             searchSuggestionController.searches = [defaultSuggestions, recentSearches, [], []]
             
             if (recentSearches.count == 0) {
@@ -1956,25 +1956,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
         
         searchSuggestionController.searches = [[], [], currentSearchStringSuggestions, completions]
     }
-    
-    func handleCompletion(searchResults: [MWKSearchResult], siteURL: URL) -> [PlaceSearch] {
-        var set = Set<String>()
-        let completions = searchResults.compactMap { (result) -> PlaceSearch? in
-            guard let location = result.location,
-                let dimension = result.geoDimension?.doubleValue,
-                let url = result.articleURL(forSiteURL: siteURL),
-                let key = url.wmf_articleDatabaseKey,
-                !set.contains(key) else {
-                    return nil
-            }
-            set.insert(key)
-            let region = [location.coordinate].wmf_boundingRegion(with: dimension)
-            return PlaceSearch(filter: currentSearchFilter, type: .location, origin: .user, sortStyle: .links, string: nil, region: region, localizedDescription: result.displayTitle, searchResult: result, siteURL: siteURL)
-        }
-        updateSearchSuggestions(withCompletions: completions, isSearchDone: true)
-        return completions
-    }
-    
+
     @objc public func showNearbyArticles() {
         guard let _ = view else { // force view instantiation
             return
@@ -1983,7 +1965,7 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
         guard currentSearch != nil else { // if current search is nil, this is the initial setup for the view and it will recenter automatically
             return
         }
-        
+
         currentSearch = nil // will cause the default search to perform after re-centering
         recenterOnUserLocation(self)
     }
@@ -2029,54 +2011,15 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
             self.isWaitingForSearchSuggestionUpdate = false
         }
     }
-    
+
     func updateSearchCompletionsFromSearchBarTextForTopArticles()
     {
-        guard let text = searchBar?.text?.trimmingCharacters(in: NSCharacterSet.whitespacesAndNewlines), text != "" else {
-            updateSearchSuggestions(withCompletions: [], isSearchDone: false)
+        suggestionsFetcher.fetchSearchSuggestions(searchString: searchBar?.text ?? "", filter: currentSearchFilter, userLocation: mapView.userLocation.coordinate) { result, done in
+            self.updateSearchSuggestions(withCompletions: result, isSearchDone: done)
             self.isWaitingForSearchSuggestionUpdate = false
-            return
-        }
-        let siteURL = self.siteURL
-        searchFetcher.fetchArticles(forSearchTerm: text, siteURL: siteURL, resultLimit: 24, failure: { (error) in
-            guard text == self.searchBar?.text else {
-                return
-            }
-            self.updateSearchSuggestions(withCompletions: [], isSearchDone: false)
-            self.isWaitingForSearchSuggestionUpdate = false
-        }) { (searchResult) in
-            guard text == self.searchBar?.text else {
-                return
-            }
-            
-            if let suggestion = searchResult.searchSuggestion {
-                DDLogDebug("got suggestion! \(suggestion)")
-            }
-            
-            let completions = self.handleCompletion(searchResults: searchResult.results ?? [], siteURL: siteURL)
-            self.isWaitingForSearchSuggestionUpdate = false
-            guard completions.count < 10 else {
-                return
-            }
-            
-            let center = self.mapView.userLocation.coordinate
-            let region = CLCircularRegion(center: center, radius: 40075000, identifier: "world")
-            self.locationSearchFetcher.fetchArticles(withSiteURL: self.siteURL, in: region, matchingSearchTerm: text, sortStyle: .links, resultLimit: 24, completion: { (locationSearchResults) in
-                guard text == self.searchBar?.text else {
-                    return
-                }
-                var combinedResults: [MWKSearchResult] = searchResult.results ?? []
-                let newResults = locationSearchResults.results as [MWKSearchResult]
-                combinedResults.append(contentsOf: newResults)
-                let _ = self.handleCompletion(searchResults: combinedResults, siteURL: siteURL)
-            }) { (error) in
-                guard text == self.searchBar?.text else {
-                    return
-                }
-            }
         }
     }
-    
+
     @IBAction func closeSearch(_ sender: Any) {
         searchBar?.endEditing(true)
         currentSearch = nil
