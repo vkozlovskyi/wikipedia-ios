@@ -38,23 +38,57 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
     @IBOutlet weak var searchBarToMapListToggleTrailingConstraint: NSLayoutConstraint!
     @IBOutlet weak var searchBarToCloseTrailingConstraint: NSLayoutConstraint!
     @IBOutlet weak var listAndSearchOverlayContainerView: RoundedCornerView!
-    @IBOutlet weak var listAndSearchOverlayFilterSelectorContainerView: UIView!
-    @IBOutlet weak var listAndSearchOverlaySearchContainerView: UIView!
-    @IBOutlet weak var listAndSearchOverlaySearchBar: UISearchBar!
     @IBOutlet weak var listAndSearchOverlaySliderSeparator: UIView!
-    @IBOutlet weak var listAndSearchOverlaySearchSeparator: UIView!
-
     @IBOutlet weak var listAndSearchOverlayBottomConstraint: NSLayoutConstraint!
     @IBOutlet weak var listAndSearchOverlayHeightConstraint: NSLayoutConstraint!
-    @IBOutlet weak var listAndSearchOverlayFilterSelectorContainerHeightConstraint: NSLayoutConstraint!
-    @IBOutlet weak var listAndSearchOverlaySearchHeightConstraint: NSLayoutConstraint!
     @IBOutlet weak var listAndSearchOverlaySliderHeightConstraint: NSLayoutConstraint!
-    @IBOutlet weak var listAndSearchOverlaySearchCancelButtonHideConstraint: NSLayoutConstraint!
-    @IBOutlet weak var listAndSearchOverlaySearchCancelButtonShowConstraint: NSLayoutConstraint!
     @IBOutlet weak var listAndSearchOverlaySliderView: UIView!
-    @IBOutlet weak var listContainerView: UIView!
+    var searchViewController: PlacesSearchViewController!
+
+
+  @available(*, deprecated) var listAndSearchOverlayFilterSelectorContainerView: UIView! {
+    return searchViewController.listAndSearchOverlayFilterSelectorContainerView
+  }
+
+  @available(*, deprecated) var listAndSearchOverlaySearchContainerView: UIView! {
+    return searchViewController.listAndSearchOverlaySearchContainerView
+  }
+
+  @available(*, deprecated) var listAndSearchOverlaySearchBar: UISearchBar! {
+    return searchViewController.listAndSearchOverlaySearchBar
+  }
+
+  @available(*, deprecated) var listAndSearchOverlaySearchSeparator: UIView! {
+    return searchViewController.listAndSearchOverlaySearchSeparator
+  }
+
+  @available(*, deprecated) var listAndSearchOverlayFilterSelectorContainerHeightConstraint: NSLayoutConstraint! {
+    return searchViewController.listAndSearchOverlayFilterSelectorContainerHeightConstraint
+  }
+
+  @available(*, deprecated) var listAndSearchOverlaySearchHeightConstraint: NSLayoutConstraint! {
+    return searchViewController.listAndSearchOverlaySearchHeightConstraint
+  }
+
+  @available(*, deprecated) var listAndSearchOverlaySearchCancelButtonHideConstraint: NSLayoutConstraint! {
+    return searchViewController.listAndSearchOverlaySearchCancelButtonHideConstraint
+  }
+
+  @available(*, deprecated) var listAndSearchOverlaySearchCancelButtonShowConstraint: NSLayoutConstraint! {
+    return searchViewController.listAndSearchOverlaySearchCancelButtonShowConstraint
+  }
+
+  @available(*, deprecated) var listContainerView: UIView! {
+    return searchViewController.listContainerView
+  }
+
+  @available(*, deprecated) var searchSuggestionView: UITableView! {
+    return searchViewController.searchSuggestionView
+  }
+
+
+
     var listViewController: ArticleLocationCollectionViewController!
-    @IBOutlet weak var searchSuggestionView: UITableView!
     @IBOutlet var emptySearchOverlayView: PlaceSearchEmptySearchOverlayView!
     
     @objc public var dataStore: MWKDataStore!
@@ -236,6 +270,9 @@ class PlacesViewController: PreviewingViewController, UISearchBarDelegate, Artic
         case "filterListController":
             searchFilterListController = segue.destination as! PlaceSearchFilterListController
             searchFilterListController.delegate = self
+        case "embedSearchViewController":
+          searchViewController = segue.destination as! PlacesSearchViewController
+          searchViewController.delegate = self
         default:
             break
         }
@@ -2507,29 +2544,15 @@ extension PlacesViewController: Themeable {
         titleViewSearchBar.setSearchFieldBackgroundImage(theme.searchBarBackgroundImage, for: .normal)
         titleViewSearchBar.searchTextPositionAdjustment = UIOffset(horizontal: 7, vertical: 0)
         
-        listAndSearchOverlaySearchBar.backgroundColor = theme.colors.chromeBackground
-        listAndSearchOverlaySearchBar.barTintColor = theme.colors.chromeBackground
-        listAndSearchOverlaySearchBar.isTranslucent = false
-        listAndSearchOverlaySearchBar.wmf_enumerateSubviewTextFields{ (textField) in
-            textField.textColor = theme.colors.primaryText
-            textField.keyboardAppearance = theme.keyboardAppearance
-            textField.font = UIFont.systemFont(ofSize: 14)
-        }
-        listAndSearchOverlaySearchBar.setSearchFieldBackgroundImage(theme.searchBarBackgroundImage, for: .normal)
-        listAndSearchOverlaySearchBar.searchTextPositionAdjustment = UIOffset(horizontal: 7, vertical: 0)
-        
         filterDropDownContainerView.wmf_addBottomShadow(with: theme)
         extendedNavBarView.wmf_addBottomShadow(with: theme)
         searchFilterListController.apply(theme: theme)
         searchSuggestionController.apply(theme: theme)
         
         listAndSearchOverlayContainerView.backgroundColor = theme.colors.chromeBackground
-        listAndSearchOverlaySearchContainerView.backgroundColor = theme.colors.chromeBackground
-        listAndSearchOverlayFilterSelectorContainerView.backgroundColor = theme.colors.chromeBackground
         listAndSearchOverlaySliderView.backgroundColor = theme.colors.chromeBackground
         listAndSearchOverlaySliderView.tintColor = theme.colors.secondaryText
         
-        listAndSearchOverlaySearchSeparator.backgroundColor = theme.colors.midBackground
         listAndSearchOverlaySliderSeparator.backgroundColor = theme.colors.midBackground
         
         emptySearchOverlayView.backgroundColor = theme.colors.midBackground
@@ -2542,5 +2565,15 @@ extension PlacesViewController: Themeable {
         didYouMeanButton.backgroundColor = theme.colors.link
         updateSearchFilterTitle()
         listViewController.apply(theme: theme)
+
+        searchViewController.apply(theme: theme)
     }
 }
+
+extension PlacesViewController: PlacesSearchViewControllerDelegate {
+
+  func placesSearchViewControllerDidCancelSearch(_ vc: PlacesSearchViewController) {
+    closeSearch(self)
+  }
+}
+

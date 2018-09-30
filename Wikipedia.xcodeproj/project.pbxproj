@@ -2852,6 +2852,11 @@
 		DE245E79DC6C3C420743A96A /* SearchHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2457F9501C560DEC717BB5 /* SearchHistory.swift */; };
 		DE245EB2B85E6F4954F568E8 /* SuggestionsFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245374868F72042879F8DC /* SuggestionsFetcher.swift */; };
 		DE245EE71ECAF98A77E4E15E /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
+		E7E3DEF9215F9408001A21AC /* PlacesSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */; };
+		E7E3DEFA215F940D001A21AC /* PlacesSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */; };
+		E7E3DEFB215F940E001A21AC /* PlacesSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */; };
+		E7E3DEFC215F940E001A21AC /* PlacesSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */; };
+		E7E3DEFD215F9410001A21AC /* PlacesSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -4733,6 +4738,7 @@
 		DE2457F9501C560DEC717BB5 /* SearchHistory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SearchHistory.swift; sourceTree = "<group>"; };
 		DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UIKitHelpers.swift; sourceTree = "<group>"; };
 		DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapKitHelpers.swift; sourceTree = "<group>"; };
+		E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlacesSearchViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -7993,6 +7999,7 @@
 				DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */,
 				DE2457F9501C560DEC717BB5 /* SearchHistory.swift */,
 				DE245374868F72042879F8DC /* SuggestionsFetcher.swift */,
+				E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */,
 			);
 			name = Places;
 			sourceTree = "<group>";
@@ -10200,6 +10207,7 @@
 				B0E803381C0CD7550065EBC0 /* WMFSearchButton.m in Sources */,
 				7A6ED50D20ADBF950001849F /* SessionsFunnel.swift in Sources */,
 				B031032D1F677BEC00E2FCF6 /* WMFWelcomeExplorationViewController.swift in Sources */,
+				E7E3DEF9215F9408001A21AC /* PlacesSearchViewController.swift in Sources */,
 				D8703DBF1EE84533001A4BAB /* PreviewingViewController.swift in Sources */,
 				D82E95281F14FBD9007BD960 /* UITableView+Theme.swift in Sources */,
 				B0E803991C0CDB280065EBC0 /* WMFArticleFetcher.m in Sources */,
@@ -10312,6 +10320,7 @@
 				D80ED2841EE57F4800CE8C50 /* WMFReferencePageBackgroundView.swift in Sources */,
 				D80ED2851EE57F4800CE8C50 /* WMFNearbyArticleCollectionViewCell.m in Sources */,
 				D80ED2861EE57F4800CE8C50 /* UIApplication+RTL.swift in Sources */,
+				E7E3DEFD215F9410001A21AC /* PlacesSearchViewController.swift in Sources */,
 				83E52BB81F681F940045E776 /* ShareAFactViewController.swift in Sources */,
 				D80ED2871EE57F4800CE8C50 /* WMFAppModalProgressViewController.swift in Sources */,
 				D80ED2891EE57F4800CE8C50 /* WMFWelcomePanelViewController.swift in Sources */,
@@ -11182,6 +11191,7 @@
 				D8A42B4B1E815A9C00D8E281 /* WMFLanguageCell.m in Sources */,
 				D82E952B1F14FBD9007BD960 /* UITableView+Theme.swift in Sources */,
 				D8421B56203CC8420040F50B /* DebugReadingListsViewController.swift in Sources */,
+				E7E3DEFC215F940E001A21AC /* PlacesSearchViewController.swift in Sources */,
 				D8A42B4C1E815A9C00D8E281 /* WMFSearchButton.m in Sources */,
 				D8A42B4D1E815A9C00D8E281 /* WMFArticleFetcher.m in Sources */,
 				D8A42B4E1E815A9C00D8E281 /* Array<UITextField>+WMFAllFieldsFilled.swift in Sources */,
@@ -11506,6 +11516,7 @@
 				D8CE25D01E698E2400DAE2E0 /* WMFLanguageCell.m in Sources */,
 				7A6ED50E20ADBF950001849F /* SessionsFunnel.swift in Sources */,
 				D8CE25D11E698E2400DAE2E0 /* WMFSearchButton.m in Sources */,
+				E7E3DEFA215F940D001A21AC /* PlacesSearchViewController.swift in Sources */,
 				D8CE25D21E698E2400DAE2E0 /* WMFArticleFetcher.m in Sources */,
 				D8CE25D31E698E2400DAE2E0 /* Array<UITextField>+WMFAllFieldsFilled.swift in Sources */,
 				D8CE25D41E698E2400DAE2E0 /* NewsViewController.swift in Sources */,
@@ -11830,6 +11841,7 @@
 				D8EC3ECE1E9BDA35006712EB /* WMFLanguageCell.m in Sources */,
 				7A6ED50A20ADBF950001849F /* SessionsFunnel.swift in Sources */,
 				D8EC3ECF1E9BDA35006712EB /* WMFSearchButton.m in Sources */,
+				E7E3DEFB215F940E001A21AC /* PlacesSearchViewController.swift in Sources */,
 				D8EC3ED01E9BDA35006712EB /* WMFArticleFetcher.m in Sources */,
 				D8EC3ED11E9BDA35006712EB /* Array<UITextField>+WMFAllFieldsFilled.swift in Sources */,
 				83927D831F705B7B00051890 /* SearchResultsViewController.swift in Sources */,
