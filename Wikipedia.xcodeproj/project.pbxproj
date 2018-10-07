@@ -7389,7 +7389,9 @@
 				D4991437181D51DE00E6073C /* Frameworks */,
 				D4991436181D51DE00E6073C /* Products */,
 			);
+			indentWidth = 4;
 			sourceTree = "<group>";
+			tabWidth = 4;
 		};
 		D4991436181D51DE00E6073C /* Products */ = {
 			isa = PBXGroup;
