@@ -120,7 +120,7 @@
                                     <action selector="didYouMean:" destination="pK5-Ai-Kzp" eventType="touchUpInside" id="cuq-C2-kl4"/>
                                 </connections>
                             </button>
-                            <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="hEe-dF-AFg" customClass="RoundedCornerView" customModule="Wikipedia" customModuleProvider="target">
+                            <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="hEe-dF-AFg" customClass="OverlayView" customModule="Wikipedia" customModuleProvider="target">
                                 <rect key="frame" x="15" y="84.5" width="325" height="388"/>
                                 <subviews>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="i0j-C1-Whj">
@@ -199,6 +199,13 @@
                                         <include reference="rqr-ZG-5SB"/>
                                     </mask>
                                 </variation>
+                                <connections>
+                                    <outlet property="listAndSearchOverlayBottomConstraint" destination="1PC-H2-U7d" id="StM-vl-dV9"/>
+                                    <outlet property="listAndSearchOverlayHeightConstraint" destination="WjD-Ab-D2o" id="w5P-Hb-IBD"/>
+                                    <outlet property="listAndSearchOverlaySliderHeightConstraint" destination="0Ku-oI-d8V" id="W9p-0x-89R"/>
+                                    <outlet property="listAndSearchOverlaySliderSeparator" destination="IVq-Mn-HaA" id="y4V-py-3NC"/>
+                                    <outlet property="listAndSearchOverlaySliderView" destination="i0j-C1-Whj" id="Yuu-q9-Ibg"/>
+                                </connections>
                             </view>
                             <view contentMode="scaleToFill" placeholderIntrinsicWidth="infinite" placeholderIntrinsicHeight="68" translatesAutoresizingMaskIntoConstraints="NO" id="Gmr-EL-FI6" customClass="WMFNavigationBar">
                                 <rect key="frame" x="0.0" y="0.0" width="834" height="68"/>
@@ -280,12 +287,7 @@
                         <outlet property="extendedNavBarViewHeightContraint" destination="Rb6-54-TnS" id="Vcg-Xk-pkX"/>
                         <outlet property="filterDropDownContainerView" destination="mwy-SF-J1D" id="VkK-Ni-Hy1"/>
                         <outlet property="filterSelectorView" destination="VAs-ZO-0gF" id="Nmc-zk-NHH"/>
-                        <outlet property="listAndSearchOverlayBottomConstraint" destination="1PC-H2-U7d" id="Spi-3n-6kC"/>
                         <outlet property="listAndSearchOverlayContainerView" destination="hEe-dF-AFg" id="pNn-lr-x35"/>
-                        <outlet property="listAndSearchOverlayHeightConstraint" destination="WjD-Ab-D2o" id="4pj-RB-IFd"/>
-                        <outlet property="listAndSearchOverlaySliderHeightConstraint" destination="0Ku-oI-d8V" id="OWR-jH-qkm"/>
-                        <outlet property="listAndSearchOverlaySliderSeparator" destination="IVq-Mn-HaA" id="eEL-Pa-Rlm"/>
-                        <outlet property="listAndSearchOverlaySliderView" destination="i0j-C1-Whj" id="F7F-6f-Zum"/>
                         <outlet property="mapContainerView" destination="EsT-De-Ary" id="BuO-NA-3h4"/>
                         <outlet property="mapListToggle" destination="HrB-BE-o86" id="YpW-51-YCV"/>
                         <outlet property="navigationBar" destination="Gmr-EL-FI6" id="YbU-tL-FC0"/>

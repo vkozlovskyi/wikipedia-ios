@@ -2852,6 +2852,7 @@
 		DE245E79DC6C3C420743A96A /* SearchHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE2457F9501C560DEC717BB5 /* SearchHistory.swift */; };
 		DE245EB2B85E6F4954F568E8 /* SuggestionsFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245374868F72042879F8DC /* SuggestionsFetcher.swift */; };
 		DE245EE71ECAF98A77E4E15E /* MapKitHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */; };
+		E7A91AA32169F1FC00AD886C /* OverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7A91AA22169F1FC00AD886C /* OverlayView.swift */; };
 		E7E3DEF9215F9408001A21AC /* PlacesSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */; };
 		E7E3DEFA215F940D001A21AC /* PlacesSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */; };
 		E7E3DEFB215F940E001A21AC /* PlacesSearchViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */; };
@@ -4738,6 +4739,7 @@
 		DE2457F9501C560DEC717BB5 /* SearchHistory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SearchHistory.swift; sourceTree = "<group>"; };
 		DE2458A45A73680DCCE9228E /* UIKitHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UIKitHelpers.swift; sourceTree = "<group>"; };
 		DE245C16DFD29F8AF1EA4E53 /* MapKitHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MapKitHelpers.swift; sourceTree = "<group>"; };
+		E7A91AA22169F1FC00AD886C /* OverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OverlayView.swift; sourceTree = "<group>"; };
 		E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlacesSearchViewController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -8002,6 +8004,7 @@
 				DE2457F9501C560DEC717BB5 /* SearchHistory.swift */,
 				DE245374868F72042879F8DC /* SuggestionsFetcher.swift */,
 				E7E3DEF8215F9408001A21AC /* PlacesSearchViewController.swift */,
+				E7A91AA22169F1FC00AD886C /* OverlayView.swift */,
 			);
 			name = Places;
 			sourceTree = "<group>";
@@ -10065,6 +10068,7 @@
 				BC62FFC01C11064200533DA9 /* MWKImageInfoFetcher+PicOfTheDayInfo.m in Sources */,
 				D8CB32AD1E79D8A0008A0966 /* RoundedCornerView.swift in Sources */,
 				B0E806341C0CE7680065EBC0 /* MWKImageInfoResponseSerializer.m in Sources */,
+				E7A91AA32169F1FC00AD886C /* OverlayView.swift in Sources */,
 				83E52BBF1F682E3E0045E776 /* LicenseView.swift in Sources */,
 				D84C364A1F32488600895FA1 /* WMFContentGroup+DetailViewControllers.m in Sources */,
 				D80ED25C1EE18D0900CE8C50 /* PlacesSearchSuggestionTableViewCell.swift in Sources */,
